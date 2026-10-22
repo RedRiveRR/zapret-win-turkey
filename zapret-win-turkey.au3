@@ -1049,12 +1049,17 @@ Func RunBlockcheck($ctrlID)
     Local $shScriptPath = @ScriptDir & "\bin\zapret\blockcheck\zapret\blog.sh"
     Local $sCommand = '"' & $bashPath & '" -i "' & $shScriptPath & '"'
     Local $iPidBash = Run($sCommand, @ScriptDir & "\bin\zapret\blockcheck", @SW_HIDE)
+    If $iPidBash = 0 Then
+        MsgBox(16 + 8192, "Analiz Başlatılamadı", "Blockcheck süreci başlatılamadı.")
+        Return
+    EndIf
     Local $hWaitTimer = TimerInit()
     While Not FileExists($logPath)
         Sleep(100)
         If TimerDiff($hWaitTimer) > 10000 Then ExitLoop
     WEnd
-    While ProcessExists("bash.exe")
+    ; Sistemdeki başka bash.exe süreçlerini (Git Bash, WSL vb.) değil, yalnızca bizim başlattığımızı bekle.
+    While ProcessExists($iPidBash)
         Sleep(1000)
         Local $hFile = FileOpen($logPath, 0)
         If $hFile <> -1 Then
