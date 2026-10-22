@@ -5,7 +5,9 @@
 ; =========================================================================
 #include "Assert.au3"
 #include "test_process.au3"
+#include "test_blockcheck.au3"
 
 _TestProcess()
+_TestBlockcheck()
 
 Exit _AssertSummary()

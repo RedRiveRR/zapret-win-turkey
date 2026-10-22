@@ -19,6 +19,7 @@
 #include <ComboConstants.au3>
 #include <EditConstants.au3>
 #include "lib\Process.au3"
+#include "lib\Blockcheck.au3"
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
 Local $currentDir = @ScriptDir
@@ -1271,42 +1272,6 @@ Func _CleanupBlockcheckProcesses($iPidBash)
     _KillProcessesUnderDir(@ScriptDir & "\bin\zapret")
 EndFunc
 
-Func _CollectStrategiesFromText($sText, ByRef $aStrategies)
-    Local $aLines = StringSplit(StringStripCR($sText), @LF)
-    If $aLines[0] < 2 Then Return
-
-    For $i = 2 To $aLines[0]
-        If Not StringInStr($aLines[$i], "!!!!! AVAILABLE !!!!!") Then ContinueLoop
-        If StringInStr($aLines[$i], "iana.org") Then ContinueLoop
-
-        Local $sPrevLine = $aLines[$i - 1]
-        If StringInStr($sPrevLine, "iana.org") Then ContinueLoop
-
-        Local $targetStr = "--wf-tcp-out=443"
-        Local $startPos = StringInStr($sPrevLine, $targetStr)
-        If $startPos = 0 Then ContinueLoop
-
-        Local $cutPoint = $startPos + StringLen($targetStr)
-        Local $sRawStrategy = StringStripWS(StringMid($sPrevLine, $cutPoint), 3)
-        If $sRawStrategy = "" Then ContinueLoop
-
-        Local $sStrategy = _FormatStrategyQuotes($sRawStrategy)
-        Local $bExists = False
-        For $j = 1 To $aStrategies[0]
-            If $aStrategies[$j] = $sStrategy Then
-                $bExists = True
-                ExitLoop
-            EndIf
-        Next
-
-        If Not $bExists Then
-            ReDim $aStrategies[UBound($aStrategies) + 1]
-            $aStrategies[0] += 1
-            $aStrategies[$aStrategies[0]] = $sStrategy
-        EndIf
-    Next
-EndFunc
-
 Func _ShowStrategyTestWindow(ByRef $aStrategies, $bMainAlreadyDisabled = False)
     ; Önceki sonuçlar ana menüden açılırsa burada modal kilitle; analiz akışından gelirse kilit zaten aktiftir.
     If Not $bMainAlreadyDisabled Then GUISetState(@SW_DISABLE, $hGUI)
@@ -1455,42 +1420,6 @@ EndFunc
 Func _StopStrategyTest()
     If $strategyTestPID > 0 And ProcessExists($strategyTestPID) Then ProcessClose($strategyTestPID)
     $strategyTestPID = 0
-EndFunc
-
-Func _GetLastStrategyFromText($sText)
-    Local $aLines = StringSplit(StringStripCR($sText), @LF)
-    For $i = $aLines[0] To 1 Step -1
-        If StringInStr($aLines[$i], "iana.org") Then ContinueLoop
-        If StringInStr($aLines[$i], "!!!!! AVAILABLE !!!!!") Then
-            If $i > 1 Then
-                Local $sPrevLine = $aLines[$i - 1]
-                Local $targetStr = "--wf-tcp-out=443"
-                Local $startPos = StringInStr($sPrevLine, $targetStr)
-                If $startPos > 0 Then
-                    Local $cutPoint = $startPos + StringLen($targetStr)
-                    Local $sRawStrategy = StringStripWS(StringMid($sPrevLine, $cutPoint), 3)
-                    Return _FormatStrategyQuotes($sRawStrategy)
-                EndIf
-            EndIf
-        EndIf
-    Next
-    Return ""
-EndFunc
-
-Func _FormatStrategyQuotes($sRawStrategy)
-    Local $aParams = StringSplit($sRawStrategy, " ", 1)
-    Local $sFormattedStrategy = ""
-    For $j = 1 To $aParams[0]
-        Local $sCurrentParam = $aParams[$j]
-        Local $iFirstEq = StringInStr($sCurrentParam, "=")
-        If $iFirstEq > 0 Then
-            Local $sParamName = StringLeft($sCurrentParam, $iFirstEq)
-            Local $sParamValue = StringMid($sCurrentParam, $iFirstEq + 1)
-            $sCurrentParam = $sParamName & '"' & $sParamValue & '"'
-        EndIf
-        $sFormattedStrategy &= $sCurrentParam & " "
-    Next
-    Return StringStripWS($sFormattedStrategy, 3)
 EndFunc
 
 Func HasValidStrategy()
