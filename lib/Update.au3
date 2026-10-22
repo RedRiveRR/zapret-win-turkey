@@ -1,0 +1,87 @@
+﻿#include-once
+#include <AutoItConstants.au3>
+#include "Log.au3"
+
+; =========================================================================
+; --- GÜNCELLEME KONTROLÜ ---
+; GitHub'daki son sürümü arka planda sorgular; arayüzü bekletmez.
+; Yalnızca bildirim yapar, hiçbir şey indirmez veya kurmaz.
+; =========================================================================
+
+Global $__g_iUpdatePid = 0
+Global $__g_sUpdateOut = ""
+Global $__g_sUpdateUrl = ""
+
+; Sürüm karşılaştırır: $a > $b ise 1, eşitse 0, küçükse -1.
+; Baştaki "v" yok sayılır; eksik bölümler 0 kabul edilir ("4.5" = "4.5.0").
+Func _VersionCompare($a, $b)
+    Local $aA = __VersionParts($a), $aB = __VersionParts($b)
+    Local $iLen = (UBound($aA) > UBound($aB)) ? UBound($aA) : UBound($aB)
+    For $i = 0 To $iLen - 1
+        Local $x = ($i < UBound($aA)) ? $aA[$i] : 0
+        Local $y = ($i < UBound($aB)) ? $aB[$i] : 0
+        If $x > $y Then Return 1
+        If $x < $y Then Return -1
+    Next
+    Return 0
+EndFunc
+
+Func __VersionParts($s)
+    $s = StringRegExpReplace(StringStripWS($s, 3), "^[vV]", "")
+    Local $aRaw = StringSplit($s, ".", 2)
+    Local $aOut[UBound($aRaw)]
+    For $i = 0 To UBound($aRaw) - 1
+        ; "6-beta" gibi bölümlerde baştaki sayı alınır.
+        $aOut[$i] = Number(StringRegExpReplace($aRaw[$i], "^(\d*).*$", "$1"))
+    Next
+    Return $aOut
+EndFunc
+
+; Sürüm etiketi makul mü? (v4.6, 4.5.1 gibi)
+Func _IsVersionTag($s)
+    Return StringRegExp(StringStripWS($s, 3), "^[vV]?\d+(\.\d+){0,3}([-+][0-9A-Za-z.]+)?$") = 1
+EndFunc
+
+; Arka planda son sürüm sorgusunu başlatır.
+Func _UpdateStartCheck($sRepo)
+    $__g_sUpdateOut = ""
+    Local $sPs = "try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; " & _
+            "(Invoke-RestMethod -Uri 'https://api.github.com/repos/" & $sRepo & "/releases/latest' -TimeoutSec 8).tag_name } catch { }"
+    $__g_iUpdatePid = Run('powershell.exe -NoProfile -NonInteractive -Command "' & $sPs & '"', "", @SW_HIDE, $STDOUT_CHILD)
+EndFunc
+
+; Sorgu bittiyse ve daha yeni sürüm varsa etiketi döndürür (yalnızca bir kez); aksi halde "".
+Func _UpdatePoll($sCurrent)
+    If $__g_iUpdatePid = 0 Then Return ""
+    $__g_sUpdateOut &= StdoutRead($__g_iUpdatePid)
+    If ProcessExists($__g_iUpdatePid) Then Return ""
+    $__g_sUpdateOut &= StdoutRead($__g_iUpdatePid)
+    $__g_iUpdatePid = 0
+
+    Local $sTag = StringStripWS($__g_sUpdateOut, 3)
+    If Not _IsVersionTag($sTag) Then
+        _LogInfo("Güncelleme kontrolü: sürüm bilgisi alınamadı")
+        Return ""
+    EndIf
+    If _VersionCompare($sTag, $sCurrent) > 0 Then
+        _LogInfo("Güncelleme kontrolü: yeni sürüm " & $sTag & " (mevcut " & $sCurrent & ")")
+        Return $sTag
+    EndIf
+    _LogInfo("Güncelleme kontrolü: güncel (" & $sTag & ")")
+    Return ""
+EndFunc
+
+; Ana döngüden çağrılır: yeni sürüm bulunduysa tepsi bildirimi gösterir ve
+; tepsi menüsünün başına "Yeni sürümü indir" öğesi ekler. TrayOnEventMode açık olmalıdır.
+Func _UpdatePollAndNotify($sCurrent, $sReleasesUrl)
+    Local $sTag = _UpdatePoll($sCurrent)
+    If $sTag = "" Then Return
+    $__g_sUpdateUrl = $sReleasesUrl
+    TrayCreateItem("Yeni sürümü indir (" & $sTag & ")", -1, 0)
+    TrayItemSetOnEvent(-1, "__UpdateOpenReleases")
+    TrayTip("Yeni sürüm: " & $sTag, "Yeni bir sürüm yayınlandı. İndirmek için tepsi simgesine sağ tıklayın.", 10, 1)
+EndFunc
+
+Func __UpdateOpenReleases()
+    If $__g_sUpdateUrl <> "" Then ShellExecute($__g_sUpdateUrl)
+EndFunc

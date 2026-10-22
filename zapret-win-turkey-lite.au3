@@ -23,6 +23,7 @@
 #include "lib\Version.au3"
 #include "lib\Log.au3"
 #include "lib\Conflicts.au3"
+#include "lib\Update.au3"
 
 Global Const $PBS_MARQUEE = 0x08
 
@@ -222,6 +223,9 @@ While 1
     EndIf
 WEnd
 
+; --- GÜNCELLEME KONTROLÜ (arka planda; config.ini'de UpdateCheck=0 ile kapatılır) ---
+If IniRead($iniPath, "Settings", "UpdateCheck", "1") <> "0" Then _UpdateStartCheck($APP_UPDATE_REPO)
+
 ; --- Ana Döngü ---
 Local $hProcessTimer = TimerInit()
 
@@ -255,6 +259,7 @@ While 1
                 CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
             EndIf
         EndIf
+        _UpdatePollAndNotify($APP_VERSION, $APP_RELEASES_URL)
         $hProcessTimer = TimerInit()
     EndIf
 

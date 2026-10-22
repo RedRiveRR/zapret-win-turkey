@@ -26,6 +26,7 @@
 #include "lib\Version.au3"
 #include "lib\Log.au3"
 #include "lib\Conflicts.au3"
+#include "lib\Update.au3"
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
 Local $currentDir = @ScriptDir
@@ -260,6 +261,9 @@ While 1
     EndIf
 WEnd
 
+; --- GÜNCELLEME KONTROLÜ (arka planda; config.ini'de UpdateCheck=0 ile kapatılır) ---
+If IniRead($iniPath, "Settings", "UpdateCheck", "1") <> "0" Then _UpdateStartCheck($APP_UPDATE_REPO)
+
 ; --- Ana Döngü ---
 Local $hProcessTimer = TimerInit() ; ZAMANLAYICIYI BAŞLAT (Bunu While 1'in hemen üstüne koy)
 
@@ -347,6 +351,7 @@ While 1
 			EndIf
 
 		EndIf
+		_UpdatePollAndNotify($APP_VERSION, $APP_RELEASES_URL)
 	$hProcessTimer = TimerInit()
 	EndIf
 
