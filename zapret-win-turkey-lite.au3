@@ -19,6 +19,7 @@
 #include "lib\Network.au3"
 #include "lib\Process.au3"
 #include "lib\Winws.au3"
+#include "lib\Strategies.au3"
 
 Global Const $PBS_MARQUEE = 0x08
 
@@ -60,6 +61,8 @@ Local $hostlistPath = @ScriptDir & "\config\autohostlist.txt"
 Local $normalHostlistPath = @ScriptDir & "\config\hostlist.txt"
 Local $iniPath = @ScriptDir & "\config\config.ini"
 Local $exludelistPath = @ScriptDir & "\config\excludelist.txt"
+Global $strategiesIniPath = @ScriptDir & "\config\strategies.ini"
+Global $g_aStrategies = _StrategyDefaults("Zapret2")
 
 ; --- CONFIG DOSYASINDAN AYARLARI OKU ---
 Local $iniEngine = IniRead($iniPath, "Settings", "ActiveEngine", "0") ; 0 = Zapret2, 1 = Zapret1
@@ -324,54 +327,15 @@ WEnd
 
 ; --- MOTORA GÖRE HAZIR STRATEJİ LİSTESİNİ DOLDURAN FONKSİYON ---
 Func _LoadStrategyList($sDefaultToSelect)
+    $g_aStrategies = _StrategyLoad($strategiesIniPath, $currentEngine)
+    ; Lite sürümde analiz yok; kayıtlı seçim listede değilse ilk profil seçilir.
+    If Not _StrategyExists($g_aStrategies, $sDefaultToSelect) Then $sDefaultToSelect = $g_aStrategies[0][0]
     GUICtrlSetData($cmbStrategy, "")
-    If $currentEngine == "Zapret2" Then
-        GUICtrlSetData($cmbStrategy, "Turk Telekom|Superonline|Vodafone|Turksat Kablonet|Telekom Mobil|Turkcell Mobil|Vodafone Mobil", ($sDefaultToSelect = "Analiz Sonucu") ? "Turk Telekom" : $sDefaultToSelect)
-    Else
-        GUICtrlSetData($cmbStrategy, "Turk Telekom|TT Alternatif|Superonline|SOL Alternatif|Vodafone|Turkcell Mobil|Vodafone Mobil|Telekom Mobil", ($sDefaultToSelect = "Analiz Sonucu") ? "Turk Telekom" : $sDefaultToSelect)
-    EndIf
+    GUICtrlSetData($cmbStrategy, _StrategyNames($g_aStrategies), $sDefaultToSelect)
 EndFunc
 
 Func _GetActiveStrategyString()
-    Local $sel = GUICtrlRead($cmbStrategy)
-    If $currentEngine == "Zapret2" Then
-        Switch $sel
-            Case "Turk Telekom"
-                Return "--payload=tls_client_hello --lua-desync=multidisorder:pos=2:seqovl=1"
-            Case "Superonline"
-                Return "--payload=tls_client_hello --lua-desync=multidisorder:pos=2:seqovl=1"
-            Case "Vodafone"
-                Return '--payload=tls_client_hello --lua-desync=multisplit:blob=fake_default_tls:ip_ttl=5:pos=2:nodrop:repeats=1'
-			Case "Turksat Kablonet"
-                Return "--payload=tls_client_hello --lua-desync=multidisorder:pos=2:seqovl=1"
-			Case "Telekom Mobil"
-                Return '--payload=tls_client_hello --lua-desync=fake:blob=0x00000000:ip_ttl=5:repeats=1'
-			Case "Turkcell Mobil"
-                Return "--payload=tls_client_hello --lua-desync=multidisorder:pos=2:seqovl=1"
-			Case "Vodafone Mobil"
-                Return "--payload=tls_client_hello --lua-desync=multidisorder:pos=2:seqovl=1"
-			EndSwitch
-    Else
-        Switch $sel
-            Case "Turk Telekom"
-                Return "--dpi-desync=fake --dpi-desync-ttl=4"
-            Case "TT Alternatif"
-                Return "--dpi-desync=fake --dpi-desync-ttl=3"
-            Case "Superonline"
-                Return "--dpi-desync=fake --dpi-desync-fooling=md5sig"
-            Case "SOL Alternatif"
-                Return "--dpi-desync=fake --dpi-desync-fooling=md5sig --dpi-desync-ttl=3"
-			Case "Vodafone"
-                Return "--dpi-desync=fake,multisplit --dpi-desync-fooling=badseq --dpi-desync-split-pos=1,midsld"
-            Case "Turkcell Mobil"
-                Return "--dpi-desync=fake --dpi-desync-ttl=1 --dpi-desync-autottl=3"
-            Case "Vodafone Mobil"
-                Return "--dpi-desync=multisplit --dpi-desync-split-pos=2"
-			Case "Telekom Mobil"
-                Return "--dpi-desync=fake --dpi-desync-ttl=5"
-        EndSwitch
-    EndIf
-    Return ""
+    Return _StrategyGet($g_aStrategies, GUICtrlRead($cmbStrategy))
 EndFunc
 
 Func _UpdateFilterForStrategy()
