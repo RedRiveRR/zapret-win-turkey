@@ -5,6 +5,13 @@ Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-
 ## [Yayınlanmadı]
 
 ### Yeni
+- **Akıllı ISS analizi.** "ISS Analizi" artık şu seçenekleri sunuyor:
+  - *Tam analiz:* ISS taraması yapılır, ardından bulunan stratejiler otomatik sınanır.
+  - *Hızlı akıllı test:* tarama yapılmaz; hazır profiller, kayıtlı ve önceki stratejiler sınanır.
+  - *Önceki sonuçlar:* eski akıllı analiz sonucu veya eski tarama listesi açılır.
+
+  Her strateji winws2 ile başlatılıp Discord'un sohbet sunucusuna (`gateway.discord.gg`), discord.com, roblox.com ve Discord CDN'ine TLS 1.2 ve 1.3 ile defalarca bağlanılarak ölçülür. Ölçüm başarı, gecikme ve sadeliğe göre 0–100 arasında puanlanır. Sonuç tablosunda ★ önerilen strateji tek tıkla kullanılabilir. Tarayıcıda deneme yanıltıcıdır (tarayıcı Discord'u QUIC ile zapret olmadan da açabiliyor); akıllı analiz uygulamanın gerçekten kullandığı TCP bağlantısını ölçer. Hedefler `config.ini` → `[SmartAnalysis] Targets=` ile değiştirilebilir. Lite sürümde tepsi menüsünden "Hazır profilleri akıllı test et".
+- Blockcheck sonuçları okunamazsa (log biçimi değişmişse) artık "strateji bulunamadı" yerine açık uyarı veriliyor.
 - **Hazır stratejiler `config/strategies.ini` dosyasında.** Yeni bir ISS profili eklemek için kodu değiştirip yeniden derlemek gerekmiyor. Dosya silinirse gömülü varsayılanlar kullanılır.
 - **Log dosyası** (`logs/app.log`, 512 KB'ta döner). Açılış, DNS kontrol sonucu, başlatma komut satırı, çökme, servis kurulumu ve blockcheck sonuçları kaydedilir.
 - **Tanılama paketi:** tepsi menüsü → "Tanılama paketi oluştur". Log, ayarlar ve servis durumu masaüstüne ZIP olarak kaydedilir. Ziyaret edilen siteler, IP ve MAC adresleri pakete eklenmez.
