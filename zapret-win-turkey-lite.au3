@@ -20,6 +20,7 @@
 #include "lib\Process.au3"
 #include "lib\Winws.au3"
 #include "lib\Strategies.au3"
+#include "lib\Version.au3"
 
 Global Const $PBS_MARQUEE = 0x08
 
@@ -86,7 +87,7 @@ Global $hInstallServiceUnlockTimer = 0
 Global $bInstallServiceEnableAfterLock = True
 
 ; --- GUI Tasarımı ---
-Global $hGUI = GUICreate("Zapret Windows Türkiye v4.5 Lite", 400, 405)
+Global $hGUI = GUICreate($APP_NAME & " v" & $APP_VERSION & " Lite", 400, 405)
 GUISetBkColor(0xFFFFFF)
 
 ; --- Tepsi Menüsü ---
@@ -394,11 +395,11 @@ Func _UpdateEnginePaths($sEngineSelected)
     If StringInStr($sEngineSelected, "Zapret2") Then
         $currentEngine = "Zapret2"
         $winwsPath = @ScriptDir & "\bin\zapret\zapret-winws\winws2.exe"
-        GUICtrlSetData($lblFooter, "Zapret2 v1.0.5.2")
+        GUICtrlSetData($lblFooter, "Zapret2 v" & $ENGINE_ZAPRET2_VERSION)
     Else
         $currentEngine = "Zapret1"
         $winwsPath = @ScriptDir & "\bin\zapret\zapret-winws\winws.exe"
-        GUICtrlSetData($lblFooter, "Zapret v72.12")
+        GUICtrlSetData($lblFooter, "Zapret v" & $ENGINE_ZAPRET1_VERSION)
     EndIf
 EndFunc
 

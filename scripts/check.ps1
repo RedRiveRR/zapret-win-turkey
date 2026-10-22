@@ -68,6 +68,25 @@ try {
         finally { Pop-Location }
     }
 
+    # Derleyici yönergelerindeki sürüm lib\Version.au3 ile aynı olmalı.
+    $versionFile = Join-Path $work 'lib\Version.au3'
+    if (Test-Path $versionFile) {
+        Write-Host "== Sürüm tutarlılığı" -ForegroundColor Cyan
+        $appVersion = [regex]::Match((Get-Content $versionFile -Raw), 'APP_VERSION\s*=\s*"([^"]+)"').Groups[1].Value
+        foreach ($script in Get-ChildItem $work -Filter '*.au3') {
+            $src = Get-Content $script.FullName -Raw
+            $product = [regex]::Match($src, '#AutoIt3Wrapper_Res_ProductVersion=(\S+)').Groups[1].Value
+            $file = [regex]::Match($src, '#AutoIt3Wrapper_Res_Fileversion=(\S+)').Groups[1].Value
+            if ($product -ne $appVersion -or -not $file.StartsWith("$appVersion.")) {
+                $failed = $true
+                Write-Host "FAIL $($script.Name): ProductVersion=$product Fileversion=$file, APP_VERSION=$appVersion" -ForegroundColor Red
+            }
+            else {
+                Write-Host "ok   $($script.Name): $appVersion"
+            }
+        }
+    }
+
     $runner = Join-Path $work 'tests\run_tests.au3'
     if (Test-Path $runner) {
         Write-Host "== Birim testleri" -ForegroundColor Cyan

@@ -23,6 +23,7 @@
 #include "lib\Network.au3"
 #include "lib\Winws.au3"
 #include "lib\Strategies.au3"
+#include "lib\Version.au3"
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
 Local $currentDir = @ScriptDir
@@ -102,7 +103,7 @@ Global $hInstallServiceUnlockTimer = 0
 Global $bInstallServiceEnableAfterLock = True
 
 ; --- GUI Tasarımı ---
-Global $hGUI = GUICreate("Zapret Windows Türkiye v4.5", 400, 535)
+Global $hGUI = GUICreate($APP_NAME & " v" & $APP_VERSION, 400, 535)
 GUISetBkColor(0xFFFFFF)
 
 ; --- Tepsi Menüsü ---
@@ -199,7 +200,7 @@ GUICtrlSetFont(-1, 10, 600, 0, "Segoe UI")
 Local $btnRemoveService = GUICtrlCreateButton("Servis ve Kalıntıları Temizle", 50, 460, 300, 35)
 GUICtrlSetFont(-1, 10, 600, 0, "Segoe UI")
 
-Global $lblFooter = GUICtrlCreateLabel("Zapret Multi-Engine v2.7.0", 0, 505, 400, 20, $SS_CENTER)
+Global $lblFooter = GUICtrlCreateLabel("", 0, 505, 400, 20, $SS_CENTER)
 GUICtrlSetFont(-1, 10, 400, 0, "Consolas")
 GUICtrlSetColor(-1, 0xBDC3C7)
 
@@ -736,14 +737,14 @@ Func _UpdateEnginePaths($sEngineSelected)
         $winwsPath = @ScriptDir & "\bin\zapret\zapret-winws\winws2.exe"
         $blockcheckPath = @ScriptDir & "\bin\zapret\blockcheck\blockcheck2.cmd"
         $logPath = @ScriptDir & "\bin\zapret\blockcheck\blockcheck2.log"
-        GUICtrlSetData($lblFooter, "Zapret2 v1.0.5.2")
+        GUICtrlSetData($lblFooter, "Zapret2 v" & $ENGINE_ZAPRET2_VERSION)
     Else
         $currentEngine = "Zapret1"
         $strategyFile = @ScriptDir & "\config\strategy.txt"
         $winwsPath = @ScriptDir & "\bin\zapret\zapret-winws\winws.exe"
         $blockcheckPath = @ScriptDir & "\bin\zapret\blockcheck\blockcheck.cmd"
         $logPath = @ScriptDir & "\bin\zapret\blockcheck\blockcheck.log"
-        GUICtrlSetData($lblFooter, "Zapret v72.12")
+        GUICtrlSetData($lblFooter, "Zapret v" & $ENGINE_ZAPRET1_VERSION)
     EndIf
 EndFunc
 
