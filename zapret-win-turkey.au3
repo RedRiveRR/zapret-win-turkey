@@ -24,6 +24,7 @@
 #include "lib\Winws.au3"
 #include "lib\Strategies.au3"
 #include "lib\Version.au3"
+#include "lib\Log.au3"
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
 Local $currentDir = @ScriptDir
@@ -35,6 +36,9 @@ If StringInStr($currentDir, @TempDir) Or StringInStr($currentDir, "Temporary Int
     Exit
 EndIf
 
+_LogInit(@ScriptDir & "\logs\app.log")
+_LogInfo("=== " & $APP_NAME & " v" & $APP_VERSION & " başlatıldı | Windows " & @OSVersion & " " & @OSBuild & " " & @OSArch)
+
 ; --- GÜVENLİK UYARILARINI KALDIR ---
 RunWait('powershell -Command "Get-ChildItem -Path ''' & @ScriptDir & ''' -Recurse | Unblock-File"', "", @SW_HIDE)
 
@@ -42,6 +46,7 @@ RunWait('powershell -Command "Get-ChildItem -Path ''' & @ScriptDir & ''' -Recurs
 If ProcessExists("goodbyedpi.exe") Then
     Local $iResponse = MsgBox(52, "Çakışma Saptandı", "GoodbyeDPI aktif gözüküyor, Zapret'in çalışması için GoodbyeDPI sonlandırılmalı." & @CRLF & @CRLF & _
             "GoodbyeDPI'ı kapatmak ve varsa servisini kaldırmak istiyor musunuz?")
+    _LogWarn("Çakışma: goodbyedpi.exe çalışıyor")
     If $iResponse = 6 Then
         ProcessClose("goodbyedpi.exe")
         While ProcessExists("goodbyedpi.exe")
@@ -341,6 +346,7 @@ While 1
 
 			; 3. Zapret ölmüşse VE bizim arayüz hala "Çalışıyor" modundaysa (Çökme veya Harici Kapatma durumu)
 			If $isZapretRunning Then
+				_LogError("Manuel mod: winws beklenmedik şekilde kapandı (çökme veya dış müdahale)")
 				StopWinws($btnRunZapret, $lblStatusText, $aOtherButtons)
 				; Kullanıcıya Fortnite ve Anti-Cheat uyarısını ver
 				MsgBox(16 + 8192, "Uyarı: Zapret Kapatıldı", "Zapret motoru beklenmedik bir şekilde çöktü veya dışarıdan sonlandırıldı!" & @CRLF & @CRLF & _
@@ -491,6 +497,7 @@ While 1
                 ; --- ADIM 3: SÜRECİ BAŞLATMA ---
                 If Not ProcessExists("go-pcap2socks.exe") Then
                     $pcapPID = Run('"' & $targetPcapExe & '"', @ScriptDir & '\bin\go-pcap2socks', @SW_HIDE)
+                    _LogInfo("Ağ paylaşımı: go-pcap2socks başlatıldı (PID " & $pcapPID & ")")
                 EndIf
 
                 ; --- GERÇEKTEN ÇALIŞIYOR MU KONTROLÜ ---
@@ -571,6 +578,7 @@ While 1
 
             If StringInStr($btnText, "servisi kur") Then
                 GUICtrlSetData($lblStatusText, "DNSCRYPT KURULUYOR...")
+                _LogInfo("DNSCrypt servisi kuruluyor")
 
                 RunWait('"' & $sProxyPath & '" -service install', $sProxyDir, @SW_HIDE)
                 RunWait('"' & $sProxyPath & '" -service start', $sProxyDir, @SW_HIDE)
@@ -581,6 +589,7 @@ While 1
                 ;MsgBox(64 + 8192, "Başarılı", "DNSCrypt servisi kuruldu.")
             Else
                 GUICtrlSetData($lblStatusText, "DNSCRYPT KALDIRILIYOR...")
+                _LogInfo("DNSCrypt servisi kaldırılıyor")
 
                 RunWait('"' & $sProxyPath & '" -service stop', $sProxyDir, @SW_HIDE)
                 RunWait('"' & $sProxyPath & '" -service uninstall', $sProxyDir, @SW_HIDE)
@@ -804,6 +813,7 @@ Func CheckServiceStatus($manualBtn, $statusID, $lockArray, $chkID)
             ; Kullanıcıyı yalnızca bir kez uyar (sürekli MsgBox çıkıp darlamasın)
             If Not $bServiceStoppedWarned Then
                 $bServiceStoppedWarned = True
+                _LogError("Servis yüklü ama durmuş durumda")
                 MsgBox(16 + 8192, "Uyarı: Servis Durdurulmuş", "Zapret servisi sisteme yüklü ancak şu anda DURMUŞ durumda!" & @CRLF & @CRLF & _
                         "Sisteminizdeki Anti-Cheat yazılımları Zapret'i tehdit olarak algılayıp kapatmış olabilir.")
             EndIf
@@ -826,6 +836,7 @@ Func StartWinws($ctrlID, $statusID, $aBtns)
 
     ;ClipPut($fullCommand)
     $zapretPID = Run($fullCommand, @ScriptDir & "\bin\zapret\zapret-winws\", @SW_HIDE)
+    _LogInfo("Manuel başlat (" & $currentEngine & ", " & GUICtrlRead($cmbStrategy) & ", PID " & $zapretPID & "): " & $fullCommand)
 
     If $zapretPID > 0 Then
         ; --- 1. ARAYÜZÜ ANINDA GÜNCELLE (Kullanıcıya anında tepki ver) ---
@@ -847,10 +858,12 @@ Func StartWinws($ctrlID, $statusID, $aBtns)
             ; CheckServiceStatus fonksiyonumuz zaten yazıları yeşil yapıp butonları açma işini kusursuz yapıyor
             CheckServiceStatus($ctrlID, $statusID, $aBtns, $cmbFilter)
 
+            _LogError("Manuel başlat: winws 500 ms içinde kapandı")
             MsgBox(16 + 8192, "Başlatma Hatası", "Zapret motoru başlatılamadı veya anında çöktü!" & @CRLF & @CRLF & _
                     "Sisteminizdeki Anti-Cheat yazılımları Zapret'i tehdit olarak algılayıp kapatmış olabilir.")
         EndIf
     Else
+        _LogError("Manuel başlat: winws çalıştırılamadı: " & $winwsPath)
         MsgBox(16 + 8192, "Dosya Bulunamadı", "WinWS exe dosyası bulunamadı veya çalıştırılamadı!")
     EndIf
 EndFunc
@@ -867,10 +880,12 @@ Func StopWinws($ctrlID, $statusID, $aBtns)
     ; Süreç kapatılamazsa (yetki, takılı sürücü) arayüz sonsuz döngüde kilitlenmesin.
     Local $aWinws[2] = ["winws2.exe", "winws.exe"]
     If Not _CloseProcessesByName($aWinws) Then
+        _LogError("Durdur: winws kapatılamadı")
         MsgBox(48 + 8192, "Uyarı", "Zapret motoru (winws) kapatılamadı." & @CRLF & @CRLF & _
                 "Görev Yöneticisi'nden elle sonlandırmanız veya bilgisayarı yeniden başlatmanız gerekebilir.")
     EndIf
     RunWait(@ComSpec & " /c sc stop WinDivert & sc delete WinDivert & sc stop WinDivert14 & sc delete WinDivert14 & sc stop monkey & sc delete monkey", "", @SW_HIDE)
+    _LogInfo("Manuel mod durduruldu")
     $isZapretRunning = False
     GUICtrlSetData($ctrlID, "ZAPRET'İ BAŞLAT")
     CheckServiceStatus($ctrlID, $statusID, $aBtns, $cmbFilter)
@@ -888,13 +903,16 @@ Func InstallServiceClean($chkID)
     RemoveService()
     Sleep(500)
 
-    If RunWait(@ComSpec & " /c sc create " & $serviceName & ' binPath= "' & $fullBinPath & '" start= auto', "", @SW_HIDE) = 0 Then
+    Local $iCreate = RunWait(@ComSpec & " /c sc create " & $serviceName & ' binPath= "' & $fullBinPath & '" start= auto', "", @SW_HIDE)
+    _LogInfo("Servis kur (" & $currentEngine & ", " & GUICtrlRead($cmbStrategy) & "): sc create çıkış kodu " & $iCreate & " | " & $binArgs)
+    If $iCreate = 0 Then
         RunWait(@ComSpec & " /c sc start " & $serviceName, "", @SW_HIDE)
         MsgBox(64 + 8192, "Başarılı", "Seçilen profil servis olarak kuruldu.")
     EndIf
 EndFunc
 
 Func RemoveService()
+    _LogInfo("Servis ve WinDivert kalıntıları kaldırılıyor")
     RunWait(@ComSpec & " /c sc stop " & $serviceName & " & sc delete " & $serviceName & " & sc stop WinDivert & sc delete WinDivert & sc stop WinDivert14 & sc delete WinDivert14 & sc stop monkey & sc delete monkey", "", @SW_HIDE)
 EndFunc
 
@@ -943,6 +961,7 @@ EndFunc
 Func ExtractSummary($filePath)
     If Not FileExists($filePath) Then Return MsgBox(16 + 8192, "Başarısız", "Analiz log dosyası bulunamadı.")
     Local $strategy = _ParseSummaryStrategy(FileRead($filePath))
+    _LogInfo("Blockcheck1 bitti: " & ($strategy = "" ? "strateji bulunamadı" : $strategy))
     If $strategy <> "" Then
         Local $sFormatted = _FormatStrategyQuotes($strategy)
         Local $hFile = FileOpen($strategyFile, 2)
@@ -1084,6 +1103,8 @@ Func RunBlockcheck2($ctrlID)
     ; blockcheck alt süreçlerini temizliyoruz. Yalnızca paketteki cygwin ve
     ; winws süreçleri hedeflenir; kullanıcının açık Git Bash/MSYS oturumları kapanmaz.
     _CleanupBlockcheckProcesses($iPidBash)
+    _LogInfo("Blockcheck2 bitti: " & $aStrategies[0] & " strateji, süre " & Int(TimerDiff($hTimer) / 1000) & " sn" & _
+            ($bUserStopped ? ", kullanıcı durdurdu" : "") & ($isNoBypassNeeded ? ", engel yok" : ""))
 
     GUIDelete($hScanGUI)
 
@@ -1210,6 +1231,7 @@ Func _ShowStrategyTestWindow(ByRef $aStrategies, $bMainAlreadyDisabled = False)
                     Else
                         FileWrite($hStore, $aStrategies[$iSelected])
                         FileClose($hStore)
+                        _LogInfo("Blockcheck2 stratejisi kaydedildi: " & $aStrategies[$iSelected])
                         ; Analiz Sonucu seçiliyken kaydedilen yeni stratejiye göre ana filtre alanını anında güncelle.
                         _UpdateFilterForStrategy()
                         _StopStrategyTest()

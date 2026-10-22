@@ -1,5 +1,6 @@
 ﻿#include-once
 #include <AutoItConstants.au3>
+#include "Log.au3"
 
 ; =========================================================================
 ; --- AĞ / DNS YARDIMCILARI ---
@@ -33,6 +34,17 @@ Func _NetReadPowerShell($sScript)
     Return StdoutRead($iPid)
 EndFunc
 
+; Bağdaştırıcı gerektiren bir DNS işlemini çalıştırır, sonucu loglar.
+Func __NetRunAdapterAction($sAction, $sBody)
+    Local $bOk = _NetRunPowerShell(_NetWithAdapter($sBody)) <> $NET_EXIT_NO_ADAPTER
+    If $bOk Then
+        _LogInfo("DNS: " & $sAction)
+    Else
+        _LogWarn("DNS: " & $sAction & " yapılamadı, uygun ağ bağdaştırıcısı yok")
+    EndIf
+    Return $bOk
+EndFunc
+
 ; Betiği yalnızca uygun bağdaştırıcı bulunduğunda çalışacak şekilde sarar.
 Func _NetWithAdapter($sBody)
     Return $NET_PS_SELECT_ADAPTER & "if ($adapter) { " & $sBody & " } else { exit " & $NET_EXIT_NO_ADAPTER & " }"
@@ -54,17 +66,17 @@ Func _SetSystemDNS()
             "} " & _
             "}; " & _
             "ipconfig /flushdns"
-    Return _NetRunPowerShell(_NetWithAdapter($sBody)) <> $NET_EXIT_NO_ADAPTER
+    Return __NetRunAdapterAction("Cloudflare (1.1.1.1) olarak ayarlandı", $sBody)
 EndFunc
 
 ; DNS'i otomatiğe (DHCP) alır ve önbelleği temizler. Bağdaştırıcı bulunamazsa False döner.
 Func _ResetSystemDNS()
-    Return _NetRunPowerShell(_NetWithAdapter("Set-DnsClientServerAddress -InterfaceAlias $adapter.Name -ResetServerAddresses; ipconfig /flushdns")) <> $NET_EXIT_NO_ADAPTER
+    Return __NetRunAdapterAction("otomatiğe (DHCP) alındı", "Set-DnsClientServerAddress -InterfaceAlias $adapter.Name -ResetServerAddresses; ipconfig /flushdns")
 EndFunc
 
 ; DNS'i yerel dnscrypt-proxy'ye (127.0.0.1 / ::1) yönlendirir. Bağdaştırıcı bulunamazsa False döner.
 Func _SetDNS_Localhost()
-    Return _NetRunPowerShell(_NetWithAdapter("Set-DnsClientServerAddress -InterfaceAlias $adapter.Name -ServerAddresses '127.0.0.1', '::1'; ipconfig /flushdns")) <> $NET_EXIT_NO_ADAPTER
+    Return __NetRunAdapterAction("yerel dnscrypt-proxy'ye (127.0.0.1) yönlendirildi", "Set-DnsClientServerAddress -InterfaceAlias $adapter.Name -ServerAddresses '127.0.0.1', '::1'; ipconfig /flushdns")
 EndFunc
 
 ; Etkin bağdaştırıcının DNS sunucularını virgülle ayrılmış olarak döndürür.
@@ -100,6 +112,7 @@ Func CheckDnsPoisoningSilent()
 
         If TimerDiff($hTimer) > 5000 Then
             ProcessClose($iPID)
+            _LogWarn("DNS kontrolü: discord.com sorgusu 5 sn içinde yanıt vermedi => zehirli kabul edildi")
             Return True
         EndIf
 
@@ -107,5 +120,7 @@ Func CheckDnsPoisoningSilent()
     WEnd
 
     $sIP &= StdoutRead($iPID)
-    Return Not _IsDnsAnswerSafe($sIP)
+    Local $bSafe = _IsDnsAnswerSafe($sIP)
+    _LogInfo("DNS kontrolü: discord.com -> " & StringLeft(StringStripWS($sIP, 3), 80) & " => " & ($bSafe ? "temiz" : "zehirli"))
+    Return Not $bSafe
 EndFunc
