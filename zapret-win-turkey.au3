@@ -908,6 +908,9 @@ Func InstallServiceClean($chkID)
     If $iCreate = 0 Then
         RunWait(@ComSpec & " /c sc start " & $serviceName, "", @SW_HIDE)
         MsgBox(64 + 8192, "Başarılı", "Seçilen profil servis olarak kuruldu.")
+    Else
+        MsgBox(16 + 8192, "Servis Kurulamadı", "Windows servisi oluşturulamadı (sc create hata kodu " & $iCreate & ")." & @CRLF & @CRLF & _
+                "'Servis ve Kalıntıları Temizle' butonuna basıp tekrar deneyin. Sorun sürerse logs\app.log dosyasıyla birlikte bildirin.")
     EndIf
 EndFunc
 
