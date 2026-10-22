@@ -17,6 +17,7 @@
 #include <ComboConstants.au3>
 #include <AutoItConstants.au3>
 #include "lib\Network.au3"
+#include "lib\Process.au3"
 
 Global Const $PBS_MARQUEE = 0x08
 
@@ -568,10 +569,12 @@ EndFunc
 
 Func StopWinws($ctrlID, $statusID, $aBtns)
     If ProcessExists($zapretPID) Then ProcessClose($zapretPID)
-    While ProcessExists("winws2.exe") Or ProcessExists("winws.exe")
-        ProcessClose("winws2.exe")
-        ProcessClose("winws.exe")
-    WEnd
+    ; Süreç kapatılamazsa (yetki, takılı sürücü) arayüz sonsuz döngüde kilitlenmesin.
+    Local $aWinws[2] = ["winws2.exe", "winws.exe"]
+    If Not _CloseProcessesByName($aWinws) Then
+        MsgBox(48 + 8192, "Uyarı", "Zapret motoru (winws) kapatılamadı." & @CRLF & @CRLF & _
+                "Görev Yöneticisi'nden elle sonlandırmanız veya bilgisayarı yeniden başlatmanız gerekebilir.")
+    EndIf
     RunWait(@ComSpec & " /c sc stop WinDivert & sc delete WinDivert & sc stop WinDivert14 & sc delete WinDivert14 & sc stop monkey & sc delete monkey", "", @SW_HIDE)
     $isZapretRunning = False
     GUICtrlSetData($ctrlID, "ZAPRET'İ BAŞLAT")

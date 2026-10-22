@@ -40,6 +40,33 @@ Func _KillProcessTree($iPid)
     RunWait(@ComSpec & " /c taskkill /F /T /PID " & $iPid, "", @SW_HIDE)
 EndFunc
 
+; Verilen adlardaki tüm süreçleri kapatır. $iTimeoutMs içinde kapanmayanlar için
+; taskkill /F denenir. Hepsi kapandıysa True, hâlâ çalışan varsa False döner.
+Func _CloseProcessesByName($aNames, $iTimeoutMs = 5000)
+    Local $hTimer = TimerInit()
+    While __AnyProcessExists($aNames)
+        For $sName In $aNames
+            ProcessClose($sName)
+        Next
+        If TimerDiff($hTimer) > $iTimeoutMs Then ExitLoop
+        Sleep(100)
+    WEnd
+
+    If __AnyProcessExists($aNames) Then
+        For $sName In $aNames
+            RunWait(@ComSpec & " /c taskkill /F /T /IM " & $sName, "", @SW_HIDE)
+        Next
+    EndIf
+    Return Not __AnyProcessExists($aNames)
+EndFunc
+
+Func __AnyProcessExists($aNames)
+    For $sName In $aNames
+        If ProcessExists($sName) Then Return True
+    Next
+    Return False
+EndFunc
+
 ; WMI erişim hatalarında betiğin çökmesini engeller.
 Func __ProcessComError($oError)
     #forceref $oError
