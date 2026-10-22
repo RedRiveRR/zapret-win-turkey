@@ -1,0 +1,22 @@
+# Çalışma anında oluşan kullanıcı dosyaları
+config/config.ini
+config/strategy.txt
+config/strategy2.txt
+config/blockcheck2_strategies.txt
+logs/
+*.log
+
+# Derleme çıktıları
+*.exe
+!bin/**/*.exe
+dist/
+
+# zapret-win-bundle'dan kopyalanan, repoda tutulmayan klasörler
+bin/zapret/zapret-winws/
+bin/zapret/cygwin/
+
+# Editör / sistem
+.vscode/
+*.bak
+Thumbs.db
+desktop.ini
