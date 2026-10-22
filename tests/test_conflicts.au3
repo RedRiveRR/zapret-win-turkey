@@ -21,7 +21,22 @@ Func _TestConflicts()
     _AssertEq(_ConflictClassify("explorer.exe", "C:\Windows\explorer.exe", $sOur, $sDesc), $CONFLICT_NONE, "ilgisiz süreç")
     _AssertEq($sDesc, "", "ilgisiz süreçte açıklama boş")
 
-    ; Gerçek tarama çökmeden boş/dizi döndürür (test makinesinde çakışan araç olmamalı).
+    ; Gerçek tarama çökmeden dizi döndürür. (Yalnızca okur; hiçbir şeyi kapatmaz.)
     Local $aScan = _ConflictScan($sOur)
     _AssertTrue(IsArray($aScan), "tarama dizi döndürür")
+
+    ; --- _ServiceExePath ---
+    _AssertEq(_ServiceExePath('"C:\Users\a b\zapret\bin\zapret\zapret-winws\winws2.exe" --wf-l3=ipv4 --lua-init="@C:\x.lua"'), _
+            "C:\Users\a b\zapret\bin\zapret\zapret-winws\winws2.exe", "tırnaklı yol")
+    _AssertEq(_ServiceExePath("C:\Users\a b\zapret\bin\dnscrypt-proxy\dnscrypt-proxy.exe -config dnscrypt-proxy.toml"), _
+            "C:\Users\a b\zapret\bin\dnscrypt-proxy\dnscrypt-proxy.exe", "tırnaksız, boşluklu yol + argüman")
+    _AssertEq(_ServiceExePath("C:\x\svc.EXE"), "C:\x\svc.EXE", "argümansız")
+    _AssertEq(_ServiceExePath('"C:\yarım'), "C:\yarım", "kapanmamış tırnak çökmez")
+    _AssertEq(_ServiceExePath(Null), "", "Null PathName")
+
+    ; --- _ForeignServiceScan: yalnızca okur. _HandleForeignServices testte ASLA çağrılmaz
+    ; (geliştirme makinesindeki canlı kurulumun servislerini kaldırır).
+    Local $aSvc = _ForeignServiceScan($sOur)
+    _AssertTrue(IsArray($aSvc), "servis taraması dizi döndürür")
+    If IsArray($aSvc) And UBound($aSvc) > 0 Then _AssertEq(UBound($aSvc, 2), 2, "servis satırı 2 sütunlu")
 EndFunc

@@ -1,6 +1,7 @@
 ﻿#include-once
 #include "Process.au3"
 #include "Log.au3"
+#include "Network.au3"
 
 ; =========================================================================
 ; --- ÇAKIŞMA TESPİTİ ---
@@ -104,6 +105,75 @@ Func _HandleStartupConflicts($sOurDir)
                 "Görev Yöneticisi'nden elle kapatmayı deneyin.")
     EndIf
     Return True
+EndFunc
+
+; Servis PathName değerinden çalıştırılabilir dosya yolunu çıkarır.
+;   "C:\a b\winws2.exe" --x   ->  C:\a b\winws2.exe
+;   C:\a b\dnscrypt-proxy.exe -config x.toml  ->  C:\a b\dnscrypt-proxy.exe
+Func _ServiceExePath($sPathName)
+    If Not IsString($sPathName) Then Return ""
+    $sPathName = StringStripWS($sPathName, 3)
+    If StringLeft($sPathName, 1) = '"' Then
+        Local $iEnd = StringInStr($sPathName, '"', 0, 1, 2)
+        If $iEnd = 0 Then Return StringTrimLeft($sPathName, 1)
+        Return StringMid($sPathName, 2, $iEnd - 2)
+    EndIf
+    Local $aM = StringRegExp($sPathName, "(?i)^(.*?\.exe)(\s|$)", 1)
+    If @error Then Return $sPathName
+    Return $aM[0]
+EndFunc
+
+; Bu programın klasörü dışını gösteren ZapretService / dnscrypt-proxy servislerini bulur.
+; [n][2] (servis adı, exe yolu) döndürür. Genelde eski bir sürümün başka klasöre
+; çıkarılmasından sonra kalan servislerdir.
+Func _ForeignServiceScan($sOurDir)
+    Local $aOut[0][2]
+    Local $oComErr = ObjEvent("AutoIt.Error", "__ProcessComError")
+    #forceref $oComErr
+    Local $oWMI = ObjGet("winmgmts:\\.\root\cimv2")
+    If Not IsObj($oWMI) Then Return $aOut
+    Local $oSvcs = $oWMI.ExecQuery("SELECT Name, PathName FROM Win32_Service WHERE Name='ZapretService' OR Name='dnscrypt-proxy'")
+    If Not IsObj($oSvcs) Then Return $aOut
+    For $oSvc In $oSvcs
+        Local $sExe = _ServiceExePath($oSvc.PathName)
+        If $sExe = "" Or _PathIsUnderDir($sExe, $sOurDir) Then ContinueLoop
+        Local $iRow = UBound($aOut)
+        ReDim $aOut[$iRow + 1][2]
+        $aOut[$iRow][0] = $oSvc.Name
+        $aOut[$iRow][1] = $sExe
+    Next
+    Return $aOut
+EndFunc
+
+; Açılışta başka klasöre ait servisleri kullanıcıya sorup kaldırır.
+; dnscrypt-proxy kaldırılırsa DNS 127.0.0.1'de kalıp internet kesilmesin diye DNS otomatiğe alınır.
+; Kullanıcı reddederse program çalışmaya devam eder.
+Func _HandleForeignServices($sOurDir)
+    Local $aSvcs = _ForeignServiceScan($sOurDir)
+    If UBound($aSvcs) = 0 Then Return
+
+    Local $sList = "", $bDnscrypt = False
+    For $i = 0 To UBound($aSvcs) - 1
+        $sList &= "• " & $aSvcs[$i][0] & "  →  " & $aSvcs[$i][1] & @CRLF
+        If $aSvcs[$i][0] = "dnscrypt-proxy" Then $bDnscrypt = True
+        _LogWarn("Başka klasöre ait servis: " & $aSvcs[$i][0] & " -> " & $aSvcs[$i][1])
+    Next
+
+    Local $iResponse = MsgBox(36 + 8192, "Eski Kurulum Servisleri", "Başka bir klasördeki (muhtemelen eski) kurulumun servisleri bulundu:" & @CRLF & @CRLF & $sList & @CRLF & _
+            "Bu servisler bu klasördeki programla birlikte çalışmaz. Kaldırılsın mı?" & @CRLF & _
+            ($bDnscrypt ? @CRLF & "DNSCrypt kaldırılınca DNS ayarınız otomatiğe (DHCP) alınır; isterseniz bu programdan tekrar kurabilirsiniz." & @CRLF : "") & @CRLF & _
+            "Hayır derseniz program yine açılır, ancak Zapret düzgün çalışmayabilir.")
+    If $iResponse <> 6 Then
+        _LogInfo("Kullanıcı eski kurulum servislerini kaldırmayı reddetti")
+        Return
+    EndIf
+
+    For $i = 0 To UBound($aSvcs) - 1
+        RunWait(@ComSpec & " /c sc stop " & $aSvcs[$i][0] & " & sc delete " & $aSvcs[$i][0], "", @SW_HIDE)
+    Next
+    RunWait(@ComSpec & " /c sc stop WinDivert & sc delete WinDivert & sc stop WinDivert14 & sc delete WinDivert14 & sc stop monkey & sc delete monkey", "", @SW_HIDE)
+    If $bDnscrypt Then _ResetSystemDNS()
+    _LogInfo("Eski kurulum servisleri kaldırıldı")
 EndFunc
 
 ; PID'yi kapatır; 5 sn içinde kapanmazsa taskkill /F dener. Kapandıysa True.

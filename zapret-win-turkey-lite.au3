@@ -44,6 +44,9 @@ _LogInfo("=== " & $APP_NAME & " v" & $APP_VERSION & " Lite başlatıldı | Windo
 ; --- GÜVENLİK UYARILARINI KALDIR ---
 RunWait('powershell -Command "Get-ChildItem -Path ''' & @ScriptDir & ''' -Recurse | Unblock-File"', "", @SW_HIDE)
 
+; --- ESKİ KURULUM SERVİSLERİ (başka klasörü gösteren ZapretService / dnscrypt-proxy) ---
+_HandleForeignServices(@ScriptDir)
+
 ; --- ÇAKIŞMA KONTROLÜ (GoodbyeDPI, ByeDPI, başka klasörden çalışan Zapret) ---
 If Not _HandleStartupConflicts(@ScriptDir) Then Exit
 
