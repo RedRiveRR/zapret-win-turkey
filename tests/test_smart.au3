@@ -87,6 +87,39 @@ Func _TestSmart()
     ; --- _SmartEstimateMinutes ---
     _AssertEq(_SmartEstimateMinutes(110), 8, "110 aday ~8 dk")
     _AssertEq(_SmartEstimateMinutes(5), 1, "5 aday ~1 dk")
+    _AssertEq(_SmartEstimateMinutes(785), 10, "785 aday üst sınırla ~10 dk (önceden ~42 dk)")
+
+    ; --- _SmartIsPriorityCandidate / _SmartOrderCandidates ---
+    _AssertTrue(_SmartIsPriorityCandidate("Tarama, Kayıtlı"), "kayıtlı öncelikli")
+    _AssertTrue(_SmartIsPriorityCandidate("Hazır: Vodafone"), "hazır profil öncelikli")
+    _AssertFalse(_SmartIsPriorityCandidate("Tarama"), "yalnız tarama öncelikli değil")
+    Local $aO[5][2] = [["--lua-desync=fake:repeats=6 --lua-desync=multisplit", "Tarama"], _
+            ["--lua-desync=multisplit:pos=2", "Tarama"], _
+            ["--lua-desync=fake:ip_ttl=5", "Hazır: X"], _
+            ["--lua-desync=multidisorder:pos=1", "Tarama"], _
+            ["--lua-desync=a --lua-desync=b", "Tarama, Kayıtlı"]]
+    Local $aOrd = _SmartOrderCandidates($aO)
+    _AssertEq(UBound($aOrd), 5, "aday sayısı korunur")
+    _AssertEq($aOrd[0][1] & "|" & $aOrd[1][1], "Hazır: X|Tarama, Kayıtlı", "öncelikliler başta, kendi sıralarıyla")
+    _AssertEq($aOrd[2][0], "--lua-desync=multisplit:pos=2", "sonra en sade tarama adayı (eşitlikte ilk bulunan)")
+    _AssertEq($aOrd[3][0], "--lua-desync=multidisorder:pos=1", "eşit sadelikte bulunuş sırası korunur")
+    _AssertEq($aOrd[4][0], "--lua-desync=fake:repeats=6 --lua-desync=multisplit", "en karmaşık en sonda")
+
+    ; OOB tek desync olsa da en sona gider (sahada sıralamanın başına geçiyordu)
+    Local $aO2[3][2] = [['--in-range="-s1" --lua-desync="oob:urp=b"', "Tarama"], _
+            ["--lua-desync=fake:repeats=6 --lua-desync=multisplit", "Tarama"], _
+            ["--lua-desync=multisplit:pos=2", "Tarama"]]
+    Local $aOrd2 = _SmartOrderCandidates($aO2)
+    _AssertEq($aOrd2[2][0], '--in-range="-s1" --lua-desync="oob:urp=b"', "OOB en sonda")
+    _AssertEq(_SmartComplexity('--in-range="-s1" --out-range="s1<d1" --lua-desync=multisplit'), 1, "her -range kuralı +0.5")
+
+    ; Sözlüklü tekrar birleştirme: yeni (boş) liste önceki listenin anahtarlarını taşımaz
+    Local $aN1[0][2], $aN2[0][2]
+    _SmartAddCandidate($aN1, "--x=1", "A")
+    _SmartAddCandidate($aN2, "--x=1", "B")
+    _AssertEq(UBound($aN2) & $aN2[0][1], "1B", "ikinci boş liste bağımsız başlar")
+    _SmartAddCandidate($aN2, '--x="1"', "C")
+    _AssertEq(UBound($aN2) & $aN2[0][1], "1B, C", "sözlükle tekrar bulunur")
 
     ; --- Taban ölçüm motoru (zapret olmadan, gerçek ağ). Yalnızca curl çalıştırır; ağ yoksa da çökmemeli.
     Local $sNull, $sCurl = _SmartFindCurl(@ScriptDir & "\..", $sNull)

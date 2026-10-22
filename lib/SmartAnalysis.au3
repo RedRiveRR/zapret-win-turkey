@@ -27,6 +27,11 @@ Global Const $SMART_TLS13 = "1.3"
 ; host:ağırlık. gateway.discord.gg Discord uygulamasının sohbet bağlantısıdır (en kritik).
 Global Const $SMART_DEFAULT_TARGETS = "gateway.discord.gg:3,discord.com:2,roblox.com:2,cdn.discordapp.com:1"
 Global Const $SMART_PHASE2_MAX = 12
+; Büyük aday listeleri (blockcheck yüzlerce strateji bulabiliyor) için:
+; elemede en fazla bu kadar tarama adayı denenir (kayıtlı/hazır profiller sınırsız)...
+Global Const $SMART_PHASE1_MAX = 150
+; ...ve bu kadar aday elemede tam başarı aldıysa eleme erken biter.
+Global Const $SMART_EARLY_PERFECT = 25
 Global Const $SMART_PHASE1_TIMEOUT = 3
 Global Const $SMART_PHASE2_TIMEOUT = 4
 Global Const $SMART_PHASE2_REPS = 3
@@ -98,6 +103,8 @@ Func _SmartComplexity($sStrategy)
     EndIf
     If StringInStr($sStrategy, "fake") Then $fP += 1 ; ek sahte paket gönderir
     If StringRegExp($sStrategy, "(?i)ip6?_ttl|autottl") Then $fP += 0.5 ; hat mesafesine bağımlı
+    StringReplace($sStrategy, "-range=", "") ; --in-range / --out-range ek kurallar
+    $fP += @extended * 0.5
     Return $fP
 EndFunc
 
@@ -153,20 +160,73 @@ EndFunc
 
 ; Aday listesine ekler; tırnak ve boşluk farkı yok sayılarak tekrarlar birleştirilir,
 ; kaynaklar ", " ile toplanır. $aC: [n][2] (strateji, kaynak)
+; Tekrar araması sözlükle yapılır (785 adayda doğrusal arama 3,5 sn sürüyordu).
+; Sözlük, liste boşken (yeni liste) sıfırlanır; listeler her zaman boştan kurulmalıdır.
+Global $__g_oSmartCandKeys = 0
 Func _SmartAddCandidate(ByRef $aC, $sStrategy, $sSource)
     $sStrategy = StringStripWS($sStrategy, 7)
     If $sStrategy = "" Then Return
     Local $sKey = StringReplace($sStrategy, '"', "")
-    For $i = 0 To UBound($aC) - 1
-        If StringReplace($aC[$i][0], '"', "") == $sKey Then
-            If Not StringInStr(", " & $aC[$i][1] & ",", ", " & $sSource & ",") Then $aC[$i][1] &= ", " & $sSource
+    If UBound($aC) = 0 Or Not IsObj($__g_oSmartCandKeys) Then
+        $__g_oSmartCandKeys = ObjCreate("Scripting.Dictionary")
+        $__g_oSmartCandKeys.CompareMode = 0 ; ikili (büyük/küçük harf duyarlı)
+        For $i = 0 To UBound($aC) - 1
+            $__g_oSmartCandKeys.Item(StringReplace($aC[$i][0], '"', "")) = $i
+        Next
+    EndIf
+    If $__g_oSmartCandKeys.Exists($sKey) Then
+        Local $iIdx = $__g_oSmartCandKeys.Item($sKey)
+        If $iIdx < UBound($aC) And StringReplace($aC[$iIdx][0], '"', "") == $sKey Then
+            If Not StringInStr(", " & $aC[$iIdx][1] & ",", ", " & $sSource & ",") Then $aC[$iIdx][1] &= ", " & $sSource
             Return
         EndIf
-    Next
+    EndIf
     Local $n = UBound($aC)
     ReDim $aC[$n + 1][2]
     $aC[$n][0] = $sStrategy
     $aC[$n][1] = $sSource
+    $__g_oSmartCandKeys.Item($sKey) = $n
+EndFunc
+
+; Aday kaynağı öncelikli mi? (Kayıtlı strateji ve hazır profiller her zaman ölçülür.)
+Func _SmartIsPriorityCandidate($sSource)
+    Return StringInStr($sSource, "Kayıtlı") > 0 Or StringInStr($sSource, "Hazır") > 0
+EndFunc
+
+; Adayları ölçüm sırasına koyar: önce öncelikliler (sıra korunur), sonra diğerleri
+; sadeden karmaşığa (eşitlikte ilk bulunan önce). Büyük listelerde erken bitirme
+; ve üst sınır uygulandığında en sağlam stratejilerin kesin denenmesini sağlar.
+Func _SmartOrderCandidates(ByRef $aC)
+    Local $n = UBound($aC)
+    Local $aOut[$n][2], $iOut = 0
+    For $i = 0 To $n - 1
+        If Not _SmartIsPriorityCandidate($aC[$i][1]) Then ContinueLoop
+        $aOut[$iOut][0] = $aC[$i][0]
+        $aOut[$iOut][1] = $aC[$i][1]
+        $iOut += 1
+    Next
+    ; Diğerleri: karmaşıklık bir kez hesaplanır, dizinler kararlı ekleme sıralamasıyla dizilir.
+    Local $aIdx[$n], $aCx[$n], $iRest = 0
+    For $i = 0 To $n - 1
+        If _SmartIsPriorityCandidate($aC[$i][1]) Then ContinueLoop
+        ; OOB sade görünse de filtreyle çalışmaz ve puanda ceza alır: en sona.
+        Local $fC = _SmartComplexity($aC[$i][0]) + (_WinwsStrategyHasOOB($aC[$i][0]) ? 100 : 0)
+        Local $j = $iRest
+        While $j > 0 And $aCx[$j - 1] > $fC
+            $aIdx[$j] = $aIdx[$j - 1]
+            $aCx[$j] = $aCx[$j - 1]
+            $j -= 1
+        WEnd
+        $aIdx[$j] = $i
+        $aCx[$j] = $fC
+        $iRest += 1
+    Next
+    For $k = 0 To $iRest - 1
+        $aOut[$iOut][0] = $aC[$aIdx[$k]][0]
+        $aOut[$iOut][1] = $aC[$aIdx[$k]][1]
+        $iOut += 1
+    Next
+    Return $aOut
 EndFunc
 
 ; Sonuçları sıralar: önce detaylı ölçülenler (faz 2), sonra puan (yüksek), sonra gecikme (düşük).
@@ -193,10 +253,12 @@ Func __SmartRowBefore(ByRef $aRows, $a, $b)
     Return $fA < $fB
 EndFunc
 
-; Tahmini süre (dakika): eleme ~3 sn/aday, detay ~7 sn/aday, taban ~10 sn.
+; Tahmini en uzun süre (dakika): eleme ~3 sn/aday (üst sınırla), detay ~7 sn/aday, taban ~10 sn.
+; Erken bitirme çoğu zaman bunu kısaltır.
 Func _SmartEstimateMinutes($iCandidates)
+    Local $iP1 = ($iCandidates < $SMART_PHASE1_MAX) ? $iCandidates : $SMART_PHASE1_MAX
     Local $iP2 = ($iCandidates < $SMART_PHASE2_MAX) ? $iCandidates : $SMART_PHASE2_MAX
-    Return Ceiling(($iCandidates * 3 + $iP2 * 7 + 10) / 60)
+    Return Ceiling(($iP1 * 3 + $iP2 * 7 + 10) / 60)
 EndFunc
 
 ; ------------------------------------------------------------------------
@@ -315,7 +377,7 @@ Func __SmartRunBatch(ByRef $aP, $sCurl, $sNull, $iTimeout, $sProgressFunc, $iDon
             Next
             Return False
         EndIf
-        Sleep(50)
+        Sleep(25)
     WEnd
 
     For $i = 0 To $n - 1
@@ -327,11 +389,28 @@ Func __SmartRunBatch(ByRef $aP, $sCurl, $sNull, $iTimeout, $sProgressFunc, $iDon
     Return True
 EndFunc
 
-Func __SmartStartWinws($sWinwsPath, $sStrategy)
+; Bekler; bu sırada ilerleme geri çağrısını çalıştırır ki pencere tepkisiz kalmasın.
+; Kullanıcı durdurursa False.
+Func __SmartWait($iMs, $sProgressFunc, $iDone, $iTotal, $sText, $iWatchPid = 0)
+    Local $hT = TimerInit()
+    While TimerDiff($hT) < $iMs
+        If Not __SmartProgress($sProgressFunc, $iDone, $iTotal, $sText) Then Return False
+        If $iWatchPid > 0 And Not ProcessExists($iWatchPid) Then Return True
+        Sleep(25)
+    WEnd
+    Return True
+EndFunc
+
+; winws2'yi strateji ile başlatır. Dönüş: PID, 0 = başlatılamadı/hemen kapandı, -1 = kullanıcı durdurdu.
+Func __SmartStartWinws($sWinwsPath, $sStrategy, $sProgressFunc = "", $iDone = 0, $iTotal = 0, $sText = "")
     Local $sDir = StringRegExpReplace($sWinwsPath, "\\[^\\]+$", "")
     Local $iPid = Run('"' & $sWinwsPath & '" ' & _BuildWinwsArgs("Zapret2", $sWinwsPath, $sStrategy, $WINWS_FILTER_OFF), $sDir, @SW_HIDE)
     If $iPid = 0 Then Return 0
-    Sleep(700) ; WinDivert filtresinin oturması için
+    ; WinDivert filtresinin oturması için bekle (süreç erken kapanırsa beklemeyi kes).
+    If Not __SmartWait(700, $sProgressFunc, $iDone, $iTotal, $sText, $iPid) Then
+        __SmartStopWinws($iPid)
+        Return -1
+    EndIf
     If Not ProcessExists($iPid) Then Return 0
     Return $iPid
 EndFunc
@@ -340,7 +419,7 @@ Func __SmartStopWinws($iPid)
     If $iPid <= 0 Then Return
     ProcessClose($iPid)
     If Not ProcessWaitClose($iPid, 3) Then _KillProcessTree($iPid)
-    Sleep(150)
+    Sleep(50)
 EndFunc
 
 ; Bir stratejiyi (ya da $sStrategy = "" ise bypass'sız durumu) ölçer.
@@ -359,7 +438,8 @@ Func _SmartMeasure($sWinwsPath, $sStrategy, ByRef $aTargets, $iReps, $iTimeout, 
 
     Local $iPid = 0
     If $sStrategy <> "" Then
-        $iPid = __SmartStartWinws($sWinwsPath, $sStrategy)
+        $iPid = __SmartStartWinws($sWinwsPath, $sStrategy, $sProgressFunc, $iDone, $iTotal, $sText)
+        If $iPid = -1 Then Return -1
         If $iPid = 0 Then Return 0
     EndIf
 
@@ -398,15 +478,23 @@ EndFunc
 ; Tam analiz. $aCandidates: [n][2] (strateji, kaynak).
 ; Dönüş: sıralı sonuçlar [n][$SMART_COL_COUNT]. $sSummary'ye özet yazılır.
 ; @error: 1 = hiçbir hedefte engel yok, 2 = kullanıcı durdurdu (kısmi sonuç), 3 = geçersiz girdi
-Func _SmartAnalyze(ByRef $aCandidates, $sWinwsPath, $sCurl, $sNull, $sTargetsSpec, $sProgressFunc, ByRef $sSummary)
+Func _SmartAnalyze(ByRef $aCandidatesIn, $sWinwsPath, $sCurl, $sNull, $sTargetsSpec, $sProgressFunc, ByRef $sSummary)
     Local $aEmpty[0][$SMART_COL_COUNT]
     $sSummary = ""
     Local $aTargets = _SmartParseTargets($sTargetsSpec)
-    Local $nT = UBound($aTargets), $nC = UBound($aCandidates)
+    Local $nT = UBound($aTargets), $nC = UBound($aCandidatesIn)
     If $nT = 0 Or $sCurl = "" Then Return SetError(3, 0, $aEmpty)
 
-    Local $iP2 = ($nC < $SMART_PHASE2_MAX) ? $nC : $SMART_PHASE2_MAX
-    Local $iTotal = 1 + $nC + $iP2, $iDone = 0
+    ; Öncelikliler önce, sonra sadeden karmaşığa.
+    Local $aCandidates = _SmartOrderCandidates($aCandidatesIn)
+    Local $nPrio = 0
+    For $i = 0 To $nC - 1
+        If _SmartIsPriorityCandidate($aCandidates[$i][1]) Then $nPrio += 1
+    Next
+    Local $nRest = $nC - $nPrio
+    Local $iP1 = $nPrio + (($nRest < $SMART_PHASE1_MAX) ? $nRest : $SMART_PHASE1_MAX)
+    Local $iP2 = ($iP1 < $SMART_PHASE2_MAX) ? $iP1 : $SMART_PHASE2_MAX
+    Local $iTotal = 1 + $iP1 + $iP2, $iDone = 0
     Local $aM, $fMs
 
     ; --- 0) Taban ölçüm ---
@@ -424,7 +512,7 @@ Func _SmartAnalyze(ByRef $aCandidates, $sWinwsPath, $sCurl, $sNull, $sTargetsSpe
         EndIf
     Next
     $iDone += 1
-    _LogInfo("Akıllı analiz: engelli hedefler [" & $sBlocked & "], engelsiz [" & $sFree & "], " & $nC & " aday")
+    _LogInfo("Akıllı analiz: engelli hedefler [" & $sBlocked & "], engelsiz [" & $sFree & "], " & $nC & " aday (" & $nPrio & " öncelikli)")
     If $iBlocked = 0 Then
         $sSummary = "Hedeflerin hiçbirinde engel saptanmadı (" & $sFree & ")."
         Return SetError(1, 0, $aEmpty)
@@ -432,20 +520,38 @@ Func _SmartAnalyze(ByRef $aCandidates, $sWinwsPath, $sCurl, $sNull, $sTargetsSpe
 
     ; --- 1) Eleme ---
     Local $aRows[$nC][$SMART_COL_COUNT]
-    Local $bAborted = False, $iMeasured = 0
+    Local $bAborted = False, $iMeasured = 0, $iRestMeasured = 0, $iPerfect = 0, $iSkipped = 0, $sSkipReason = ""
     For $i = 0 To $nC - 1
         __SmartFillRow($aRows, $i, $aCandidates[$i][0], $aCandidates[$i][1])
         If $bAborted Then ContinueLoop
+        Local $bPrio = _SmartIsPriorityCandidate($aCandidates[$i][1])
+        If Not $bPrio Then
+            If $iPerfect >= $SMART_EARLY_PERFECT Then
+                $iSkipped += 1
+                $sSkipReason = $SMART_EARLY_PERFECT & " aday tam başarı aldı"
+                ContinueLoop
+            EndIf
+            If $iRestMeasured >= $SMART_PHASE1_MAX Then
+                $iSkipped += 1
+                If $sSkipReason = "" Then $sSkipReason = "üst sınır " & $SMART_PHASE1_MAX
+                ContinueLoop
+            EndIf
+        EndIf
         $iR = _SmartMeasure($sWinwsPath, $aCandidates[$i][0], $aTargets, 1, $SMART_PHASE1_TIMEOUT, $sCurl, $sNull, _
-                $sProgressFunc, $iDone, $iTotal, "Eleme " & ($i + 1) & "/" & $nC & ": " & StringLeft($aCandidates[$i][0], 90), $aM, $fMs)
+                $sProgressFunc, $iDone, $iTotal, "Eleme " & ($iMeasured + 1) & "/" & $iP1 & " (tam başarılı: " & $iPerfect & "): " & _
+                StringLeft($aCandidates[$i][0], 80), $aM, $fMs)
         If $iR = -1 Then
             $bAborted = True
             ContinueLoop
         EndIf
         __SmartScoreRow($aRows, $i, $iR, $aM, $fMs, $aTargets, $aBlocked, 1)
+        If $aRows[$i][$SMART_COL_SUCCESS] >= 100 Then $iPerfect += 1
         $iMeasured += 1
+        If Not $bPrio Then $iRestMeasured += 1
         $iDone += 1
     Next
+    ; Erken bitince ilerleme çubuğu eleme sonuna atlasın.
+    $iDone = 1 + $iP1
     _SmartRank($aRows)
 
     ; --- 2) Detaylı ölçüm ---
@@ -467,7 +573,7 @@ Func _SmartAnalyze(ByRef $aCandidates, $sWinwsPath, $sCurl, $sNull, $sTargetsSpe
         _SmartRank($aRows)
     EndIf
 
-    ; Ölçülmeyen (durdurma sonrası) satırları at
+    ; Ölçülmeyen (atlanan / durdurma sonrası) satırları at
     Local $aOut[0][$SMART_COL_COUNT], $iWorking = 0
     For $i = 0 To $nC - 1
         If $aRows[$i][$SMART_COL_PHASE] = 0 Then ContinueLoop
@@ -481,6 +587,7 @@ Func _SmartAnalyze(ByRef $aCandidates, $sWinwsPath, $sCurl, $sNull, $sTargetsSpe
 
     $sSummary = "Engelli hedefler: " & $sBlocked & ($sFree = "" ? "" : " | Engelsiz: " & $sFree) & " | " & _
             $iWorking & "/" & $iMeasured & " strateji çalıştı"
+    If $iSkipped > 0 Then $sSummary &= " | " & $iSkipped & " karmaşık aday atlandı (" & $sSkipReason & ")"
     If UBound($aOut) > 0 And $aOut[0][$SMART_COL_SCORE] > 0 Then $sSummary &= " | Önerilen puan: " & $aOut[0][$SMART_COL_SCORE]
     If $bAborted Then
         $sSummary &= " | Kullanıcı durdurdu"

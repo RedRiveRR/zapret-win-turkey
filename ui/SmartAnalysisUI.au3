@@ -23,7 +23,7 @@ Global Const $SMARTUI_PREV_LIST = 3
 Global Const $SMARTUI_PREV_SMART = 4
 
 Global $__g_idSmartBar = 0, $__g_idSmartPhase = 0, $__g_idSmartElapsed = 0, $__g_idSmartStop = 0
-Global $__g_hSmartTimer = 0, $__g_sSmartLastText = "", $__g_iSmartLastPct = -1
+Global $__g_hSmartTimer = 0, $__g_sSmartLastText = "", $__g_iSmartLastPct = -1, $__g_iSmartLastSec = -1, $__g_bSmartStopping = False
 
 Global Const $SMARTUI_BROWSER_NOTE = "Not: Tarayıcı Discord'u QUIC ile zapret olmadan da açabildiği için tarayıcıda denemek yanıltıcıdır. " & _
         "Discord uygulamasını tepsiden tamamen kapatıp yeniden açarak deneyin."
@@ -111,6 +111,8 @@ Func _SmartUI_Run(ByRef $aCandidates, $sRoot, $sWinwsPath, $sTargetsSpec, $sResu
     $__g_hSmartTimer = TimerInit()
     $__g_sSmartLastText = ""
     $__g_iSmartLastPct = -1
+    $__g_iSmartLastSec = -1
+    $__g_bSmartStopping = False
 
     Local $sSummary
     Local $aRows = _SmartAnalyze($aCandidates, $sWinwsPath, $sCurl, $sNull, $sTargetsSpec, "__SmartUI_Progress", $sSummary)
@@ -141,7 +143,10 @@ Func _SmartUI_Run(ByRef $aCandidates, $sRoot, $sWinwsPath, $sTargetsSpec, $sResu
     Return _SmartUI_ShowResults($aRows, $sSummary, $sStrategyFile, $sWinwsPath, $hParent)
 EndFunc
 
+; Motor bu fonksiyonu ~25 ms'de bir çağırır: yalnızca değişen denetimler güncellenir
+; (her çağrıda yazmak pencereyi titretir ve tıklamaları geciktirir).
 Func __SmartUI_Progress($iDone, $iTotal, $sText)
+    If $__g_bSmartStopping Then Return False
     Local $iPct = ($iTotal > 0) ? Int($iDone * 100 / $iTotal) : 0
     If $iPct <> $__g_iSmartLastPct Then
         GUICtrlSetData($__g_idSmartBar, $iPct)
@@ -152,9 +157,19 @@ Func __SmartUI_Progress($iDone, $iTotal, $sText)
         $__g_sSmartLastText = $sText
     EndIf
     Local $iSecs = Int(TimerDiff($__g_hSmartTimer) / 1000)
-    GUICtrlSetData($__g_idSmartElapsed, "Geçen süre: " & StringFormat("%02d:%02d", Int($iSecs / 60), Mod($iSecs, 60)) & "   |   %" & $iPct)
+    If $iSecs <> $__g_iSmartLastSec Then
+        GUICtrlSetData($__g_idSmartElapsed, "Geçen süre: " & StringFormat("%02d:%02d", Int($iSecs / 60), Mod($iSecs, 60)) & "   |   %" & $iPct)
+        $__g_iSmartLastSec = $iSecs
+    EndIf
     Local $nMsg = GUIGetMsg()
-    If $nMsg = $__g_idSmartStop Or $nMsg = $GUI_EVENT_CLOSE Then Return False
+    If $nMsg = $__g_idSmartStop Or $nMsg = $GUI_EVENT_CLOSE Then
+        ; Anında geri bildirim: çalışan ölçüm birkaç yüz ms içinde kapanır.
+        $__g_bSmartStopping = True
+        GUICtrlSetState($__g_idSmartStop, $GUI_DISABLE)
+        GUICtrlSetData($__g_idSmartStop, "Durduruluyor...")
+        GUICtrlSetData($__g_idSmartPhase, "Durduruluyor, şimdiye kadarki sonuçlar hazırlanıyor...")
+        Return False
+    EndIf
     Return True
 EndFunc
 
@@ -250,7 +265,11 @@ Func _SmartUI_ShowResults(ByRef $aRows, $sSummary, $sStrategyFile, $sWinwsPath, 
                 Else
                     $iSel = __SmartUI_Selected($idLV)
                     If $iSel < 0 Then ContinueLoop
+                    GUICtrlSetState($bTry, $GUI_DISABLE)
+                    GUICtrlSetData($bTry, "Başlatılıyor...")
                     $iTryPid = __SmartStartWinws($sWinwsPath, $aRows[$iSel][$SMART_COL_STRATEGY])
+                    GUICtrlSetState($bTry, $GUI_ENABLE)
+                    GUICtrlSetData($bTry, "Seçileni Dene")
                     If $iTryPid > 0 Then
                         GUICtrlSetData($bTry, "Denemeyi Durdur")
                         GUICtrlSetData($idNote, "DENEME ÇALIŞIYOR (#" & ($iSel + 1) & ") — Discord uygulamasını tamamen kapatıp açın; bağlanıyorsa strateji çalışıyor.")
@@ -259,12 +278,12 @@ Func _SmartUI_ShowResults(ByRef $aRows, $sSummary, $sStrategyFile, $sWinwsPath, 
                     EndIf
                 EndIf
             Case Else
-                For $i = 0 To $n - 1
-                    If $nMsg = $aItems[$i] Then
-                        __SmartUI_ShowDetail($aRows, $i, $idDetail)
-                        ExitLoop
-                    EndIf
-                Next
+                ; Satır öğelerinin denetim kimlikleri ardışıktır: döngü yerine doğrudan hesapla
+                ; (yüzlerce satırda her olayda dizi taramak tepkiyi yavaşlatıyordu).
+                If $nMsg > 0 And $n > 0 And $nMsg >= $aItems[0] And $nMsg <= $aItems[$n - 1] Then
+                    Local $iIdx = $nMsg - $aItems[0]
+                    If $aItems[$iIdx] = $nMsg Then __SmartUI_ShowDetail($aRows, $iIdx, $idDetail)
+                EndIf
         EndSwitch
         ; Deneme süreci dışarıdan kapanırsa düğmeyi düzelt
         If $iTryPid > 0 And Not ProcessExists($iTryPid) Then
