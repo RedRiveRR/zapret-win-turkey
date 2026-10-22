@@ -4,6 +4,14 @@ on:
   workflow_dispatch:
   push:
     tags: ['v*']
+    # Geliştirme dalında kod değişince test paketi (artifact) üret.
+    branches: [gelistirme]
+    paths:
+      - '*.au3'
+      - 'lib/**'
+      - 'config/**'
+      - 'scripts/build.ps1'
+      - '.github/workflows/release.yml'
 
 permissions:
   contents: write
