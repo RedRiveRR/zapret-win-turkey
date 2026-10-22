@@ -1,0 +1,75 @@
+name: Hata raporu
+description: Program çalışmıyor, çöküyor veya beklenmedik davranıyor
+labels: [hata]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Raporunuz ne kadar ayrıntılıysa sorun o kadar hızlı çözülür. Kişisel bilgilerinizi (IP adresi, kullanıcı adı) paylaşmayın.
+  - type: input
+    id: surum
+    attributes:
+      label: Program sürümü
+      description: Pencere başlığında yazar (ör. 4.5) ve Lite mı?
+      placeholder: "4.5 / 4.5 Lite"
+    validations:
+      required: true
+  - type: dropdown
+    id: iss
+    attributes:
+      label: İnternet sağlayıcı
+      options:
+        - Türk Telekom
+        - Superonline
+        - Vodafone
+        - Türksat Kablonet
+        - Telekom Mobil
+        - Turkcell Mobil
+        - Vodafone Mobil
+        - Diğer
+    validations:
+      required: true
+  - type: dropdown
+    id: motor
+    attributes:
+      label: Motor
+      options:
+        - Zapret2
+        - Zapret (klasik)
+    validations:
+      required: true
+  - type: input
+    id: strateji
+    attributes:
+      label: Strateji
+      description: Hazır profil adı ya da "Analiz Sonucu"
+  - type: dropdown
+    id: mod
+    attributes:
+      label: Çalışma modu
+      options:
+        - Manuel
+        - Servis
+  - type: input
+    id: windows
+    attributes:
+      label: Windows sürümü
+      placeholder: "Windows 11 24H2"
+  - type: textarea
+    id: ne-oldu
+    attributes:
+      label: Ne oldu?
+      description: Hangi adımda ne yaptınız, ne bekliyordunuz, ne oldu?
+    validations:
+      required: true
+  - type: textarea
+    id: diger
+    attributes:
+      label: Açık olan diğer programlar
+      description: VPN, Cloudflare WARP, GoodbyeDPI, antivirüs, oyun anti-cheat yazılımları vb.
+  - type: textarea
+    id: log
+    attributes:
+      label: Blockcheck logu (analiz sorunlarında)
+      description: bin\zapret\blockcheck\blockcheck2.log içeriğinin ilgili kısmı
+      render: text

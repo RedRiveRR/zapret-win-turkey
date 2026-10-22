@@ -1,0 +1,55 @@
+name: Çalışan strateji bildirimi
+description: ISS'nizde çalışan (veya artık çalışmayan) bir strateji bildirin
+labels: [strateji]
+body:
+  - type: dropdown
+    id: iss
+    attributes:
+      label: İnternet sağlayıcı
+      options:
+        - Türk Telekom
+        - Superonline
+        - Vodafone
+        - Türksat Kablonet
+        - Telekom Mobil
+        - Turkcell Mobil
+        - Vodafone Mobil
+        - Diğer
+    validations:
+      required: true
+  - type: input
+    id: sehir
+    attributes:
+      label: Şehir (isteğe bağlı)
+      description: Bazı ISS'lerde DPI bölgeye göre değişebiliyor
+  - type: dropdown
+    id: motor
+    attributes:
+      label: Motor
+      options:
+        - Zapret2
+        - Zapret (klasik)
+    validations:
+      required: true
+  - type: dropdown
+    id: durum
+    attributes:
+      label: Durum
+      options:
+        - Çalışıyor
+        - Artık çalışmıyor
+    validations:
+      required: true
+  - type: textarea
+    id: strateji
+    attributes:
+      label: Strateji parametreleri
+      description: config\strategy2.txt (Zapret2) veya config\strategy.txt içeriği ya da hazır profil adı
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: siteler
+    attributes:
+      label: Test ettiğiniz siteler
+      placeholder: "discord.com, roblox.com"
