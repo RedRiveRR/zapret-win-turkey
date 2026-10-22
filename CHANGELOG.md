@@ -9,6 +9,7 @@ Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-
 - **Log dosyası** (`logs/app.log`, 512 KB'ta döner). Açılış, DNS kontrol sonucu, başlatma komut satırı, çökme, servis kurulumu ve blockcheck sonuçları kaydedilir.
 - **Tanılama paketi:** tepsi menüsü → "Tanılama paketi oluştur". Log, ayarlar ve servis durumu masaüstüne ZIP olarak kaydedilir. Ziyaret edilen siteler, IP ve MAC adresleri pakete eklenmez.
 - **Güncelleme bildirimi:** açılışta arka planda GitHub'daki son sürüme bakılır. Yeni sürüm varsa tepsi bildirimi gösterilir. Hiçbir şey otomatik indirilmez. `config.ini` → `[Settings] UpdateCheck=0` ile kapatılır.
+- **Eski kurulumdan geçiş:** yeni sürüm başka bir klasöre çıkarıldığında, eski klasörü gösteren `ZapretService` ve `dnscrypt-proxy` servisleri tespit edilir ve onayla kaldırılır. DNSCrypt kaldırılırsa DNS otomatiğe alınır, internet kesilmez.
 - **Genişletilmiş çakışma tespiti:** GoodbyeDPI'ya ek olarak ByeDPI ve bu programın klasörü dışından çalışan `winws`/`winws2` (ikinci bir zapret paketi) de tespit edilir.
 
 ### Düzeltmeler
