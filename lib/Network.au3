@@ -93,15 +93,39 @@ Func _IsDnsAnswerSafe($sIP)
 EndFunc
 
 ; discord.com sorgusuyla DNS zehirlenmesini sessizce kontrol eder. Zehirliyse veya
-; sorgu 5 sn içinde yanıt vermezse True döner.
+; iki denemede de geçerli yanıt alınamazsa True döner.
 Func CheckDnsPoisoningSilent()
+    Local $sIP = __NetQueryDiscord()
+    ; Boş yanıt, zaman aşımı veya hata metni geçici bir ağ sorunu olabilir; bir kez daha dene.
+    ; Kesin bir IP (zehirli dahil) döndüyse yeniden denenmez.
+    If _DnsAnswerNeedsRetry($sIP) Then
+        _LogWarn("DNS kontrolü: geçerli yanıt alınamadı (" & StringLeft(StringStripWS($sIP, 3), 80) & "), 1 sn sonra yeniden deneniyor")
+        Sleep(1000)
+        $sIP = __NetQueryDiscord()
+    EndIf
+
+    Local $bSafe = _IsDnsAnswerSafe($sIP)
+    _LogInfo("DNS kontrolü: discord.com -> " & StringLeft(StringStripWS($sIP, 3), 80) & " => " & ($bSafe ? "temiz" : "zehirli"))
+    Return Not $bSafe
+EndFunc
+
+; Yanıt bir IPv4/IPv6 adresi değilse (boş, zaman aşımı, PowerShell hata metni) True.
+Func _DnsAnswerNeedsRetry($sIP)
+    $sIP = StringStripWS($sIP, 3)
+    If $sIP = "" Then Return True
+    If StringRegExp($sIP, "^\d{1,3}(\.\d{1,3}){3}$") Then Return False
+    If StringRegExp($sIP, "^[0-9a-fA-F:]+$") And StringInStr($sIP, ":") Then Return False
+    Return True
+EndFunc
+
+; DNS önbelleğini temizleyip discord.com'u çözer; ilk IP'yi döndürür. 5 sn içinde yanıt yoksa "".
+Func __NetQueryDiscord()
     RunWait(@ComSpec & " /c ipconfig /flushdns", "", @SW_HIDE)
 
     Local $iPID = Run( _
             'powershell.exe -NoProfile -NonInteractive -Command "[System.Net.Dns]::GetHostAddresses(' & "'" & "discord.com" & "'" & ') | Select-Object -ExpandProperty IPAddressToString | Select-Object -First 1"', _
             "", @SW_HIDE, $STDOUT_CHILD + $STDERR_MERGED)
-
-    If $iPID = 0 Then Return True
+    If $iPID = 0 Then Return ""
 
     Local $hTimer = TimerInit()
     Local $sIP = ""
@@ -112,15 +136,13 @@ Func CheckDnsPoisoningSilent()
 
         If TimerDiff($hTimer) > 5000 Then
             ProcessClose($iPID)
-            _LogWarn("DNS kontrolü: discord.com sorgusu 5 sn içinde yanıt vermedi => zehirli kabul edildi")
-            Return True
+            _LogWarn("DNS kontrolü: discord.com sorgusu 5 sn içinde yanıt vermedi")
+            Return ""
         EndIf
 
         Sleep(50)
     WEnd
 
     $sIP &= StdoutRead($iPID)
-    Local $bSafe = _IsDnsAnswerSafe($sIP)
-    _LogInfo("DNS kontrolü: discord.com -> " & StringLeft(StringStripWS($sIP, 3), 80) & " => " & ($bSafe ? "temiz" : "zehirli"))
-    Return Not $bSafe
+    Return StringStripWS($sIP, 3)
 EndFunc

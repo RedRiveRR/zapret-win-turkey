@@ -11,6 +11,14 @@ Func _TestNetwork()
     _AssertFalse(_IsDnsAnswerSafe("Exception calling GetHostAddresses"), "hata metni güvenli değil")
     _AssertFalse(_IsDnsAnswerSafe("10.0.0.1"), "bilinmeyen IP güvenli değil (mevcut davranış)")
 
+    ; --- _DnsAnswerNeedsRetry (H7) ---
+    _AssertTrue(_DnsAnswerNeedsRetry(""), "boş yanıt yeniden denenir")
+    _AssertTrue(_DnsAnswerNeedsRetry("  " & @CRLF), "yalnızca boşluk yeniden denenir")
+    _AssertTrue(_DnsAnswerNeedsRetry('Exception calling "GetHostAddresses" with "1" argument(s): "No such host is known"'), "PowerShell hata metni yeniden denenir")
+    _AssertFalse(_DnsAnswerNeedsRetry("195.175.254.2"), "zehirli IP kesin yanıttır, yeniden denenmez")
+    _AssertFalse(_DnsAnswerNeedsRetry("162.159.135.232" & @CRLF), "Cloudflare IP yeniden denenmez")
+    _AssertFalse(_DnsAnswerNeedsRetry("2606:4700::6810:84e5"), "IPv6 yanıt yeniden denenmez")
+
     ; --- _NetWithAdapter ---
     Local $sScript = _NetWithAdapter("Write-Output x")
     _AssertTrue(StringLeft($sScript, StringLen($NET_PS_SELECT_ADAPTER)) == $NET_PS_SELECT_ADAPTER, "bağdaştırıcı seçimiyle başlar")
