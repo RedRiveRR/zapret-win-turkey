@@ -7,9 +7,11 @@
 #include "test_process.au3"
 #include "test_blockcheck.au3"
 #include "test_network.au3"
+#include "test_winws.au3"
 
 _TestProcess()
 _TestBlockcheck()
 _TestNetwork()
+_TestWinws()
 
 Exit _AssertSummary()

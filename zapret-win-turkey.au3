@@ -21,6 +21,7 @@
 #include "lib\Process.au3"
 #include "lib\Blockcheck.au3"
 #include "lib\Network.au3"
+#include "lib\Winws.au3"
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
 Local $currentDir = @ScriptDir
@@ -858,34 +859,7 @@ Func StartWinws($ctrlID, $statusID, $aBtns)
     Local $activeStrategy = _GetActiveStrategyString()
     If $activeStrategy = "" Then Return MsgBox(48 + 8192, "Hata", "Strateji bulunamadı. Önce analiz yapın.")
 
-    Local $fullCommand = ""
-
-    Local $bStrategyHasOOB = StringInStr($activeStrategy, "oob") > 0
-    If $currentEngine = "Zapret2" Then
-        Local $luaBaseDir = StringRegExpReplace($winwsPath, "\\[^\\]+$", "") & "\lua\"
-        Local $luaParams = ' --lua-init="@' & $luaBaseDir & 'zapret-lib.lua"' & _
-                           ' --lua-init="@' & $luaBaseDir & 'zapret-antidpi.lua"' & _
-                           ' --lua-init="@' & $luaBaseDir & 'zapret-auto.lua"'
-        $fullCommand = '"' & $winwsPath & '" --wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-65535 '
-        If Not $bStrategyHasOOB Then $fullCommand &= '--hostlist-exclude="' & $exludelistPath & '" '
-        $fullCommand &= $activeStrategy & $luaParams
-    Else
-        $fullCommand = '"' & $winwsPath & '" --wf-tcp=0-65535 --wf-udp=0-65535 '
-        If Not $bStrategyHasOOB Then $fullCommand &= '--hostlist-exclude="' & $exludelistPath & '" '
-        $fullCommand &= $activeStrategy
-    EndIf
-
-    ; OOB stratejilerinde hostlist filtreleri uygulanmaz.
-    If Not $bStrategyHasOOB Then
-        Local $filterSelection = GUICtrlRead($cmbFilter)
-        If StringInStr($filterSelection, "Auto") Then
-            If Not FileExists($hostlistPath) Then FileWrite($hostlistPath, "")
-            $fullCommand &= ' --hostlist-auto="' & $hostlistPath & '"'
-        ElseIf StringInStr($filterSelection, "Manuel") Then
-            If Not FileExists($normalHostlistPath) Then FileWrite($normalHostlistPath, "discord.com" & @CRLF & "updates.discord.com")
-            $fullCommand &= ' --hostlist="' & $normalHostlistPath & '"'
-        EndIf
-    EndIf
+    Local $fullCommand = '"' & $winwsPath & '" ' & _BuildActiveWinwsArgs($activeStrategy)
 
     ;ClipPut($fullCommand)
     $zapretPID = Run($fullCommand, @ScriptDir & "\bin\zapret\zapret-winws\", @SW_HIDE)
@@ -918,6 +892,13 @@ Func StartWinws($ctrlID, $statusID, $aBtns)
     EndIf
 EndFunc
 
+; Seçili motor, strateji ve filtreye göre winws argümanlarını oluşturur; gereken hostlist dosyasını hazırlar.
+Func _BuildActiveWinwsArgs($sStrategy)
+    Local $sFilterMode = _WinwsFilterModeFromText(GUICtrlRead($cmbFilter))
+    _EnsureHostlistFile($sFilterMode, $sStrategy, $hostlistPath, $normalHostlistPath)
+    Return _BuildWinwsArgs($currentEngine, $winwsPath, $sStrategy, $sFilterMode, $exludelistPath, $hostlistPath, $normalHostlistPath)
+EndFunc
+
 Func StopWinws($ctrlID, $statusID, $aBtns)
     If ProcessExists($zapretPID) Then ProcessClose($zapretPID)
     ; Süreç kapatılamazsa (yetki, takılı sürücü) arayüz sonsuz döngüde kilitlenmesin.
@@ -936,34 +917,7 @@ Func InstallServiceClean($chkID)
     Local $activeStrategy = _GetActiveStrategyString()
     If $activeStrategy = "" Then Return MsgBox(48 + 8192, "Hata", "Strateji bulunamadı. Önce analiz yapın.")
 
-    Local $binArgs = ""
-
-    Local $bStrategyHasOOB = StringInStr($activeStrategy, "oob") > 0
-    If $currentEngine = "Zapret2" Then
-        Local $luaBaseDir = StringRegExpReplace($winwsPath, "\\[^\\]+$", "") & "\lua\"
-        Local $luaParams = ' --lua-init="@' & $luaBaseDir & 'zapret-lib.lua"' & _
-                           ' --lua-init="@' & $luaBaseDir & 'zapret-antidpi.lua"' & _
-                           ' --lua-init="@' & $luaBaseDir & 'zapret-auto.lua"'
-        $binArgs = '--wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-65535 '
-        If Not $bStrategyHasOOB Then $binArgs &= '--hostlist-exclude="' & $exludelistPath & '" '
-        $binArgs &= $activeStrategy & $luaParams
-    Else
-        $binArgs = '--wf-tcp=0-65535 --wf-udp=0-65535 '
-        If Not $bStrategyHasOOB Then $binArgs &= '--hostlist-exclude="' & $exludelistPath & '" '
-        $binArgs &= $activeStrategy
-    EndIf
-
-    ; OOB stratejilerinde hostlist filtreleri uygulanmaz.
-    If Not $bStrategyHasOOB Then
-        Local $filterSelection = GUICtrlRead($cmbFilter)
-        If StringInStr($filterSelection, "Auto") Then
-            If Not FileExists($hostlistPath) Then FileWrite($hostlistPath, "")
-            $binArgs &= ' --hostlist-auto="' & $hostlistPath & '"'
-        ElseIf StringInStr($filterSelection, "Manuel") Then
-            If Not FileExists($normalHostlistPath) Then FileWrite($normalHostlistPath, "discord.com" & @CRLF & "updates.discord.com")
-            $binArgs &= ' --hostlist="' & $normalHostlistPath & '"'
-        EndIf
-    EndIf
+    Local $binArgs = _BuildActiveWinwsArgs($activeStrategy)
 
     Local $fullBinPath = '"' & $winwsPath & '" ' & $binArgs
     $fullBinPath = StringReplace($fullBinPath, '"', '\"')
@@ -1327,13 +1281,8 @@ Func _ShowStrategyTestWindow(ByRef $aStrategies, $bMainAlreadyDisabled = False)
 EndFunc
 
 Func _BuildStrategyTestCommand($sStrategy)
-    Local $luaBaseDir = StringRegExpReplace($winwsPath, "\\[^\\]+$", "") & "\lua\"
-    Local $luaParams = ' --lua-init="@' & $luaBaseDir & 'zapret-lib.lua"' & _
-                       ' --lua-init="@' & $luaBaseDir & 'zapret-antidpi.lua"' & _
-                       ' --lua-init="@' & $luaBaseDir & 'zapret-auto.lua"'
-
     ; Testler hostlist/hostlist-auto/hostlist-exclude filtreleri olmadan çalışır.
-    Return '"' & $winwsPath & '" --wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-65535 ' & $sStrategy & $luaParams
+    Return '"' & $winwsPath & '" ' & _BuildWinwsArgs("Zapret2", $winwsPath, $sStrategy, $WINWS_FILTER_OFF)
 EndFunc
 
 Func _UpdateOobWarning($sStrategy, $lblOobWarning)
