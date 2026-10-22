@@ -10,6 +10,9 @@ Func _TestNetwork()
     _AssertFalse(_IsDnsAnswerSafe(""), "boş yanıt (sorgu başarısız) güvenli değil")
     _AssertFalse(_IsDnsAnswerSafe("Exception calling GetHostAddresses"), "hata metni güvenli değil")
     _AssertFalse(_IsDnsAnswerSafe("10.0.0.1"), "bilinmeyen IP güvenli değil (mevcut davranış)")
+    ; Sahadan (2026-10-22): ISS'nin discord.com için döndürdüğü zehirli IPv6 yanıtı.
+    _AssertFalse(_IsDnsAnswerSafe("2a01:358:4014:a00::3"), "sahada görülen zehirli IPv6 yanıtı")
+    _AssertFalse(_DnsAnswerNeedsRetry("2a01:358:4014:a00::3"), "zehirli IPv6 kesin yanıttır, yeniden denenmez")
 
     ; --- _DnsAnswerNeedsRetry (H7) ---
     _AssertTrue(_DnsAnswerNeedsRetry(""), "boş yanıt yeniden denenir")
