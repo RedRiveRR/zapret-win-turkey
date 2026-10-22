@@ -81,7 +81,7 @@ EndFunc
 
 ; Etkin bağdaştırıcının DNS sunucularını virgülle ayrılmış olarak döndürür.
 Func _GetActiveAdapterDnsServers()
-    Return _NetReadPowerShell(_NetWithAdapter("(Get-DnsClientServerAddress -InterfaceAlias $adapter.Name).ServerAddresses -join ','"))
+    Return _NetReadPowerShell(_NetWithAdapter("(Get-DnsClientServerAddress -InterfaceAlias $adapter.Name -ErrorAction SilentlyContinue).ServerAddresses -join ','"))
 EndFunc
 
 ; discord.com için dönen IP güvenli mi? Yalnızca Cloudflare öneki güvenli kabul edilir.
