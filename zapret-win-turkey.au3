@@ -28,6 +28,8 @@
 #include "lib\Conflicts.au3"
 #include "lib\Update.au3"
 #include "lib\Diag.au3"
+#include "lib\SmartAnalysis.au3"
+#include "ui\SmartAnalysisUI.au3"
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
 Local $currentDir = @ScriptDir
@@ -387,29 +389,9 @@ While 1
                 $bBlockcheckEnableAfterLock = (BitAND(GUICtrlGetState($btnAnalyze), $GUI_ENABLE) <> 0)
                 GUICtrlSetState($btnAnalyze, $GUI_DISABLE)
 
-            ; Zapret2 için önceki analiz sonuçları saklanır ve tekrar açılabilir.
+            ; Zapret2: tam analiz / hızlı akıllı test / önceki sonuçlar seçimi.
             Local $bStartNewAnalysis = True
-            If $currentEngine = "Zapret2" And FileExists(_BlockcheckResultsPath()) Then
-                Local $iPreviousChoice = MsgBox(35 + 8192, "Önceki Blockcheck Sonucu", _
-                    "Önceki analizde bulunan stratejiler açılsın mı?" & @CRLF & @CRLF & _
-                    "Evet: Önceki sonuçları aç" & @CRLF & _
-                    "Hayır: Yeni analiz başlat" & @CRLF & _
-                    "İptal: Vazgeç")
-
-                If $iPreviousChoice = 6 Then
-                    Local $aPreviousStrategies[1] = [0]
-                    _LoadBlockcheckResults($aPreviousStrategies)
-                    If $aPreviousStrategies[0] > 0 Then
-                        _ShowStrategyTestWindow($aPreviousStrategies)
-                    Else
-                        MsgBox(48 + 8192, "Sonuç Bulunamadı", "Kayıtlı sonuç dosyası boş veya okunamadı. Yeni analiz başlatabilirsiniz.")
-                    EndIf
-                    $bStartNewAnalysis = False
-                ElseIf $iPreviousChoice = 2 Then
-                    $bStartNewAnalysis = False
-                EndIf
-                ; Hayır (7) seçilirse yeni analiz akışına devam edilir.
-            EndIf
+            If $currentEngine = "Zapret2" Then $bStartNewAnalysis = _HandleZapret2AnalysisChoice()
 
             If $bStartNewAnalysis Then
                 If $currentEngine = "Zapret2" Then
@@ -1118,7 +1100,19 @@ Func RunBlockcheck2($ctrlID)
     EndIf
 
     If $aStrategies[0] > 0 Then
-        _ShowStrategyTestWindow($aStrategies, True)
+        Local $iSmart = MsgBox(36 + 8192, "Akıllı Analiz", $aStrategies[0] & " çalışan strateji bulundu." & @CRLF & @CRLF & _
+                "En uygun olanı otomatik belirlemek için akıllı analiz yapılsın mı? (tahmini " & _SmartEstimateMinutes($aStrategies[0]) & " dk)" & @CRLF & @CRLF & _
+                "Hayır: listeyi açıp stratejileri elle denersiniz.")
+        If $iSmart = 6 Then
+            Local $aCand = _BuildSmartCandidates($aStrategies, False)
+            _RunSmartAnalysisFlow($aCand, True)
+        Else
+            _ShowStrategyTestWindow($aStrategies, True)
+        EndIf
+    ElseIf _BlockcheckLooksUnparsed(FileRead($logPath), 0) Then
+        _LogError("Blockcheck2: logda çalışan sonuç var ama strateji ayrıştırılamadı (log biçimi değişmiş olabilir)")
+        MsgBox(48 + 8192, "Sonuç Okunamadı", "Analiz çalışan stratejiler buldu ancak sonuçlar okunamadı; blockcheck'in log biçimi değişmiş olabilir." & @CRLF & @CRLF & _
+                "Tepsi menüsünden 'Tanılama paketi oluştur' ile logu gönderebilirsiniz. Bu sırada 'Hızlı akıllı test' ile hazır profilleri deneyebilirsiniz.")
     ElseIf $isNoBypassNeeded Then
         MsgBox(64 + 8192, "Bilgi: Zapret2 Analiz Tamamlandı", _
             "İnternet hattınızda herhangi bir DPI / sansür kısıtlaması saptanmadı.")
@@ -1130,6 +1124,81 @@ Func RunBlockcheck2($ctrlID)
 
     GUISetState(@SW_ENABLE, $hGUI)
     GUISetState(@SW_SHOW, $hGUI)
+EndFunc
+
+; =========================================================================
+; --- AKILLI ANALİZ ENTEGRASYONU ---
+; =========================================================================
+Func _SmartResultsPath()
+    Return @ScriptDir & "\config\smart_results.tsv"
+EndFunc
+
+; Zapret2 analiz seçici. Yeni blockcheck taraması başlatılacaksa True döner.
+Func _HandleZapret2AnalysisChoice()
+    Local $iChoice = _SmartUI_Chooser(FileExists(_BlockcheckResultsPath()), FileExists(_SmartResultsPath()), $hGUI)
+    Switch $iChoice
+        Case $SMARTUI_FULL
+            Return True
+        Case $SMARTUI_QUICK
+            Local $aNone[1] = [0]
+            Local $aCand = _BuildSmartCandidates($aNone, True)
+            _RunSmartAnalysisFlow($aCand, False)
+        Case $SMARTUI_PREV_SMART
+            If _SmartUI_ShowSaved(_SmartResultsPath(), $strategyFile, $winwsPath, $hGUI) <> "" Then _AfterSmartStrategyChosen()
+        Case $SMARTUI_PREV_LIST
+            Local $aPrev[1] = [0]
+            _LoadBlockcheckResults($aPrev)
+            If $aPrev[0] > 0 Then
+                _ShowStrategyTestWindow($aPrev)
+            Else
+                MsgBox(48 + 8192, "Sonuç Bulunamadı", "Kayıtlı sonuç dosyası boş veya okunamadı. Yeni analiz başlatabilirsiniz.")
+            EndIf
+    EndSwitch
+    Return False
+EndFunc
+
+; Aday listesi: $aFound (1 tabanlı, [0]=adet) + istenirse hazır profiller ve önceki tarama.
+; Kayıtlı "Analiz Sonucu" stratejisi her zaman eklenir (karşılaştırma için).
+Func _BuildSmartCandidates(ByRef $aFound, $bIncludeExtras)
+    Local $aC[0][2]
+    For $i = 1 To $aFound[0]
+        _SmartAddCandidate($aC, $aFound[$i], "Tarama")
+    Next
+    If HasValidStrategy() Then _SmartAddCandidate($aC, StringStripWS(FileRead($strategyFile), 3), "Kayıtlı")
+    If $bIncludeExtras Then
+        Local $aPresets = _StrategyLoad($strategiesIniPath, "Zapret2")
+        For $i = 0 To UBound($aPresets) - 1
+            _SmartAddCandidate($aC, $aPresets[$i][1], "Hazır: " & $aPresets[$i][0])
+        Next
+        Local $aPrev[1] = [0]
+        _LoadBlockcheckResults($aPrev)
+        For $i = 1 To $aPrev[0]
+            _SmartAddCandidate($aC, $aPrev[$i], "Önceki tarama")
+        Next
+    EndIf
+    Return $aC
+EndFunc
+
+; Akıllı analizi çalıştırır; seçilen strateji "Analiz Sonucu" olarak kaydedilir ve seçilir.
+Func _RunSmartAnalysisFlow(ByRef $aCand, $bMainAlreadyDisabled)
+    _LogInfo("Akıllı analiz başlıyor: " & UBound($aCand) & " aday")
+    Local $sPrevStatus = GUICtrlRead($lblStatusText)
+    GUICtrlSetData($lblStatusText, "AKILLI ANALİZ YAPILIYOR...")
+    If Not $bMainAlreadyDisabled Then GUISetState(@SW_DISABLE, $hGUI)
+    Local $sTargets = IniRead($iniPath, "SmartAnalysis", "Targets", $SMART_DEFAULT_TARGETS)
+    Local $sChosen = _SmartUI_Run($aCand, @ScriptDir, $winwsPath, $sTargets, _SmartResultsPath(), $strategyFile, $hGUI)
+    If Not $bMainAlreadyDisabled Then
+        GUISetState(@SW_ENABLE, $hGUI)
+        GUISetState(@SW_SHOW, $hGUI)
+    EndIf
+    GUICtrlSetData($lblStatusText, $sPrevStatus)
+    If $sChosen <> "" Then _AfterSmartStrategyChosen()
+EndFunc
+
+Func _AfterSmartStrategyChosen()
+    _LoadStrategyList("Analiz Sonucu")
+    _RefreshStrategyLabel()
+    _UpdateFilterForStrategy()
 EndFunc
 
 Func _CleanupBlockcheckProcesses($iPidBash)

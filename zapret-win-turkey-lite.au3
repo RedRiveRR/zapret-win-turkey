@@ -25,8 +25,10 @@
 #include "lib\Conflicts.au3"
 #include "lib\Update.au3"
 #include "lib\Diag.au3"
+#include "lib\SmartAnalysis.au3"
+#include "ui\SmartAnalysisUI.au3"
 
-Global Const $PBS_MARQUEE = 0x08
+#include <ProgressConstants.au3>
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
 Local $currentDir = @ScriptDir
@@ -90,6 +92,8 @@ GUISetBkColor(0xFFFFFF)
 ; --- Tepsi Menüsü ---
 Local $trayShow = TrayCreateItem("Göster")
 TrayItemSetOnEvent(-1, "ShowGUI")
+TrayCreateItem("Hazır profilleri akıllı test et")
+TrayItemSetOnEvent(-1, "_LiteSmartFromTray")
 TrayCreateItem("Tanılama paketi oluştur")
 TrayItemSetOnEvent(-1, "_DiagCreateFromTray")
 TrayCreateItem("")
@@ -519,6 +523,35 @@ Func _BuildActiveWinwsArgs($sStrategy)
     Local $sFilterMode = _WinwsFilterModeFromText(GUICtrlRead($cmbFilter))
     _EnsureHostlistFile($sFilterMode, $sStrategy, $hostlistPath, $normalHostlistPath)
     Return _BuildWinwsArgs($currentEngine, $winwsPath, $sStrategy, $sFilterMode, $exludelistPath, $hostlistPath, $normalHostlistPath)
+EndFunc
+
+; Tepsi: hazır profilleri akıllı analizle sınar, en uygununu seçtirir.
+Func _LiteSmartFromTray()
+    If $currentEngine <> "Zapret2" Then Return MsgBox(48 + 8192, "Akıllı Analiz", "Akıllı analiz yalnızca Zapret2 motoruyla çalışır.")
+    If GUICtrlRead($lblStatusText) <> "ÇALIŞMAYA HAZIR" Then
+        Return MsgBox(48 + 8192, "Akıllı Analiz", "Akıllı analiz için Zapret kapalı olmalı ve DNS sorunu olmamalı (durum: ÇALIŞMAYA HAZIR).")
+    EndIf
+    Local $aCand[0][2]
+    For $i = 0 To UBound($g_aStrategies) - 1
+        _SmartAddCandidate($aCand, $g_aStrategies[$i][1], "Hazır: " & $g_aStrategies[$i][0])
+    Next
+    ShowGUI()
+    GUICtrlSetData($lblStatusText, "AKILLI ANALİZ YAPILIYOR...")
+    GUISetState(@SW_DISABLE, $hGUI)
+    Local $sChosen = _SmartUI_Run($aCand, @ScriptDir, $winwsPath, IniRead($iniPath, "SmartAnalysis", "Targets", $SMART_DEFAULT_TARGETS), _
+            @ScriptDir & "\config\smart_results.tsv", "", $hGUI)
+    GUISetState(@SW_ENABLE, $hGUI)
+    GUICtrlSetData($lblStatusText, "ÇALIŞMAYA HAZIR")
+    If $sChosen = "" Then Return
+    ; Lite'ta "Analiz Sonucu" yok: aynı parametreli ilk hazır profil seçilir.
+    For $i = 0 To UBound($g_aStrategies) - 1
+        If StringReplace($g_aStrategies[$i][1], '"', "") == StringReplace($sChosen, '"', "") Then
+            _LoadStrategyList($g_aStrategies[$i][0])
+            _RefreshStrategyLabel()
+            _UpdateFilterForStrategy()
+            ExitLoop
+        EndIf
+    Next
 EndFunc
 
 Func StopWinws($ctrlID, $statusID, $aBtns)

@@ -63,6 +63,7 @@ try {
     New-Item -ItemType Directory -Path $src | Out-Null
     Copy-Item (Join-Path $repo '*.au3') $src
     Copy-Item (Join-Path $repo 'lib') (Join-Path $src 'lib') -Recurse
+    Copy-Item (Join-Path $repo 'ui') (Join-Path $src 'ui') -Recurse
     $icon = Join-Path $base 'bin\zapret\zapret-winws\winws2.ico'
 
     function Invoke-Compile([string]$name) {
@@ -85,6 +86,7 @@ try {
         }
         Copy-Item (Join-Path $src "$scriptName.au3") $dest
         Copy-Item (Join-Path $src 'lib') (Join-Path $dest 'lib') -Recurse
+        Copy-Item (Join-Path $src 'ui') (Join-Path $dest 'ui') -Recurse
         foreach ($doc in 'README.md', 'CHANGELOG.md', 'THIRD_PARTY.md') {
             Copy-Item (Join-Path $repo $doc) $dest
         }

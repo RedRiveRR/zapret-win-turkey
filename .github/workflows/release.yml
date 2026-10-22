@@ -9,6 +9,7 @@ on:
     paths:
       - '*.au3'
       - 'lib/**'
+      - 'ui/**'
       - 'config/**'
       - 'scripts/build.ps1'
       - '.github/workflows/release.yml'

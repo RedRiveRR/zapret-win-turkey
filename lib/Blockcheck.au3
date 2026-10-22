@@ -57,6 +57,21 @@ Func _FormatStrategyQuotes($sRawStrategy)
     Return StringStripWS($sFormattedStrategy, 3)
 EndFunc
 
+; Log'da (iana.org dışında) çalışan sonuç satırı var ama hiçbir strateji
+; çıkarılamadıysa True: blockcheck'in log biçimi değişmiş olabilir.
+Func _BlockcheckLooksUnparsed($sLog, $iFound)
+    If $iFound > 0 Then Return False
+    Local $aLines = StringSplit(StringStripCR($sLog), @LF, 2)
+    For $i = 1 To UBound($aLines) - 1
+        If Not StringInStr($aLines[$i], "!!!!! AVAILABLE !!!!!") Then ContinueLoop
+        If StringInStr($aLines[$i], "iana.org") Or StringInStr($aLines[$i - 1], "iana.org") Then ContinueLoop
+        Local $aProbe[1] = [0]
+        _CollectStrategiesFromText($aLines[$i - 1] & @LF & $aLines[$i], $aProbe)
+        If $aProbe[0] = 0 Then Return True
+    Next
+    Return False
+EndFunc
+
 ; Zapret1 blockcheck logundaki son "SUMMARY" bloğunu bulur ve ardından gelen
 ; satırdaki stratejiyi (--dpi ile başlayan kısım) tırnaklamadan döndürür.
 ; Bulunamazsa "" döner. SUMMARY son satırdaysa dizi dışına çıkmaz.

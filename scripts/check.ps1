@@ -41,7 +41,7 @@ New-Item -ItemType Directory -Path $work | Out-Null
 $failed = $false
 try {
     Copy-Item (Join-Path $repo '*.au3') $work
-    foreach ($dir in 'lib', 'tests', 'config') {
+    foreach ($dir in 'lib', 'ui', 'tests', 'config') {
         $src = Join-Path $repo $dir
         if (Test-Path $src) { Copy-Item $src (Join-Path $work $dir) -Recurse }
     }

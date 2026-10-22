@@ -37,6 +37,13 @@ Func _TestBlockcheck()
     _CollectStrategiesFromText("!!!!! AVAILABLE !!!!!", $aEmpty)
     _AssertEq($aEmpty[0], 0, "tek satırlık log çökmez")
 
+    ; --- _BlockcheckLooksUnparsed ---
+    _AssertFalse(_BlockcheckLooksUnparsed($sLog, 2), "strateji bulunduysa sorun yok")
+    _AssertFalse(_BlockcheckLooksUnparsed("- iana.org test" & @LF & "!!!!! AVAILABLE !!!!!", 0), "yalnız iana.org AVAILABLE sorun değil")
+    _AssertFalse(_BlockcheckLooksUnparsed("UNAVAILABLE code=35", 0), "hiç AVAILABLE yoksa sorun değil (gerçekten bulunamadı)")
+    _AssertTrue(_BlockcheckLooksUnparsed("- curl roblox.com : winws2 --yeni-bicim-443 --lua-desync=fake" & @LF & "!!!!! AVAILABLE !!!!!", 0), _
+            "AVAILABLE var ama --wf-tcp-out=443 biçimi yoksa okunamadı")
+
     ; --- _ParseSummaryStrategy (Zapret1) ---
     Local $sSummary = "test satırı" & @CRLF & "* SUMMARY" & @CRLF & _
             "ipv4 discord.com curl_test_https_tls12 : winws --wf-tcp=443 --dpi-desync=fake --dpi-desync-ttl=4 " & @CRLF & "son"
