@@ -18,6 +18,7 @@
 #include <TrayConstants.au3>
 #include <ComboConstants.au3>
 #include <EditConstants.au3>
+#include "lib\Process.au3"
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
 Local $currentDir = @ScriptDir
@@ -1071,6 +1072,8 @@ Func RunBlockcheck($ctrlID)
             EndIf
         EndIf
     WEnd
+    ; Erken çıkışta (engel yok) blockcheck arka planda çalışmaya devam etmesin.
+    _CleanupBlockcheckProcesses($iPidBash)
     If $isNoBypassNeeded Then
         MsgBox(64 + 8192, "Bilgi: Zapret1 Analiz Tamamlandı", _
                 "İnternet hattınızda herhangi bir DPI / Sansür kısıtlaması saptanmadı!")
@@ -1232,12 +1235,9 @@ Func RunBlockcheck2($ctrlID)
     WEnd
 
     ; Analiz doğal olarak bittiğinde de, kullanıcı durdurduğunda da
-    ; blockcheck alt süreçlerini temizliyoruz.
-    If ProcessExists($iPidBash) Then ProcessClose($iPidBash)
-    Local $aProcesses = ["bash.exe", "sh.exe", "tee.exe", "winws2.exe"]
-    For $sProc In $aProcesses
-        RunWait(@ComSpec & " /c taskkill /F /IM " & $sProc & " /T", "", @SW_HIDE)
-    Next
+    ; blockcheck alt süreçlerini temizliyoruz. Yalnızca paketteki cygwin ve
+    ; winws süreçleri hedeflenir; kullanıcının açık Git Bash/MSYS oturumları kapanmaz.
+    _CleanupBlockcheckProcesses($iPidBash)
 
     GUIDelete($hScanGUI)
 
@@ -1262,6 +1262,13 @@ Func RunBlockcheck2($ctrlID)
 
     GUISetState(@SW_ENABLE, $hGUI)
     GUISetState(@SW_SHOW, $hGUI)
+EndFunc
+
+Func _CleanupBlockcheckProcesses($iPidBash)
+    ; Analiz sırasında manuel mod ve servis butonları kilitli olduğundan bin\zapret
+    ; altında çalışan her süreç (cygwin bash/sh/tee, test için açılan winws) blockcheck'e aittir.
+    _KillProcessTree($iPidBash)
+    _KillProcessesUnderDir(@ScriptDir & "\bin\zapret")
 EndFunc
 
 Func _CollectStrategiesFromText($sText, ByRef $aStrategies)
