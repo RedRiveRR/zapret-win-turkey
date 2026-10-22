@@ -14,6 +14,7 @@
 #include "test_update.au3"
 #include "test_diag.au3"
 #include "test_smart.au3"
+#include "test_service.au3"
 
 _TestProcess()
 _TestBlockcheck()
@@ -25,5 +26,6 @@ _TestConflicts()
 _TestUpdate()
 _TestDiag()
 _TestSmart()
+_TestService()
 
 Exit _AssertSummary()

@@ -20,3 +20,6 @@ bin/zapret/cygwin/
 *.bak
 Thumbs.db
 desktop.ini
+
+# Windows NUL aygıtına yazmak isteyen ama Git Bash altında dosya oluşturan komutlar
+nul

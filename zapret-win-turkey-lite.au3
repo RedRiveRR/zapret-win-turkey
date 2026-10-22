@@ -26,6 +26,7 @@
 #include "lib\Update.au3"
 #include "lib\Diag.au3"
 #include "lib\SmartAnalysis.au3"
+#include "lib\Service.au3"
 #include "ui\SmartAnalysisUI.au3"
 
 #include <ProgressConstants.au3>
@@ -540,7 +541,14 @@ EndFunc
 ; Tepsi: hazır profilleri akıllı analizle sınar, en uygununu seçtirir.
 Func _LiteSmartFromTray()
     If $currentEngine <> "Zapret2" Then Return MsgBox(48 + 8192, "Akıllı Analiz", "Akıllı analiz yalnızca Zapret2 motoruyla çalışır.")
-    If GUICtrlRead($lblStatusText) <> "ÇALIŞMAYA HAZIR" Then
+    ; Servis kuruluysa analiz süresince durdurulur, sonunda (seçildiyse yeni stratejiyle) yeniden başlatılır.
+    Local $bService = _ServiceIsInstalled($serviceName)
+    If $bService Then
+        If Not StringInStr(_ServiceParseBinPath(_ServiceGetConfig($serviceName)), "winws2.exe") Then
+            Return MsgBox(48 + 8192, "Akıllı Analiz", "Kurulu servis klasik Zapret motorunu kullanıyor; akıllı analiz yalnızca Zapret2 ile çalışır.")
+        EndIf
+        If MsgBox(36 + 8192, "Servis Stratejisini Güncelle", "Analiz süresince servis durdurulacak; seçtiğiniz strateji servise yazılacak. DNS ayarınız değişmez." & @CRLF & @CRLF & "Devam edilsin mi?") <> 6 Then Return
+    ElseIf GUICtrlRead($lblStatusText) <> "ÇALIŞMAYA HAZIR" Then
         Return MsgBox(48 + 8192, "Akıllı Analiz", "Akıllı analiz için Zapret kapalı olmalı ve DNS sorunu olmamalı (durum: ÇALIŞMAYA HAZIR).")
     EndIf
     Local $aCand[0][2]
@@ -548,22 +556,42 @@ Func _LiteSmartFromTray()
         _SmartAddCandidate($aCand, $g_aStrategies[$i][1], "Hazır: " & $g_aStrategies[$i][0])
     Next
     ShowGUI()
+    If $bService Then
+        _LogInfo("Servis stratejisi güncelleme (lite): analiz için servis durduruluyor")
+        _ServiceStop($serviceName)
+        _KillProcessesUnderDir(@ScriptDir & "\bin\zapret\zapret-winws")
+    EndIf
     GUICtrlSetData($lblStatusText, "AKILLI ANALİZ YAPILIYOR...")
     GUISetState(@SW_DISABLE, $hGUI)
     Local $sChosen = _SmartUI_Run($aCand, @ScriptDir, $winwsPath, IniRead($iniPath, "SmartAnalysis", "Targets", $SMART_DEFAULT_TARGETS), _
             @ScriptDir & "\config\smart_results.tsv", "", $hGUI)
     GUISetState(@SW_ENABLE, $hGUI)
     GUICtrlSetData($lblStatusText, "ÇALIŞMAYA HAZIR")
-    If $sChosen = "" Then Return
-    ; Lite'ta "Analiz Sonucu" yok: aynı parametreli ilk hazır profil seçilir.
-    For $i = 0 To UBound($g_aStrategies) - 1
-        If StringReplace($g_aStrategies[$i][1], '"', "") == StringReplace($sChosen, '"', "") Then
-            _LoadStrategyList($g_aStrategies[$i][0])
-            _RefreshStrategyLabel()
-            _UpdateFilterForStrategy()
-            ExitLoop
+    If $sChosen <> "" Then
+        ; Lite'ta "Analiz Sonucu" yok: aynı parametreli ilk hazır profil seçilir.
+        For $i = 0 To UBound($g_aStrategies) - 1
+            If StringReplace($g_aStrategies[$i][1], '"', "") == StringReplace($sChosen, '"', "") Then
+                _LoadStrategyList($g_aStrategies[$i][0])
+                _RefreshStrategyLabel()
+                _UpdateFilterForStrategy()
+                ExitLoop
+            EndIf
+        Next
+    EndIf
+    If $bService Then
+        Local $bOk
+        If $sChosen <> "" Then
+            Local $sArgs = _BuildActiveWinwsArgs($sChosen)
+            $bOk = _ServiceUpdateArgs($serviceName, $winwsPath, $sArgs)
+            _LogInfo("Servis stratejisi güncellendi (lite, " & ($bOk ? "çalışıyor" : "BAŞLATILAMADI") & "): " & $sArgs)
+        Else
+            $bOk = _ServiceStart($serviceName)
+            _LogInfo("Servis stratejisi değişmedi (lite), servis eski haliyle " & ($bOk ? "başlatıldı" : "BAŞLATILAMADI"))
         EndIf
-    Next
+        If Not $bOk Then MsgBox(16 + 8192, "Servis", "Servis yeniden başlatılamadı. logs\app.log dosyasına bakın.")
+        $bServiceStoppedWarned = False
+        CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
+    EndIf
 EndFunc
 
 Func StopWinws($ctrlID, $statusID, $aBtns)
@@ -588,17 +616,18 @@ Func InstallServiceClean($chkID)
 
     Local $binArgs = _BuildActiveWinwsArgs($activeStrategy)
 
-    Local $fullBinPath = '"' & $winwsPath & '" ' & $binArgs
-    $fullBinPath = StringReplace($fullBinPath, '"', '\"')
+    ; Otomatik yeniden başlatma isteğe bağlı ve varsayılan kapalı (ADR-007: anti-cheat ile çatışma riski).
+    Local $bRecovery = _ServiceAskRecovery($iniPath)
 
     RemoveService()
     Sleep(500)
 
-    Local $iCreate = RunWait(@ComSpec & " /c sc create " & $serviceName & ' binPath= "' & $fullBinPath & '" start= auto', "", @SW_HIDE)
-    _LogInfo("Servis kur (" & $currentEngine & ", " & GUICtrlRead($cmbStrategy) & "): sc create çıkış kodu " & $iCreate & " | " & $binArgs)
+    Local $iCreate = _ServiceInstall($serviceName, $winwsPath, $binArgs, $bRecovery)
+    _LogInfo("Servis kur (" & $currentEngine & ", " & GUICtrlRead($cmbStrategy) & ", otomatik yeniden başlatma " & ($bRecovery ? "açık" : "kapalı") & _
+            "): sc create çıkış kodu " & $iCreate & " | " & $binArgs)
     If $iCreate = 0 Then
-        RunWait(@ComSpec & " /c sc start " & $serviceName, "", @SW_HIDE)
-        MsgBox(64 + 8192, "Başarılı", "Seçilen profil servis olarak kuruldu.")
+        MsgBox(64 + 8192, "Başarılı", "Seçilen profil servis olarak kuruldu. Bilgisayar açılınca otomatik başlar." & @CRLF & @CRLF & _
+                ($bRecovery ? "Servis kapanırsa Windows en fazla 2 kez (10 sn ve 60 sn sonra) yeniden başlatır." : "Servis kapanırsa otomatik yeniden başlatılmaz; program uyarır."))
     Else
         MsgBox(16 + 8192, "Servis Kurulamadı", "Windows servisi oluşturulamadı (sc create hata kodu " & $iCreate & ")." & @CRLF & @CRLF & _
                 "'Servis ve Kalıntıları Temizle' butonuna basıp tekrar deneyin. Sorun sürerse logs\app.log dosyasıyla birlikte bildirin.")

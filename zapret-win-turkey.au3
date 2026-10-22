@@ -29,6 +29,7 @@
 #include "lib\Update.au3"
 #include "lib\Diag.au3"
 #include "lib\SmartAnalysis.au3"
+#include "lib\Service.au3"
 #include "ui\SmartAnalysisUI.au3"
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
@@ -391,9 +392,15 @@ While 1
                 $bBlockcheckEnableAfterLock = (BitAND(GUICtrlGetState($btnAnalyze), $GUI_ENABLE) <> 0)
                 GUICtrlSetState($btnAnalyze, $GUI_DISABLE)
 
-            ; Zapret2: tam analiz / hızlı akıllı test / önceki sonuçlar seçimi.
+            ; Servis kuruluysa: servis stratejisini güncelleme akışı.
+            ; Değilse Zapret2: tam analiz / hızlı akıllı test / önceki sonuçlar seçimi.
             Local $bStartNewAnalysis = True
-            If $currentEngine = "Zapret2" Then $bStartNewAnalysis = _HandleZapret2AnalysisChoice()
+            If _ServiceIsInstalled($serviceName) Then
+                _ServiceStrategyUpdateFlow()
+                $bStartNewAnalysis = False
+            ElseIf $currentEngine = "Zapret2" Then
+                $bStartNewAnalysis = _HandleZapret2AnalysisChoice()
+            EndIf
 
             If $bStartNewAnalysis Then
                 If $currentEngine = "Zapret2" Then
@@ -783,6 +790,12 @@ Func CheckServiceStatus($manualBtn, $statusID, $lockArray, $chkID)
 
 		GUICtrlSetState($btnDnscrypt, $GUI_ENABLE)
 
+        ; Zapret2 servisi kuruluyken analiz butonu "servis stratejisini güncelle" olarak açık kalır.
+        If StringInStr($sCfgOut, "winws2.exe") Then
+            GUICtrlSetData($btnAnalyze, "Servis Stratejisini Güncelle (Analiz)")
+            GUICtrlSetState($btnAnalyze, $GUI_ENABLE)
+        EndIf
+
         ; --- YENİ EKLENEN KISIM: SERVİS DURUMUNU (RUNNING/STOPPED) KONTROL ET ---
         If StringInStr($sOutput, "RUNNING") Then
             GUICtrlSetData($statusID, "SERVİS MODU AKTİF")
@@ -803,6 +816,7 @@ Func CheckServiceStatus($manualBtn, $statusID, $lockArray, $chkID)
     Else
         GUICtrlSetState($manualBtn, $GUI_ENABLE)
         _SetButtonsState($lockArray, $GUI_ENABLE)
+        GUICtrlSetData($btnAnalyze, "ISS Analizi (Blockcheck) Yap")
 
         GUICtrlSetData($statusID, "ÇALIŞMAYA HAZIR")
         GUICtrlSetColor($statusID, 0x2C3E50)
@@ -888,17 +902,18 @@ Func InstallServiceClean($chkID)
 
     Local $binArgs = _BuildActiveWinwsArgs($activeStrategy)
 
-    Local $fullBinPath = '"' & $winwsPath & '" ' & $binArgs
-    $fullBinPath = StringReplace($fullBinPath, '"', '\"')
+    ; Otomatik yeniden başlatma isteğe bağlı ve varsayılan kapalı (ADR-007: anti-cheat ile çatışma riski).
+    Local $bRecovery = _ServiceAskRecovery($iniPath)
 
     RemoveService()
     Sleep(500)
 
-    Local $iCreate = RunWait(@ComSpec & " /c sc create " & $serviceName & ' binPath= "' & $fullBinPath & '" start= auto', "", @SW_HIDE)
-    _LogInfo("Servis kur (" & $currentEngine & ", " & GUICtrlRead($cmbStrategy) & "): sc create çıkış kodu " & $iCreate & " | " & $binArgs)
+    Local $iCreate = _ServiceInstall($serviceName, $winwsPath, $binArgs, $bRecovery)
+    _LogInfo("Servis kur (" & $currentEngine & ", " & GUICtrlRead($cmbStrategy) & ", otomatik yeniden başlatma " & ($bRecovery ? "açık" : "kapalı") & _
+            "): sc create çıkış kodu " & $iCreate & " | " & $binArgs)
     If $iCreate = 0 Then
-        RunWait(@ComSpec & " /c sc start " & $serviceName, "", @SW_HIDE)
-        MsgBox(64 + 8192, "Başarılı", "Seçilen profil servis olarak kuruldu.")
+        MsgBox(64 + 8192, "Başarılı", "Seçilen profil servis olarak kuruldu. Bilgisayar açılınca otomatik başlar." & @CRLF & @CRLF & _
+                ($bRecovery ? "Servis kapanırsa Windows en fazla 2 kez (10 sn ve 60 sn sonra) yeniden başlatır." : "Servis kapanırsa otomatik yeniden başlatılmaz; program uyarır."))
     Else
         MsgBox(16 + 8192, "Servis Kurulamadı", "Windows servisi oluşturulamadı (sc create hata kodu " & $iCreate & ")." & @CRLF & @CRLF & _
                 "'Servis ve Kalıntıları Temizle' butonuna basıp tekrar deneyin. Sorun sürerse logs\app.log dosyasıyla birlikte bildirin.")
@@ -1153,7 +1168,51 @@ EndFunc
 
 ; Zapret2 analiz seçici. Yeni blockcheck taraması başlatılacaksa True döner.
 Func _HandleZapret2AnalysisChoice()
+    Return _RunAnalysisChoice(_SmartUI_Chooser(FileExists(_BlockcheckResultsPath()), FileExists(_SmartResultsPath()), $hGUI))
+EndFunc
+
+; Servis kuruluyken: servisi durdurur, seçilen analizi çalıştırır; strateji değiştiyse servisi
+; yeni stratejiyle günceller (DNS'e ve kurtarma ayarına dokunmaz), değişmediyse eski haliyle başlatır.
+Func _ServiceStrategyUpdateFlow()
+    If Not StringInStr(_ServiceParseBinPath(_ServiceGetConfig($serviceName)), "winws2.exe") Then
+        Return MsgBox(48 + 8192, "Servis Stratejisi", "Kurulu servis klasik Zapret motorunu kullanıyor; akıllı analiz yalnızca Zapret2 ile çalışır." & @CRLF & @CRLF & _
+                "'Servis ve Kalıntıları Temizle' ile kaldırıp Zapret2 ile yeniden kurabilirsiniz.")
+    EndIf
     Local $iChoice = _SmartUI_Chooser(FileExists(_BlockcheckResultsPath()), FileExists(_SmartResultsPath()), $hGUI)
+    If $iChoice = $SMARTUI_CANCEL Then Return
+
+    Local $sBefore = StringStripWS(FileRead($strategyFile), 3)
+    _LogInfo("Servis stratejisi güncelleme: analiz için servis durduruluyor")
+    GUICtrlSetData($lblStatusText, "SERVİS GEÇİCİ OLARAK DURDURULDU")
+    _ServiceStop($serviceName)
+    ; Servis duruşu sonrası WinDivert'in bırakılması için
+    _KillProcessesUnderDir(@ScriptDir & "\bin\zapret\zapret-winws")
+
+    If _RunAnalysisChoice($iChoice) Then RunBlockcheck2($btnAnalyze)
+
+    Local $sAfter = StringStripWS(FileRead($strategyFile), 3)
+    Local $bOk
+    If $sAfter <> "" And $sAfter <> $sBefore Then
+        _LoadStrategyList("Analiz Sonucu")
+        Local $sArgs = _BuildActiveWinwsArgs($sAfter)
+        $bOk = _ServiceUpdateArgs($serviceName, $winwsPath, $sArgs)
+        _LogInfo("Servis stratejisi güncellendi (" & ($bOk ? "çalışıyor" : "BAŞLATILAMADI") & "): " & $sArgs)
+        If $bOk Then
+            MsgBox(64 + 8192, "Servis Güncellendi", "Servis yeni stratejiyle yeniden başlatıldı:" & @CRLF & $sAfter)
+        Else
+            MsgBox(16 + 8192, "Servis Güncellenemedi", "Servis yeni stratejiyle başlatılamadı. logs\app.log dosyasına bakın.")
+        EndIf
+    Else
+        $bOk = _ServiceStart($serviceName)
+        _LogInfo("Servis stratejisi değişmedi, servis eski haliyle " & ($bOk ? "başlatıldı" : "BAŞLATILAMADI"))
+        If Not $bOk Then MsgBox(16 + 8192, "Servis Başlatılamadı", "Servis yeniden başlatılamadı. logs\app.log dosyasına bakın.")
+    EndIf
+    $bServiceStoppedWarned = False
+    CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
+EndFunc
+
+; Seçici sonucunu uygular. Yeni blockcheck taraması gerekiyorsa True döner (çağıran başlatır).
+Func _RunAnalysisChoice($iChoice)
     Switch $iChoice
         Case $SMARTUI_FULL
             Return True
