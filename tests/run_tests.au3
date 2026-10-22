@@ -12,6 +12,7 @@
 #include "test_log.au3"
 #include "test_conflicts.au3"
 #include "test_update.au3"
+#include "test_diag.au3"
 
 _TestProcess()
 _TestBlockcheck()
@@ -21,5 +22,6 @@ _TestStrategies()
 _TestLog()
 _TestConflicts()
 _TestUpdate()
+_TestDiag()
 
 Exit _AssertSummary()

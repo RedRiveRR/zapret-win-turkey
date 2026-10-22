@@ -27,6 +27,7 @@
 #include "lib\Log.au3"
 #include "lib\Conflicts.au3"
 #include "lib\Update.au3"
+#include "lib\Diag.au3"
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
 Local $currentDir = @ScriptDir
@@ -102,6 +103,8 @@ GUISetBkColor(0xFFFFFF)
 ; --- Tepsi Menüsü ---
 Local $trayShow = TrayCreateItem("Göster")
 TrayItemSetOnEvent(-1, "ShowGUI")
+TrayCreateItem("Tanılama paketi oluştur")
+TrayItemSetOnEvent(-1, "_DiagCreateFromTray")
 TrayCreateItem("")
 Local $trayExit = TrayCreateItem("Kapat")
 TrayItemSetOnEvent(-1, "_SaveConfigAndExit")
