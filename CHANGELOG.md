@@ -26,4 +26,5 @@ Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-
 - Ortak kod `lib/` altında: ana ve lite sürüm aynı modülleri kullanıyor. İki betik birlikte net 338 satır kısaldı (508 silindi, 170 eklendi).
 - GUI'den bağımsız birim testleri (`tests/`, 116 test) ve `scripts/check.ps1` (Au3Check + sürüm tutarlılığı + testler).
 - GitHub Actions CI, her push'ta aynı denetimi çalıştırıyor.
+- `scripts/build.ps1` ile tekrarlanabilir paketleme: upstream v4.5 ikilileri (SHA256 ile sabitlenmiş) + bu repodaki kaynak + derlenen exe. Paketlerde geliştiriciye ait `config.ini` ve loglar yok. Her geliştirme push'unda "Paket" iş akışı test paketi üretir.
 - `CONTRIBUTING.md`, `THIRD_PARTY.md` (ikililerin SHA256 özetleri), issue şablonları.
