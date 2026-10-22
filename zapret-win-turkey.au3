@@ -1028,7 +1028,8 @@ Func RunBlockcheck2($ctrlID)
     GUICtrlSetFont($lblScanElapsed, 10, 400, 0, "Segoe UI")
     Local $lblScanCount = GUICtrlCreateLabel("Bulunan strateji: 0", 18, 80, 324, 22, $SS_CENTER)
     GUICtrlSetFont($lblScanCount, 10, 600, 0, "Segoe UI")
-    Local $btnStopScan = GUICtrlCreateButton("Analizi Durdur", 95, 115, 170, 32)
+    Local $btnStopScan = GUICtrlCreateButton("Analizi Durdur", 70, 115, 220, 32)
+    Local $bEnoughHinted = False
     GUISetState(@SW_SHOW, $hScanGUI)
 
     Local $bashPath = @ScriptDir & "\bin\zapret\cygwin\bin\bash.exe"
@@ -1076,6 +1077,12 @@ Func RunBlockcheck2($ctrlID)
             Local $iSeconds = Int(TimerDiff($hTimer) / 1000)
             GUICtrlSetData($lblScanElapsed, "Geçen süre: " & StringFormat("%02d:%02d", Int($iSeconds / 60), Mod($iSeconds, 60)))
             GUICtrlSetData($lblScanCount, "Bulunan strateji: " & $aStrategies[0])
+            ; Akıllı analiz en fazla birkaç yüz aday denediğinden taramayı sonuna kadar beklemeye gerek yok.
+            If $aStrategies[0] >= 60 And Not $bEnoughHinted Then
+                $bEnoughHinted = True
+                GUICtrlSetData($btnStopScan, "Yeterli — akıllı analize geç")
+                GUICtrlSetData($lblScanTitle, "Taranıyor... (yeterli strateji bulundu)")
+            EndIf
             $hUiTimer = TimerInit()
         EndIf
 
