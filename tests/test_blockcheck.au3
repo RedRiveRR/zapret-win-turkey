@@ -36,4 +36,13 @@ Func _TestBlockcheck()
     Local $aEmpty[1] = [0]
     _CollectStrategiesFromText("!!!!! AVAILABLE !!!!!", $aEmpty)
     _AssertEq($aEmpty[0], 0, "tek satırlık log çökmez")
+
+    ; --- _ParseSummaryStrategy (Zapret1) ---
+    Local $sSummary = "test satırı" & @CRLF & "* SUMMARY" & @CRLF & _
+            "ipv4 discord.com curl_test_https_tls12 : winws --wf-tcp=443 --dpi-desync=fake --dpi-desync-ttl=4 " & @CRLF & "son"
+    _AssertEq(_ParseSummaryStrategy($sSummary), "--dpi-desync=fake --dpi-desync-ttl=4", "SUMMARY sonrası strateji alınır")
+    _AssertEq(_ParseSummaryStrategy("a" & @LF & "* SUMMARY"), "", "H3: SUMMARY son satırdaysa çökmez, boş döner")
+    _AssertEq(_ParseSummaryStrategy("* SUMMARY" & @LF & "--dpi-desync=eski" & @LF & "* SUMMARY" & @LF & "strateji yok"), _
+            "--dpi-desync=eski", "son SUMMARY'de strateji yoksa öncekine bakılır")
+    _AssertEq(_ParseSummaryStrategy(""), "", "boş log")
 EndFunc

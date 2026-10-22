@@ -56,3 +56,17 @@ Func _FormatStrategyQuotes($sRawStrategy)
     Next
     Return StringStripWS($sFormattedStrategy, 3)
 EndFunc
+
+; Zapret1 blockcheck logundaki son "SUMMARY" bloğunu bulur ve ardından gelen
+; satırdaki stratejiyi (--dpi ile başlayan kısım) tırnaklamadan döndürür.
+; Bulunamazsa "" döner. SUMMARY son satırdaysa dizi dışına çıkmaz.
+Func _ParseSummaryStrategy($sText)
+    Local $aLines = StringSplit(StringStripCR($sText), @LF)
+    For $i = $aLines[0] To 1 Step -1
+        If Not StringInStr($aLines[$i], "SUMMARY") Then ContinueLoop
+        If $i + 1 > $aLines[0] Then ContinueLoop
+        Local $pos = StringInStr($aLines[$i + 1], "--dpi")
+        If $pos > 0 Then Return StringStripWS(StringMid($aLines[$i + 1], $pos), 3)
+    Next
+    Return ""
+EndFunc

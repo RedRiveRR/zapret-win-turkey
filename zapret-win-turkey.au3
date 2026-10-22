@@ -1084,21 +1084,9 @@ Func RunBlockcheck($ctrlID)
 EndFunc
 
 Func ExtractSummary($filePath)
-    Local $aLogContent
-    If Not _FileReadToArray($filePath, $aLogContent) Then Return
-    Local $found = False, $strategy = ""
-    For $i = $aLogContent[0] To 1 Step -1
-        If StringInStr($aLogContent[$i], "SUMMARY") Then
-            Local $fullLine = $aLogContent[$i + 1]
-            Local $pos = StringInStr($fullLine, "--dpi")
-            If $pos > 0 Then
-                $strategy = StringStripWS(StringMid($fullLine, $pos), 3)
-                $found = True
-                ExitLoop
-            EndIf
-        EndIf
-    Next
-    If $found And $strategy <> "" Then
+    If Not FileExists($filePath) Then Return MsgBox(16 + 8192, "Başarısız", "Analiz log dosyası bulunamadı.")
+    Local $strategy = _ParseSummaryStrategy(FileRead($filePath))
+    If $strategy <> "" Then
         Local $sFormatted = _FormatStrategyQuotes($strategy)
         Local $hFile = FileOpen($strategyFile, 2)
         If $hFile <> -1 Then
