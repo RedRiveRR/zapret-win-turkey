@@ -1,0 +1,60 @@
+name: Paket
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Derle ve paketle
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: AutoIt önbelleği
+        id: cache-autoit
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}\autoit
+          key: autoit-v3-${{ runner.os }}-1
+
+      - name: Taşınabilir AutoIt indir
+        if: steps.cache-autoit.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $zip = Join-Path $env:RUNNER_TEMP 'autoit.zip'
+          Invoke-WebRequest -Uri 'https://www.autoitscript.com/files/autoit3/autoit-v3.zip' -OutFile $zip
+          Expand-Archive $zip -DestinationPath (Join-Path $env:RUNNER_TEMP 'autoit-x')
+          Move-Item (Join-Path $env:RUNNER_TEMP 'autoit-x\install') (Join-Path $env:RUNNER_TEMP 'autoit')
+
+      - name: Denetim
+        shell: pwsh
+        env:
+          AUTOIT_DIR: ${{ runner.temp }}\autoit
+        run: ./scripts/check.ps1
+
+      - name: Derle ve paketle
+        shell: pwsh
+        env:
+          AUTOIT_DIR: ${{ runner.temp }}\autoit
+        run: ./scripts/build.ps1
+
+      - name: Paketleri yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: zapret-win-turkey-${{ github.sha }}
+          path: dist/*
+          retention-days: 30
+
+      - name: Taslak release oluştur (yalnızca etiket)
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" dist/* --draft --title "${{ github.ref_name }}" --notes-file CHANGELOG.md
