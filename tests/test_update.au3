@@ -1,6 +1,7 @@
 ﻿#include-once
 #include "Assert.au3"
 #include "..\lib\Update.au3"
+#include "..\lib\Version.au3"
 
 Func _TestUpdate()
     ; --- _VersionCompare ---
@@ -19,6 +20,12 @@ Func _TestUpdate()
     _AssertFalse(_IsVersionTag(""), "boş geçersiz")
     _AssertFalse(_IsVersionTag("Not Found"), "hata metni geçersiz")
     _AssertFalse(_IsVersionTag("<html>"), "HTML geçersiz")
+
+    ; --- Fork kendi sürümlerine bakmalı (upstream'e yönlendirmek geliştirmeleri kaybettirir) ---
+    _AssertEq($APP_UPDATE_REPO, "RedRiveRR/zapret-win-turkey", "güncelleme kontrolü fork'a bakar")
+    _AssertTrue(StringInStr($APP_RELEASES_URL, "RedRiveRR/") > 0, "indirme sayfası fork'un sürümleri")
+    _AssertTrue(_IsVersionTag("v4.5.1-fork"), "fork etiket biçimi geçerli")
+    _AssertEq(_VersionCompare("v4.5.1-fork", "4.5"), 1, "v4.5.1-fork > 4.5")
 
     ; --- _UpdatePoll: sorgu başlatılmadıysa boş ---
     _AssertEq(_UpdatePoll("4.5"), "", "başlatılmamış sorgu boş döner")

@@ -14,5 +14,7 @@ Global Const $ENGINE_ZAPRET2_VERSION = "1.0.5.2"
 Global Const $ENGINE_ZAPRET1_VERSION = "72.12"
 
 ; Güncelleme kontrolünde sorgulanan GitHub deposu ve kullanıcıya gösterilen sürümler sayfası.
-Global Const $APP_UPDATE_REPO = "alimali54/zapret-win-turkey"
+; Fork kendi sürümlerine bakar: upstream (alimali54) sürümleri bu fork'taki geliştirmeleri
+; içermez; oraya yönlendirmek kullanıcının bu özellikleri kaybetmesine yol açar.
+Global Const $APP_UPDATE_REPO = "RedRiveRR/zapret-win-turkey"
 Global Const $APP_RELEASES_URL = "https://github.com/" & $APP_UPDATE_REPO & "/releases"
