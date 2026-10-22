@@ -22,6 +22,7 @@
 #include "lib\Strategies.au3"
 #include "lib\Version.au3"
 #include "lib\Log.au3"
+#include "lib\Conflicts.au3"
 
 Global Const $PBS_MARQUEE = 0x08
 
@@ -41,22 +42,8 @@ _LogInfo("=== " & $APP_NAME & " v" & $APP_VERSION & " Lite başlatıldı | Windo
 ; --- GÜVENLİK UYARILARINI KALDIR ---
 RunWait('powershell -Command "Get-ChildItem -Path ''' & @ScriptDir & ''' -Recurse | Unblock-File"', "", @SW_HIDE)
 
-; --- ÇAKIŞMA KONTROLÜ (GoodbyeDPI) ---
-If ProcessExists("goodbyedpi.exe") Then
-    Local $iResponse = MsgBox(52, "Çakışma Saptandı", "GoodbyeDPI aktif gözüküyor, Zapret'in çalışması için GoodbyeDPI sonlandırılmalı." & @CRLF & @CRLF & _
-            "GoodbyeDPI'ı kapatmak ve varsa servisini kaldırmak istiyor musunuz?")
-    _LogWarn("Çakışma: goodbyedpi.exe çalışıyor")
-    If $iResponse = 6 Then
-        ProcessClose("goodbyedpi.exe")
-        While ProcessExists("goodbyedpi.exe")
-            Sleep(100)
-        WEnd
-        RunWait(@ComSpec & ' /c sc stop "GoodbyeDPI" & sc delete "GoodbyeDPI" & sc stop "WinDivert" & sc delete "WinDivert" & sc stop "WinDivert14" & sc delete "WinDivert14"', "", @SW_HIDE)
-		MsgBox(64, "Bilgi", "GoodbyeDPI ve servisleri başarıyla kaldırıldı. Program başlatılıyor.")
-	Else
-        Exit
-    EndIf
-EndIf
+; --- ÇAKIŞMA KONTROLÜ (GoodbyeDPI, ByeDPI, başka klasörden çalışan Zapret) ---
+If Not _HandleStartupConflicts(@ScriptDir) Then Exit
 
 Opt("TrayMenuMode", 3)
 Opt("TrayOnEventMode", 1)
