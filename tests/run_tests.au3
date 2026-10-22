@@ -9,11 +9,13 @@
 #include "test_network.au3"
 #include "test_winws.au3"
 #include "test_strategies.au3"
+#include "test_log.au3"
 
 _TestProcess()
 _TestBlockcheck()
 _TestNetwork()
 _TestWinws()
 _TestStrategies()
+_TestLog()
 
 Exit _AssertSummary()
