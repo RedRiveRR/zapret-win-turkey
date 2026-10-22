@@ -117,7 +117,8 @@ try {
     $sums = $zips | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_ -Algorithm SHA256).Hash.ToLower(), (Split-Path $_ -Leaf) }
     $sums += "{0}  {1}" -f (Get-FileHash $mainExe -Algorithm SHA256).Hash.ToLower(), 'zapret-win-turkey.exe'
     $sums += "{0}  {1}" -f (Get-FileHash $liteExe -Algorithm SHA256).Hash.ToLower(), 'zapret-win-turkey-lite.exe'
-    Set-Content (Join-Path $OutDir 'SHA256SUMS.txt') $sums -Encoding utf8
+    # LF ve BOM'suz: `sha256sum -c SHA256SUMS.txt` ile doğrudan doğrulanabilsin.
+    [IO.File]::WriteAllText((Join-Path $OutDir 'SHA256SUMS.txt'), (($sums -join "`n") + "`n"), [Text.UTF8Encoding]::new($false))
     $sums | Write-Host
     Write-Host "Çıktı: $OutDir" -ForegroundColor Green
 }
