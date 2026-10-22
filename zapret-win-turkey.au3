@@ -20,6 +20,7 @@
 #include <EditConstants.au3>
 #include "lib\Process.au3"
 #include "lib\Blockcheck.au3"
+#include "lib\Network.au3"
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
 Local $currentDir = @ScriptDir
@@ -79,6 +80,7 @@ Global $isZapretRunning = False
 Global $zapretPID = 0
 Global $pcapPID = 0
 Global $bServiceStoppedWarned = False
+Global $bDnsReset = True
 Global $strategyTestPID = 0
 
 ; Blockcheck butonuna art arda tıklanmasını engelleyen kilit.
@@ -240,7 +242,10 @@ While 1
 
         If $iAsk = 6 Then ; EVET
             GUICtrlSetData($lblStatusText, "DNS AYARLANIYOR...")
-            _SetSystemDNS()
+            If Not _SetSystemDNS() Then
+                MsgBox(48 + 8192, "Uyarı", $NET_MSG_NO_ADAPTER)
+                ExitLoop
+            EndIf
             $isDnsChangedByApp = True
             GUICtrlSetData($lblStatusText, "DNS TEST EDİLİYOR...")
             Sleep(1000)
@@ -564,7 +569,7 @@ While 1
 
                 RunWait('"' & $sProxyPath & '" -service install', $sProxyDir, @SW_HIDE)
                 RunWait('"' & $sProxyPath & '" -service start', $sProxyDir, @SW_HIDE)
-                _SetDNS_Localhost()
+                If Not _SetDNS_Localhost() Then MsgBox(48 + 8192, "Uyarı", $NET_MSG_NO_ADAPTER)
 
                 GUICtrlSetData($btnDnscrypt, "[ ✓ ] Dnscrypt-proxy Aktif / Kaldır")
                 IniWrite($iniPath, "Settings", "DnscryptInstalled", "1")
@@ -574,7 +579,7 @@ While 1
 
                 RunWait('"' & $sProxyPath & '" -service stop', $sProxyDir, @SW_HIDE)
                 RunWait('"' & $sProxyPath & '" -service uninstall', $sProxyDir, @SW_HIDE)
-                _ResetSystemDNS()
+                If Not _ResetSystemDNS() Then MsgBox(48 + 8192, "Uyarı", $NET_MSG_NO_ADAPTER)
 
                 GUICtrlSetData($btnDnscrypt, "Dnscrypt-proxy servisi kur")
                 IniWrite($iniPath, "Settings", "DnscryptInstalled", "0")
@@ -619,12 +624,16 @@ While 1
 
             ; --- YENİ EKLENEN ADIM: DNS'i Otomatiğe (DHCP) Al ---
             GUICtrlSetData($lblStatusText, "SİSTEM SIFIRLANIYOR...")
-            _ResetSystemDNS()
+            $bDnsReset = _ResetSystemDNS()
 
             $isPoisoned = CheckDnsPoisoningSilent()
             If Not $isPoisoned Then CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
             _RefreshStrategyLabel()
-            MsgBox(64 + 8192, "Bilgi", "WinDivert, Zapret, Dnscrypt temizlendi ve DNS ayarları otomatiğe (DHCP) alındı.")
+            If $bDnsReset Then
+                MsgBox(64 + 8192, "Bilgi", "WinDivert, Zapret, Dnscrypt temizlendi ve DNS ayarları otomatiğe (DHCP) alındı.")
+            Else
+                MsgBox(48 + 8192, "Bilgi", "WinDivert, Zapret, Dnscrypt temizlendi." & @CRLF & @CRLF & $NET_MSG_NO_ADAPTER)
+            EndIf
 
 			If $isPoisoned Then
 				_SetButtonsState($aCriticalButtons, $GUI_DISABLE)
@@ -640,39 +649,6 @@ WEnd
 
 ; --- YENİ YARDIMCI FONKSİYONLAR ---
 
-
-Func _SetSystemDNS()
-    Local $psScript = "$ErrorActionPreference = 'SilentlyContinue'; " & _
-        "$adapter = Get-NetAdapter | Where-Object {$_.Status -eq 'Up' -and $_.InterfaceDescription -notlike '*Virtual*' -and $_.InterfaceDescription -notlike '*Hyper-V*' -and $_.InterfaceDescription -notlike '*WSL*' -and $_.Name -notlike '*vEthernet*' -and $_.InterfaceDescription -notlike '*TAP*' -and $_.InterfaceDescription -notlike '*TUN*' -and $_.InterfaceDescription -notlike '*VPN*'} | Select-Object -First 1; " & _
-        "if ($adapter) { " & _
-        "Set-DnsClientServerAddress -InterfaceAlias $adapter.Name -ServerAddresses @('1.1.1.1','1.0.0.1','2606:4700:4700::1111','2606:4700:4700::1001'); " & _
-        "if ([Environment]::OSVersion.Version.Build -ge 22000) { " & _
-        "$doh = Get-DnsClientDohServerAddress; " & _
-        "foreach ($ip in @('1.1.1.1','1.0.0.1','2606:4700:4700::1111','2606:4700:4700::1001')) { " & _
-        "if ($doh.ServerAddress -contains $ip) { " & _
-        "Set-DnsClientDohServerAddress -ServerAddress $ip -DohTemplate 'https://cloudflare-dns.com/dns-query' -AutoUpgrade $true -AllowFallbackToUdp $false " & _
-        "} else { " & _
-        "Add-DnsClientDohServerAddress -ServerAddress $ip -DohTemplate 'https://cloudflare-dns.com/dns-query' -AutoUpgrade $true -AllowFallbackToUdp $false " & _
-        "} " & _
-        "} " & _
-        "}; " & _
-        "ipconfig /flushdns " & _
-        "}"
-
-    RunWait('powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "' & $psScript & '"', "", @SW_HIDE)
-EndFunc
-
-Func _ResetSystemDNS()
-
-    ; Aktif ağ bağdaştırıcısını bul
-    Local $psScript = "$adapter = Get-NetAdapter | Where-Object {$_.Status -eq 'Up' -and $_.InterfaceDescription -notlike '*Virtual*' -and $_.InterfaceDescription -notlike '*Hyper-V*' -and $_.InterfaceDescription -notlike '*WSL*' -and $_.Name -notlike '*vEthernet*' -and $_.InterfaceDescription -notlike '*TAP*' -and $_.InterfaceDescription -notlike '*TUN*' -and $_.InterfaceDescription -notlike '*VPN*'} | Select-Object -First 1; "
-
-    ; Her iki sistem için: DNS'i otomatiğe (DHCP) al ve DNS önbelleğini sıfırla
-    $psScript &= "Set-DnsClientServerAddress -InterfaceAlias $adapter.Name -ResetServerAddresses; " & _
-                 "ipconfig /flushdns;"
-
-    RunWait('powershell -NoProfile -ExecutionPolicy Bypass -Command "' & $psScript & '"', "", @SW_HIDE)
-EndFunc
 
 ; --- MOTORA GÖRE HAZIR STRATEJİ LİSTESİNİ DOLDURAN FONKSİYON ---
 Func _LoadStrategyList($sDefaultToSelect)
@@ -826,44 +802,6 @@ Func _SetButtonsState(ByRef $aBtnArray, $iState)
 EndFunc
 
 #include <Constants.au3>
-
-Func CheckDnsPoisoningSilent()
-    Local $safePrefix = "162.159"
-    Local $ttPoisonIP = "195.175.254.2"
-
-    ; DNS önbelleğini temizle
-    RunWait(@ComSpec & " /c ipconfig /flushdns", "", @SW_HIDE)
-
-    ; PowerShell ile DNS sorgusu
-    Local $iPID = Run( _
-        'powershell.exe -NoProfile -NonInteractive -Command "[System.Net.Dns]::GetHostAddresses(' & "'" & "discord.com" & "'" & ') | Select-Object -ExpandProperty IPAddressToString | Select-Object -First 1"', _
-        "", @SW_HIDE, $STDOUT_CHILD + $STDERR_MERGED)
-
-    If $iPID = 0 Then Return True
-
-    Local $hTimer = TimerInit()
-    Local $sIP = ""
-
-    ; En fazla 5 saniye bekle
-    While ProcessExists($iPID)
-        $sIP &= StdoutRead($iPID)
-
-        If TimerDiff($hTimer) > 5000 Then
-            ProcessClose($iPID)
-            Return True
-        EndIf
-
-        Sleep(50)
-    WEnd
-
-    $sIP &= StdoutRead($iPID)
-    $sIP = StringStripWS($sIP, 3)
-
-    If StringInStr($sIP, $safePrefix) Then Return False
-    If StringInStr($sIP, $ttPoisonIP) Then Return True
-
-    Return True
-EndFunc
 
 
 Func CheckServiceStatus($manualBtn, $statusID, $lockArray, $chkID)
@@ -1426,14 +1364,6 @@ Func HasFirewallRule($fullPath)
     Return (StringLen(StdoutRead($iPID)) > 10)
 EndFunc
 
-Func _SetDNS_Localhost()
-    Local $psScript = "$adapter = Get-NetAdapter | Where-Object {$_.Status -eq 'Up' -and $_.InterfaceDescription -notlike '*Virtual*' -and $_.InterfaceDescription -notlike '*Hyper-V*' -and $_.InterfaceDescription -notlike '*WSL*' -and $_.Name -notlike '*vEthernet*' -and $_.InterfaceDescription -notlike '*TAP*' -and $_.InterfaceDescription -notlike '*TUN*' -and $_.InterfaceDescription -notlike '*VPN*'} | Select-Object -First 1; "
-    $psScript &= "Set-DnsClientServerAddress -InterfaceAlias $adapter.Name -ServerAddresses '127.0.0.1', '::1'; "
-    $psScript &= "ipconfig /flushdns;"
-
-    RunWait('powershell -NoProfile -Command "' & $psScript & '"', "", @SW_HIDE)
-EndFunc
-
 Func _CheckDnscryptStatus()
     Local $sProxyName = "dnscrypt-proxy"
 
@@ -1443,11 +1373,7 @@ Func _CheckDnscryptStatus()
     Local $sOutput = StdoutRead($iPid)
 
     ; 2. Aktif DNS adresi 127.0.0.1 mi kontrol et
-    Local $psScript = "$adapter = Get-NetAdapter | Where-Object {$_.Status -eq 'Up' -and $_.InterfaceDescription -notlike '*Virtual*' -and $_.InterfaceDescription -notlike '*Hyper-V*' -and $_.InterfaceDescription -notlike '*WSL*' -and $_.Name -notlike '*vEthernet*' -and $_.InterfaceDescription -notlike '*TAP*' -and $_.InterfaceDescription -notlike '*TUN*' -and $_.InterfaceDescription -notlike '*VPN*'} | Select-Object -First 1; "
-    $psScript &= "if ($adapter) { (Get-DnsClientServerAddress -InterfaceAlias $adapter.Name).ServerAddresses -join ',' }"
-    Local $iPidDNS = Run('powershell -NoProfile -Command "' & $psScript & '"', "", @SW_HIDE, $STDOUT_CHILD)
-    ProcessWaitClose($iPidDNS)
-    Local $sDnsOut = StdoutRead($iPidDNS)
+    Local $sDnsOut = _GetActiveAdapterDnsServers()
 
     If StringInStr($sOutput, "RUNNING") And StringInStr($sDnsOut, "127.0.0.1") Then
         GUICtrlSetData($btnDnscrypt, "[ ✓ ] Dnscrypt-proxy Aktif / Kaldır")

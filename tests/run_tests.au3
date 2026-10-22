@@ -6,8 +6,10 @@
 #include "Assert.au3"
 #include "test_process.au3"
 #include "test_blockcheck.au3"
+#include "test_network.au3"
 
 _TestProcess()
 _TestBlockcheck()
+_TestNetwork()
 
 Exit _AssertSummary()

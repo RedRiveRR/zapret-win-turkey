@@ -16,6 +16,7 @@
 #include <TrayConstants.au3>
 #include <ComboConstants.au3>
 #include <AutoItConstants.au3>
+#include "lib\Network.au3"
 
 Global Const $PBS_MARQUEE = 0x08
 
@@ -72,6 +73,7 @@ Global $currentEngine = "Zapret2"
 Global $isZapretRunning = False
 Global $zapretPID = 0
 Global $bServiceStoppedWarned = False
+Global $bDnsReset = True
 
 ; Servis kurulum butonuna art arda tıklamayı engelleyen kilit.
 Global $bInstallServiceBusy = False
@@ -203,7 +205,10 @@ While 1
 
         If $iAsk = 6 Then ; EVET
             GUICtrlSetData($lblStatusText, "DNS AYARLANIYOR...")
-            _SetSystemDNS()
+            If Not _SetSystemDNS() Then
+                MsgBox(48 + 8192, "Uyarı", $NET_MSG_NO_ADAPTER)
+                ExitLoop
+            EndIf
             $isDnsChangedByApp = True
             GUICtrlSetData($lblStatusText, "DNS TEST EDİLİYOR...")
             Sleep(1000)
@@ -293,11 +298,15 @@ While 1
         Case $btnRemoveService
             RemoveService()
             GUICtrlSetData($lblStatusText, "SİSTEM SIFIRLANIYOR...")
-            _ResetSystemDNS()
+            $bDnsReset = _ResetSystemDNS()
             Local $isPoisonedAfterCleanup = CheckDnsPoisoningSilent()
             If Not $isPoisonedAfterCleanup Then CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
             _RefreshStrategyLabel()
-            MsgBox(64 + 8192, "Bilgi", "Zapret servisleri ve kalıntıları temizlendi. DNS ayarları otomatiğe (DHCP) alındı.")
+            If $bDnsReset Then
+                MsgBox(64 + 8192, "Bilgi", "Zapret servisleri ve kalıntıları temizlendi. DNS ayarları otomatiğe (DHCP) alındı.")
+            Else
+                MsgBox(48 + 8192, "Bilgi", "Zapret servisleri ve kalıntıları temizlendi." & @CRLF & @CRLF & $NET_MSG_NO_ADAPTER)
+            EndIf
             If $isPoisonedAfterCleanup Then
                 _SetButtonsState($aCriticalButtons, $GUI_DISABLE)
                 GUICtrlSetData($lblStatusText, "DNS ZEHİRLENMESİ SAPTANDI!")
@@ -310,39 +319,6 @@ While 1
 WEnd
 
 ; --- YENİ YARDIMCI FONKSİYONLAR ---
-
-Func _SetSystemDNS()
-    Local $psScript = "$ErrorActionPreference = 'SilentlyContinue'; " & _
-        "$adapter = Get-NetAdapter | Where-Object {$_.Status -eq 'Up' -and $_.InterfaceDescription -notlike '*Virtual*' -and $_.InterfaceDescription -notlike '*Hyper-V*' -and $_.InterfaceDescription -notlike '*WSL*' -and $_.Name -notlike '*vEthernet*' -and $_.InterfaceDescription -notlike '*TAP*' -and $_.InterfaceDescription -notlike '*TUN*' -and $_.InterfaceDescription -notlike '*VPN*'} | Select-Object -First 1; " & _
-        "if ($adapter) { " & _
-        "Set-DnsClientServerAddress -InterfaceAlias $adapter.Name -ServerAddresses @('1.1.1.1','1.0.0.1','2606:4700:4700::1111','2606:4700:4700::1001'); " & _
-        "if ([Environment]::OSVersion.Version.Build -ge 22000) { " & _
-        "$doh = Get-DnsClientDohServerAddress; " & _
-        "foreach ($ip in @('1.1.1.1','1.0.0.1','2606:4700:4700::1111','2606:4700:4700::1001')) { " & _
-        "if ($doh.ServerAddress -contains $ip) { " & _
-        "Set-DnsClientDohServerAddress -ServerAddress $ip -DohTemplate 'https://cloudflare-dns.com/dns-query' -AutoUpgrade $true -AllowFallbackToUdp $false " & _
-        "} else { " & _
-        "Add-DnsClientDohServerAddress -ServerAddress $ip -DohTemplate 'https://cloudflare-dns.com/dns-query' -AutoUpgrade $true -AllowFallbackToUdp $false " & _
-        "} " & _
-        "} " & _
-        "}; " & _
-        "ipconfig /flushdns " & _
-        "}"
-
-    RunWait('powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "' & $psScript & '"', "", @SW_HIDE)
-EndFunc
-
-Func _ResetSystemDNS()
-
-    ; Aktif ağ bağdaştırıcısını bul
-    Local $psScript = "$adapter = Get-NetAdapter | Where-Object {$_.Status -eq 'Up' -and $_.InterfaceDescription -notlike '*Virtual*' -and $_.InterfaceDescription -notlike '*Hyper-V*' -and $_.InterfaceDescription -notlike '*WSL*' -and $_.Name -notlike '*vEthernet*' -and $_.InterfaceDescription -notlike '*TAP*' -and $_.InterfaceDescription -notlike '*TUN*' -and $_.InterfaceDescription -notlike '*VPN*'} | Select-Object -First 1; "
-
-    ; Her iki sistem için: DNS'i otomatiğe (DHCP) al ve DNS önbelleğini sıfırla
-    $psScript &= "Set-DnsClientServerAddress -InterfaceAlias $adapter.Name -ResetServerAddresses; " & _
-                 "ipconfig /flushdns;"
-
-    RunWait('powershell -NoProfile -ExecutionPolicy Bypass -Command "' & $psScript & '"', "", @SW_HIDE)
-EndFunc
 
 ; --- MOTORA GÖRE HAZIR STRATEJİ LİSTESİNİ DOLDURAN FONKSİYON ---
 Func _LoadStrategyList($sDefaultToSelect)
@@ -477,44 +453,6 @@ Func _SetButtonsState(ByRef $aBtnArray, $iState)
 EndFunc
 
 #include <Constants.au3>
-
-Func CheckDnsPoisoningSilent()
-    Local $safePrefix = "162.159"
-    Local $ttPoisonIP = "195.175.254.2"
-
-    ; DNS önbelleğini temizle
-    RunWait(@ComSpec & " /c ipconfig /flushdns", "", @SW_HIDE)
-
-    ; PowerShell ile DNS sorgusu
-    Local $iPID = Run( _
-        'powershell.exe -NoProfile -NonInteractive -Command "[System.Net.Dns]::GetHostAddresses(' & "'" & "discord.com" & "'" & ') | Select-Object -ExpandProperty IPAddressToString | Select-Object -First 1"', _
-        "", @SW_HIDE, $STDOUT_CHILD + $STDERR_MERGED)
-
-    If $iPID = 0 Then Return True
-
-    Local $hTimer = TimerInit()
-    Local $sIP = ""
-
-    ; En fazla 5 saniye bekle
-    While ProcessExists($iPID)
-        $sIP &= StdoutRead($iPID)
-
-        If TimerDiff($hTimer) > 5000 Then
-            ProcessClose($iPID)
-            Return True
-        EndIf
-
-        Sleep(50)
-    WEnd
-
-    $sIP &= StdoutRead($iPID)
-    $sIP = StringStripWS($sIP, 3)
-
-    If StringInStr($sIP, $safePrefix) Then Return False
-    If StringInStr($sIP, $ttPoisonIP) Then Return True
-
-    Return True
-EndFunc
 
 Func CheckServiceStatus($manualBtn, $statusID, $lockArray, $chkID)
     Local $iPid = Run(@ComSpec & " /c sc query " & $serviceName, "", @SW_HIDE, $STDOUT_CHILD)
