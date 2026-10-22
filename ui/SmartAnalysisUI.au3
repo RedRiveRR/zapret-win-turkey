@@ -25,8 +25,8 @@ Global Const $SMARTUI_PREV_SMART = 4
 Global $__g_idSmartBar = 0, $__g_idSmartPhase = 0, $__g_idSmartElapsed = 0, $__g_idSmartStop = 0
 Global $__g_hSmartTimer = 0, $__g_sSmartLastText = "", $__g_iSmartLastPct = -1, $__g_iSmartLastSec = -1, $__g_bSmartStopping = False
 
-Global Const $SMARTUI_BROWSER_NOTE = "Not: Tarayıcı Discord'u QUIC ile zapret olmadan da açabildiği için tarayıcıda denemek yanıltıcıdır. " & _
-        "Discord uygulamasını tepsiden tamamen kapatıp yeniden açarak deneyin."
+Global Const $SMARTUI_BROWSER_NOTE = "Not: Puan mesajlaşma/sunucu bağlantısını (TCP) ölçer; SESLİ GÖRÜŞME (UDP) ölçülmez, kısa bir sesli görüşmeyle ayrıca deneyin. " & _
+        "Tarayıcıda denemek yanıltıcıdır; Discord uygulamasını tepsiden tamamen kapatıp yeniden açarak deneyin."
 
 ; Analiz türü seçici. Dönüş: $SMARTUI_* sabiti.
 Func _SmartUI_Chooser($bHasPrevList, $bHasPrevSmart, $hParent)
@@ -308,7 +308,8 @@ Func _SmartUI_ShowResults(ByRef $aRows, $sSummary, $sStrategyFile, $sWinwsPath, 
     EndIf
     If $sChosen <> "" Then
         _LogInfo("Akıllı analiz: strateji seçildi: " & $sChosen)
-        MsgBox(64 + 8192, "Strateji Kaydedildi", "Strateji kaydedildi. Zapret'i başlatıp Discord uygulamasını yeniden açarak deneyebilirsiniz.")
+        MsgBox(64 + 8192, "Strateji Kaydedildi", "Strateji kaydedildi. Zapret'i başlatıp Discord uygulamasını yeniden açarak deneyebilirsiniz." & @CRLF & @CRLF & _
+                "Akıllı analiz sesli görüşmeyi ölçmez; ses için kısa bir sesli görüşme deneyin.")
     EndIf
     Return $sChosen
 EndFunc

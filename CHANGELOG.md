@@ -11,6 +11,8 @@ Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-
   - *Önceki sonuçlar:* eski akıllı analiz sonucu veya eski tarama listesi açılır.
 
   Her strateji winws2 ile başlatılıp Discord'un sohbet sunucusuna (`gateway.discord.gg`), discord.com, roblox.com ve Discord CDN'ine TLS 1.2 ve 1.3 ile defalarca bağlanılarak ölçülür. Ölçüm başarı, gecikme ve sadeliğe göre 0–100 arasında puanlanır. Sonuç tablosunda ★ önerilen strateji tek tıkla kullanılabilir. Tarayıcıda deneme yanıltıcıdır (tarayıcı Discord'u QUIC ile zapret olmadan da açabiliyor); akıllı analiz uygulamanın gerçekten kullandığı TCP bağlantısını ölçer. Hedefler `config.ini` → `[SmartAnalysis] Targets=` ile değiştirilebilir. Lite sürümde tepsi menüsünden "Hazır profilleri akıllı test et".
+
+  **Sınır:** yalnızca TCP bağlantıları ölçülür (mesajlaşma, sunucu bağlantısı, sayfalar). Discord **sesli görüşmesi (UDP) ölçülmez**; puan yüksek olsa da sesi ayrıca bir sesli görüşmeyle deneyin.
 - Akıllı analiz yüzlerce adayla da hızlı: kayıtlı strateji ve hazır profiller her zaman, tarama sonuçları sadeden karmaşığa doğru ölçülür; 25 tam başarılı aday bulunca eleme erken biter, en fazla 150 tarama adayı elenir. Blockcheck 60 stratejiye ulaşınca "Yeterli — akıllı analize geç" önerilir.
 - Blockcheck sonuçları okunamazsa (log biçimi değişmişse) artık "strateji bulunamadı" yerine açık uyarı veriliyor.
 - **Hazır stratejiler `config/strategies.ini` dosyasında.** Yeni bir ISS profili eklemek için kodu değiştirip yeniden derlemek gerekmiyor. Dosya silinirse gömülü varsayılanlar kullanılır.
