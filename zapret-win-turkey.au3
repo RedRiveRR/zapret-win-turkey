@@ -328,6 +328,8 @@ While 1
 		If $bZapretAlive Then
 			; 1. Zapret yaşıyorsa LAN Paylaşım butonunu aktif et
 			If BitAND(GUICtrlGetState($btnLanShare), $GUI_DISABLE) Then GUICtrlSetState($btnLanShare, $GUI_ENABLE)
+			; Servis durduktan sonra yeniden başladıysa "DURDU" yazısı takılı kalmasın.
+			_RefreshIfServiceRecovered()
 		Else
 			; 2. Zapret ölmüşse LAN Paylaşım butonunu devre dışı bırak, yazısını sıfırla ve go-pcap2socks'u kapat
 			If BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) Then
@@ -806,6 +808,15 @@ Func CheckServiceStatus($manualBtn, $statusID, $lockArray, $chkID)
         GUICtrlSetColor($statusID, 0x2C3E50)
     EndIf
     _UpdateFilterForStrategy()
+EndFunc
+
+; Servis durmuş görünürken winws yeniden çalışıyorsa (Windows/elle yeniden başlatma) durumu
+; tazeler ve "servis durdu" uyarısını yeniden silahlandırır; böylece sonraki durmada da uyarılır.
+Func _RefreshIfServiceRecovered()
+    If GUICtrlRead($lblStatusText) <> "SERVİS YÜKLÜ - DURDU" Then Return
+    _LogInfo("Servis yeniden çalışıyor")
+    $bServiceStoppedWarned = False
+    CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
 EndFunc
 
 Func StartWinws($ctrlID, $statusID, $aBtns)

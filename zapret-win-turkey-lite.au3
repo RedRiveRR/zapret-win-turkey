@@ -268,6 +268,9 @@ While 1
             If GUICtrlRead($lblStatusText) = "SERVİS MODU AKTİF" Then
                 CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
             EndIf
+        Else
+            ; Servis durduktan sonra yeniden başladıysa "DURDU" yazısı takılı kalmasın.
+            _RefreshIfServiceRecovered()
         EndIf
         _UpdatePollAndNotify($APP_VERSION, $APP_RELEASES_URL)
         $hProcessTimer = TimerInit()
@@ -523,6 +526,15 @@ Func _BuildActiveWinwsArgs($sStrategy)
     Local $sFilterMode = _WinwsFilterModeFromText(GUICtrlRead($cmbFilter))
     _EnsureHostlistFile($sFilterMode, $sStrategy, $hostlistPath, $normalHostlistPath)
     Return _BuildWinwsArgs($currentEngine, $winwsPath, $sStrategy, $sFilterMode, $exludelistPath, $hostlistPath, $normalHostlistPath)
+EndFunc
+
+; Servis durmuş görünürken winws yeniden çalışıyorsa (Windows/elle yeniden başlatma) durumu
+; tazeler ve "servis durdu" uyarısını yeniden silahlandırır; böylece sonraki durmada da uyarılır.
+Func _RefreshIfServiceRecovered()
+    If GUICtrlRead($lblStatusText) <> "SERVİS YÜKLÜ - DURDU" Then Return
+    _LogInfo("Servis yeniden çalışıyor")
+    $bServiceStoppedWarned = False
+    CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
 EndFunc
 
 ; Tepsi: hazır profilleri akıllı analizle sınar, en uygununu seçtirir.
