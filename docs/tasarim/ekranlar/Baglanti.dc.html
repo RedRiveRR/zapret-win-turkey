@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Kompakt, bağlantı</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:inherit}
+@keyframes akis{to{stroke-dashoffset:-20}}
+.akis{animation:akis 1.2s linear infinite}
+@media (prefers-reduced-motion: reduce){.akis{animation:none}}
+</style>
+</helmet>
+<div style="width: 460px; height: 660px; box-sizing: border-box; background: {{c.bg}}; color: {{c.text}}; font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; display: flex; flex-direction: column;">
+  <header style="padding: 20px 22px 0; display: flex; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="{{c.logoBg}}"></rect><path d="M47.6 23 A 18 18 0 1 0 47.6 41" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"></path><path d="M19 32 H53 M46 25 L53 32 L46 39" fill="none" stroke="{{c.logoRiver}}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      <span style="font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.2px;">RedRiveRR <span style="font-weight: 400;">Zapret</span></span>
+    </div>
+    <button aria-label="Ayarlar" style="width: 36px; height: 36px; border-radius: 12px; border: 0; background: {{c.surface2}}; display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{c.muted}}" stroke-width="2" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"></path><circle cx="16" cy="7" r="2"></circle><circle cx="8" cy="17" r="2"></circle></svg></button>
+  </header>
+  <main style="flex: 1; min-height: 0; padding: 16px 18px 12px; display: flex; flex-direction: column; gap: 12px;">
+    <section style="background: {{c.okTint}}; border-radius: 22px; padding: 20px 20px 18px; display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: {{c.okText}};"><span style="width: 7px; height: 7px; border-radius: 4px; background: {{c.ok}};"></span>Servis çalışıyor</span>
+          <h1 style="margin: 4px 0 0; font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; font-size: 24px; font-weight: 700; letter-spacing: -0.3px;">Discord'a yol açık</h1>
+        </div>
+        <button aria-label="Zapret'i durdur" style="width: 52px; height: 52px; border-radius: 26px; border: 0; background: {{c.surface}}; display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{c.text}}" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v8"></path><path d="M6.3 6.8a8 8 0 1 0 11.4 0"></path></svg></button>
+      </div>
+      <div aria-label="Bağlantı yolu" style="display: flex; align-items: flex-start;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 60px;">
+          <span style="width: 36px; height: 36px; border-radius: 12px; background: {{c.surface}}; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="{{c.text}}" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path></svg></span>
+          <span style="font-size: 12px; color: {{c.muted}};">Sen</span>
+        </div>
+        <svg style="flex: 1; margin-top: 16px;" height="4" aria-hidden="true"><line class="akis" x1="0" y1="2" x2="100%" y2="2" stroke="{{c.accent}}" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 4"></line></svg>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 60px;">
+          <span style="width: 36px; height: 36px; border-radius: 12px; background: {{c.accent}}; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="{{c.onAccent}}" stroke-width="2" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"></path></svg></span>
+          <span style="font-size: 12px; color: {{c.muted}};">Zapret</span>
+        </div>
+        <svg style="flex: 1; margin-top: 16px;" height="4" aria-hidden="true"><line class="akis" x1="0" y1="2" x2="100%" y2="2" stroke="{{c.accent}}" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 4"></line></svg>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 66px;">
+          <span style="width: 36px; height: 36px; border-radius: 12px; background: {{c.surface}}; border: 1.5px dashed {{c.warn}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="{{c.warn}}" stroke-width="2" aria-hidden="true"><path d="M4 8h16M4 16h16"></path></svg></span>
+          <span style="font-size: 12px; color: {{c.muted}};">Sağlayıcı</span>
+        </div>
+        <svg style="flex: 1; margin-top: 16px;" height="4" aria-hidden="true"><line class="akis" x1="0" y1="2" x2="100%" y2="2" stroke="{{c.ok}}" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 4"></line></svg>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 60px;">
+          <span style="width: 36px; height: 36px; border-radius: 12px; background: {{c.ok}}; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="{{c.onAccent}}" stroke-width="2.6" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+          <span style="font-size: 12px; color: {{c.muted}};">Discord</span>
+        </div>
+      </div>
+    </section>
+    <section style="background: {{c.surface}}; border-radius: 18px; padding: 6px 16px;">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid {{c.line}};">
+        <span style="flex: 1; font-size: 14px;">Discord</span>
+        <span style="width: 54px; height: 6px; border-radius: 3px; background: {{c.surface2}};"><span style="display: block; width: 46px; height: 6px; border-radius: 3px; background: {{c.ok}};"></span></span>
+        <span style="width: 64px; text-align: right; font-size: 13px; color: {{c.muted}};">92 ms</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid {{c.line}};">
+        <span style="flex: 1; font-size: 14px;">Sohbet bağlantısı</span>
+        <span style="width: 54px; height: 6px; border-radius: 3px; background: {{c.surface2}};"><span style="display: block; width: 42px; height: 6px; border-radius: 3px; background: {{c.ok}};"></span></span>
+        <span style="width: 64px; text-align: right; font-size: 13px; color: {{c.muted}};">118 ms</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 11px 0;">
+        <span style="flex: 1; font-size: 14px;">Roblox</span>
+        <span style="width: 54px; height: 6px; border-radius: 3px; background: {{c.surface2}};"><span style="display: block; width: 14px; height: 6px; border-radius: 3px; background: {{c.warn}};"></span></span>
+        <span style="width: 64px; text-align: right; font-size: 13px; color: {{c.warnText}};">640 ms</span>
+      </div>
+    </section>
+    <a href="Strateji.dc.html" style="text-decoration: none; background: {{c.surface}}; border-radius: 18px; padding: 14px 16px; display: flex; align-items: center; gap: 12px;">
+      <span style="width: 38px; height: 38px; border-radius: 12px; background: {{c.accentTint}}; display: flex; align-items: center; justify-content: center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{c.accentText}}" stroke-width="2" aria-hidden="true"><path d="M12 2l2.4 6.9H21l-5.4 4.2 2 7-5.6-4.2-5.6 4.2 2-7L3 8.9h6.6z"></path></svg></span>
+      <span style="flex: 1; display: flex; flex-direction: column; gap: 1px;"><span style="font-size: 12px; color: {{c.muted}};">Strateji</span><span style="font-size: 15px; font-weight: 600;">Akıllı analiz önerisi</span></span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{c.muted}}" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+    </a>
+  </main>
+  <nav aria-label="Bölümler" style="margin: 0 14px 14px; height: 60px; border-radius: 20px; background: {{c.surface}}; display: flex; padding: 6px; box-sizing: border-box; gap: 4px;">
+    <a href="#" style="flex: 1; text-decoration: none; border-radius: 14px; background: {{c.accentTint}}; color: {{c.accentText}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; font-weight: 600;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 12h4l3-7 4 14 3-7h2"></path></svg>Bağlantı</a>
+    <a href="Strateji.dc.html" style="flex: 1; text-decoration: none; border-radius: 14px; color: {{c.muted}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.5-4.5"></path></svg>Strateji</a>
+    <a href="Servis.dc.html" style="flex: 1; text-decoration: none; border-radius: 14px; color: {{c.muted}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v8"></path><path d="M6.3 6.8a8 8 0 1 0 11.4 0"></path></svg>Servis</a>
+    <a href="DNS.dc.html" style="flex: 1; text-decoration: none; border-radius: 14px; color: {{c.muted}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"></path></svg>DNS</a>
+    <a href="Diger.dc.html" style="flex: 1; text-decoration: none; border-radius: 14px; color: {{c.muted}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle></svg>Diğer</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Açık","Koyu"],"default":"Açık"},"$preview":{"width":460,"height":660}}'>
+class Component extends DCLogic {
+renderVals() {
+const acik = {logoBg:'#5B5BD6',logoRiver:'#B7F5D0',bg:'#F2F4F7',surface:'#FFFFFF',surface2:'#E9EDF2',line:'#EDF0F4',text:'#1D2433',muted:'#677489',accent:'#5B5BD6',accentTint:'#ECECFC',accentText:'#4342B8',onAccent:'#FFFFFF',ok:'#2F9E6E',okTint:'#E3F4EC',okText:'#1C6E4A',warn:'#C98512',warnText:'#8F5A00'};
+const koyu = {logoBg:'#6466E0',logoRiver:'#B7F5D0',bg:'#14161B',surface:'#1D2027',surface2:'#2A2E37',line:'#262A32',text:'#E7EAF0',muted:'#99A2B2',accent:'#7E80EE',accentTint:'#2A2B4D',accentText:'#B9BAFA',onAccent:'#101218',ok:'#4CC38A',okTint:'#17302A',okText:'#7FDBAE',warn:'#E5A53B',warnText:'#F0C274'};
+return { c: (this.props.tema ?? 'Açık') === 'Koyu' ? koyu : acik };
+}
+}
+</script>
+</body>
+</html>
