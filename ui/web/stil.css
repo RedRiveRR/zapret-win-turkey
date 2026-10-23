@@ -107,3 +107,8 @@ select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .tehlike{background:var(--badTint);color:var(--badText)}
 .ikincil:disabled,.tehlike:disabled{opacity:.45;cursor:default}
 .tehlike.onay{background:var(--bad);color:#FFFFFF}
+/* Bildirim */
+.app{position:relative}
+.bildirim{position:absolute;left:24px;right:24px;bottom:86px;padding:12px 14px;border-radius:14px;background:var(--text);color:var(--bg);font-size:13px;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none}
+.bildirim.gorunur{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.bildirim{transition:none}}

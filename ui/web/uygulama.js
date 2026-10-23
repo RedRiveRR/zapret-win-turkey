@@ -12,6 +12,7 @@
 //   {tip:"komut", ad:"analiz", tur:"hizli|tam"}, {tip:"secim", alan:"strateji|motor|filtre", deger}
 //   {tip:"servis", durum:"aktif|hata|uyari|yok", baslik, aciklama, kurulu, onarim, yenidenBaslat, onarimNot,
 //    kurAcik, kaldirAcik, ayarAcik}   (program -> sayfa)
+//   {tip:"bildirim", metin}   (program -> sayfa, birkaç saniye görünür)
 //   {tip:"komut", ad:"servisKur|servisKaldir|servisAyarlar"}, {tip:"ayar", ad:"onarim|yenidenBaslat", deger:bool}
 'use strict';
 
@@ -178,6 +179,16 @@ function servisUygula(m) {
   $('servis-ayar').disabled = !m.ayarAcik;
 }
 
+// --- Bildirim ---
+let bildirimZaman = 0;
+function bildirimGoster(metin) {
+  const b = $('bildirim');
+  b.textContent = metin || '';
+  b.classList.add('gorunur');
+  clearTimeout(bildirimZaman);
+  bildirimZaman = setTimeout(() => b.classList.remove('gorunur'), 5000);
+}
+
 if (wv) {
   wv.addEventListener('message', (e) => {
     const m = e.data || {};
@@ -186,6 +197,7 @@ if (wv) {
     else if (m.tip === 'tema') temaUygula(m.tema);
     else if (m.tip === 'strateji') stratejiUygula(m);
     else if (m.tip === 'servis') servisUygula(m);
+    else if (m.tip === 'bildirim') bildirimGoster(m.metin);
   });
 }
 gonder({ tip: 'hazir' });
