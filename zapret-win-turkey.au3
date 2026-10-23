@@ -38,6 +38,7 @@
 #include "ui\Theme.au3"
 #include "ui\WebView2.au3"
 #include "lib\WebState.au3"
+#include "lib\AppState.au3"
 #include <ScreenCapture.au3>
 #include "lib\Install.au3"
 
@@ -309,7 +310,7 @@ _UpdateFilterForStrategy()
 
 ; --- GÜVENLİ AÇILIŞ AKIŞI VE DİNAMİK DNS ZEHİRLENMESİ KONTROL DÖNGÜSÜ ---
 RunWait(@ComSpec & " /c sc stop WinDivert & sc delete WinDivert & sc stop WinDivert14 & sc delete WinDivert14 & sc stop monkey & sc delete monkey", "", @SW_HIDE)
-GUICtrlSetData($lblStatusText, "DNS KONTROL EDİLİYOR...")
+_SetStatus("DNS KONTROL EDİLİYOR...")
 
 Local $isDnsChangedByApp = False
 
@@ -319,7 +320,7 @@ While 1
     If $isPoisoned Then
         _SetButtonsState($aCriticalButtons, $GUI_DISABLE)
 		GUICtrlSetState($btnDnscrypt, $GUI_ENABLE) ; <--- DNS zehirlense bile bu buton hep tıklanabilir olsun!
-        GUICtrlSetData($lblStatusText, "DNS ZEHİRLENMESİ SAPTANDI!")
+        _SetStatus("DNS ZEHİRLENMESİ SAPTANDI!")
         GUICtrlSetColor($lblStatusText, 0xC0392B)
 
         ; 2. TUR: Uygulama DNS değiştirdi ama hala zehirliyse (TT engelliyorsa)
@@ -337,13 +338,13 @@ While 1
                 "Sistem DNS adresiniz Cloudflare (1.1.1.1 / 1.0.0.1) olarak ayarlansın mı?")
 
         If $iAsk = 6 Then ; EVET
-            GUICtrlSetData($lblStatusText, "DNS AYARLANIYOR...")
+            _SetStatus("DNS AYARLANIYOR...")
             If Not _SetSystemDNS() Then
                 MsgBox(48 + 8192, "Uyarı", $NET_MSG_NO_ADAPTER)
                 ExitLoop
             EndIf
             $isDnsChangedByApp = True
-            GUICtrlSetData($lblStatusText, "DNS TEST EDİLİYOR...")
+            _SetStatus("DNS TEST EDİLİYOR...")
             Sleep(1000)
             ContinueLoop ; Döngüyü başa sar, nslookup ile yeni DNS'i test et
         Else ; HAYIR
@@ -524,7 +525,7 @@ While 1
 				If $iConfirm = 1 Then
                     _SetButtonsState($aCriticalButtons, $GUI_DISABLE)
                     GUICtrlSetState($btnRemoveService, $GUI_DISABLE)
-                    GUICtrlSetData($lblStatusText, "ANALİZ YAPILIYOR...")
+                    _SetStatus("ANALİZ YAPILIYOR...")
                     GUICtrlSetState($pBar, $GUI_SHOW)
                     GUICtrlSetData($lblStrategyInfo, "")
                     GUICtrlSendMsg($pBar, $PBM_SETMARQUEE, True, 50)
@@ -540,7 +541,7 @@ While 1
                     _SetButtonsState($aCriticalButtons, $GUI_ENABLE)
                     GUICtrlSetState($btnRemoveService, $GUI_ENABLE)
                     CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
-                    GUICtrlSetData($lblStatusText, "ANALİZ TAMAMLANDI")
+                    _SetStatus("ANALİZ TAMAMLANDI")
                     _RefreshStrategyLabel()
                 EndIf
             EndIf
@@ -675,7 +676,7 @@ While 1
             Local $btnText = GUICtrlRead($btnDnscrypt)
 
             If StringInStr($btnText, "servisi kur") Then
-                GUICtrlSetData($lblStatusText, "DNSCRYPT KURULUYOR...")
+                _SetStatus("DNSCRYPT KURULUYOR...")
                 _LogInfo("DNSCrypt servisi kuruluyor")
 
                 RunWait('"' & $sProxyPath & '" -service install', $sProxyDir, @SW_HIDE)
@@ -686,7 +687,7 @@ While 1
                 IniWrite($iniPath, "Settings", "DnscryptInstalled", "1")
                 ;MsgBox(64 + 8192, "Başarılı", "DNSCrypt servisi kuruldu.")
             Else
-                GUICtrlSetData($lblStatusText, "DNSCRYPT KALDIRILIYOR...")
+                _SetStatus("DNSCRYPT KALDIRILIYOR...")
                 _LogInfo("DNSCrypt servisi kaldırılıyor")
 
                 RunWait('"' & $sProxyPath & '" -service stop', $sProxyDir, @SW_HIDE)
@@ -720,7 +721,7 @@ While 1
             IniWrite($iniPath, "Settings", "DnscryptInstalled", "0")
 
             ; --- YENİ EKLENEN ADIM: DNS'i Otomatiğe (DHCP) Al ---
-            GUICtrlSetData($lblStatusText, "SİSTEM SIFIRLANIYOR...")
+            _SetStatus("SİSTEM SIFIRLANIYOR...")
             $bDnsReset = _ResetSystemDNS()
 
             $isPoisoned = CheckDnsPoisoningSilent()
@@ -735,7 +736,7 @@ While 1
 			If $isPoisoned Then
 				_SetButtonsState($aCriticalButtons, $GUI_DISABLE)
 				GUICtrlSetState($btnDnscrypt, $GUI_ENABLE) ; <--- Servisler temizlense ve zehirlenme olsa bile bu buton hep açık kalacak!
-				GUICtrlSetData($lblStatusText, "DNS ZEHİRLENMESİ SAPTANDI!")
+				_SetStatus("DNS ZEHİRLENMESİ SAPTANDI!")
 				GUICtrlSetColor($lblStatusText, 0xC0392B)
 			Else
 				CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
@@ -866,6 +867,13 @@ Func _MainWindowHide()
     GUISetState(@SW_HIDE, $g_bWebUi ? $hWebGui : $hGUI)
 EndFunc
 
+; Ana durumu yazar: durum modülü tek kaynaktır; eski arayüzün etiketi de güncellenir (Aşama 2.1).
+; CheckServiceStatus/StartWinws'e verilen $statusID her yerde $lblStatusText'tir.
+Func _SetStatus($sStatus)
+    _StateSetStatus($sStatus)
+    GUICtrlSetData($lblStatusText, $sStatus)
+EndFunc
+
 ; Alt pencerelerin sahibi: kullanıcının gördüğü ana pencere (yeni arayüzde gizli eski pencere değil).
 Func _MainWindowHandle()
     Return $g_bWebUi ? $hWebGui : $hGUI
@@ -918,11 +926,11 @@ Func CheckServiceStatus($manualBtn, $statusID, $lockArray, $chkID)
 
         ; --- YENİ EKLENEN KISIM: SERVİS DURUMUNU (RUNNING/STOPPED) KONTROL ET ---
         If StringInStr($sOutput, "RUNNING") Then
-            GUICtrlSetData($statusID, "SERVİS MODU AKTİF")
+            _SetStatus("SERVİS MODU AKTİF")
             GUICtrlSetColor($statusID, 0x27AE60)
         Else
             ; Servis yüklü ama durmuş!
-            GUICtrlSetData($statusID, "SERVİS YÜKLÜ - DURDU")
+            _SetStatus("SERVİS YÜKLÜ - DURDU")
             GUICtrlSetColor($statusID, 0xC0392B) ; Kırmızı renkle uyar
 
             ; Kullanıcıyı yalnızca bir kez uyar (sürekli MsgBox çıkıp darlamasın)
@@ -938,7 +946,7 @@ Func CheckServiceStatus($manualBtn, $statusID, $lockArray, $chkID)
         _SetButtonsState($lockArray, $GUI_ENABLE)
         GUICtrlSetData($btnAnalyze, "ISS Analizi (Blockcheck) Yap")
 
-        GUICtrlSetData($statusID, "ÇALIŞMAYA HAZIR")
+        _SetStatus("ÇALIŞMAYA HAZIR")
         GUICtrlSetColor($statusID, 0x2C3E50)
     EndIf
     _UpdateFilterForStrategy()
@@ -967,7 +975,7 @@ Func StartWinws($ctrlID, $statusID, $aBtns)
         ; --- 1. ARAYÜZÜ ANINDA GÜNCELLE (Kullanıcıya anında tepki ver) ---
         $isZapretRunning = True
         GUICtrlSetData($ctrlID, "■   Durdur")
-        GUICtrlSetData($statusID, "MANUEL MOD AKTİF")
+        _SetStatus("MANUEL MOD AKTİF")
         GUICtrlSetColor($statusID, 0xE67E22)
         _SetButtonsState($aBtns, $GUI_DISABLE)
 
@@ -1040,7 +1048,7 @@ Func _MainUiPreviewAndExit($sDir)
     _UpdateEnginePaths(GUICtrlRead($cmbEngine))
     _LoadStrategyList($iniStrategy)
     _RefreshStrategyLabel()
-    GUICtrlSetData($lblStatusText, "ÇALIŞMAYA HAZIR")
+    _SetStatus("ÇALIŞMAYA HAZIR")
     _SetButtonsState($aCriticalButtons, $GUI_ENABLE)
     GUICtrlSetState($btnLanShare, $GUI_ENABLE)
     DirCreate($sDir)
@@ -1496,7 +1504,7 @@ Func _ServiceStrategyUpdateFlow()
 
     Local $sBefore = StringStripWS(FileRead($strategyFile), 3)
     _LogInfo("Servis stratejisi güncelleme: analiz için servis durduruluyor")
-    GUICtrlSetData($lblStatusText, "SERVİS GEÇİCİ OLARAK DURDURULDU")
+    _SetStatus("SERVİS GEÇİCİ OLARAK DURDURULDU")
     _ServiceStop($serviceName)
     ; Servis duruşu sonrası WinDivert'in bırakılması için
     _KillProcessesUnderDir(@ScriptDir & "\bin\zapret\zapret-winws")
@@ -1573,7 +1581,7 @@ EndFunc
 Func _RunSmartAnalysisFlow(ByRef $aCand, $bMainAlreadyDisabled)
     _LogInfo("Akıllı analiz başlıyor: " & UBound($aCand) & " aday")
     Local $sPrevStatus = GUICtrlRead($lblStatusText)
-    GUICtrlSetData($lblStatusText, "AKILLI ANALİZ YAPILIYOR...")
+    _SetStatus("AKILLI ANALİZ YAPILIYOR...")
     If Not $bMainAlreadyDisabled Then GUISetState(@SW_DISABLE, _MainWindowHandle())
     Local $sTargets = IniRead($iniPath, "SmartAnalysis", "Targets", $SMART_DEFAULT_TARGETS)
     Local $sChosen = _SmartUI_Run($aCand, @ScriptDir, $winwsPath, $sTargets, _SmartResultsPath(), $strategyFile, _MainWindowHandle())
@@ -1581,7 +1589,7 @@ Func _RunSmartAnalysisFlow(ByRef $aCand, $bMainAlreadyDisabled)
         GUISetState(@SW_ENABLE, _MainWindowHandle())
         _MainWindowShow()
     EndIf
-    GUICtrlSetData($lblStatusText, $sPrevStatus)
+    _SetStatus($sPrevStatus)
     If $sChosen <> "" Then _AfterSmartStrategyChosen()
 EndFunc
 
@@ -1762,12 +1770,12 @@ EndFunc
 
 ; DNS değiştikten sonra açılıştaki kontrolün aynısı: zehirlenme varsa kritik düğmeler kilitlenir.
 Func _DnsRecheckAfterChange()
-    GUICtrlSetData($lblStatusText, "DNS TEST EDİLİYOR...")
+    _SetStatus("DNS TEST EDİLİYOR...")
     Sleep(1000) ; Ağın ve adaptörün kendine gelmesi için bekleme
     If CheckDnsPoisoningSilent() Then
         _SetButtonsState($aCriticalButtons, $GUI_DISABLE)
         GUICtrlSetState($btnDnscrypt, $GUI_ENABLE) ; DNS zehirlense bile bu buton hep tıklanabilir olsun
-        GUICtrlSetData($lblStatusText, "DNS ZEHİRLENMESİ SAPTANDI!")
+        _SetStatus("DNS ZEHİRLENMESİ SAPTANDI!")
         GUICtrlSetColor($lblStatusText, 0xC0392B)
     Else
         ; Zehirlenme yoksa her şey normal devam etsin
@@ -2047,7 +2055,7 @@ Func _WebUiDnsCommand($sMode)
         Return 0
     EndIf
     $bDnscryptBusy = True
-    GUICtrlSetData($lblStatusText, "DNS AYARLANIYOR...")
+    _SetStatus("DNS AYARLANIYOR...")
     Local $bOk = ($sMode = "cloudflare") ? _SetSystemDNS() : _ResetSystemDNS()
     _LogInfo("Yeni arayüz: DNS seçimi " & $sMode & ($bOk ? "" : " (bağdaştırıcı bulunamadı)"))
     If Not $bOk Then _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", "Etkin ağ bağdaştırıcısı bulunamadı; DNS değiştirilemedi. VPN kullanıyorsan kapatıp tekrar dene."))
@@ -2097,7 +2105,7 @@ Func _WebUiShowSmartResults()
         MsgBox(48 + 8192, "Servis Stratejisi", "Strateji kaydedildi, ancak kurulu servis klasik Zapret motorunu kullandığı için servise uygulanmadı.")
         Return
     EndIf
-    GUICtrlSetData($lblStatusText, "SERVİS GEÇİCİ OLARAK DURDURULDU")
+    _SetStatus("SERVİS GEÇİCİ OLARAK DURDURULDU")
     Local $sArgs = _BuildActiveWinwsArgs($sAfter)
     Local $bOk = _ServiceUpdateArgs($serviceName, $winwsPath, $sArgs)
     _LogInfo("Servis stratejisi sonuç penceresinden güncellendi (" & ($bOk ? "çalışıyor" : "BAŞLATILAMADI") & "): " & $sArgs)
@@ -2213,7 +2221,7 @@ Func _WebUiPreviewAndExit($sDir)
             EndIf
             $iShot += 1
             If $iShot >= UBound($aStatus) Then ExitLoop
-            GUICtrlSetData($lblStatusText, $aStatus[$iShot])
+            _SetStatus($aStatus[$iShot])
             $hShot = TimerInit()
         EndIf
     WEnd
