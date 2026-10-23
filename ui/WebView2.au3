@@ -16,7 +16,7 @@ Global Const $WV2_STATE_NONE = 0, $WV2_STATE_STARTING = 1, $WV2_STATE_READY = 2,
 Global $__g_WV2_iState = $WV2_STATE_NONE
 Global $__g_WV2_hWnd = 0, $__g_WV2_sUrl = "", $__g_WV2_sError = ""
 Global $__g_WV2_pEnv = 0, $__g_WV2_pCtrl = 0, $__g_WV2_pView = 0
-Global $__g_WV2_aQueue[0]
+Global $__g_WV2_aQueue[0], $__g_WV2_aQueueT[0]
 Global $__g_WV2_aKeep[0]
 Global $__g_WV2_hQI = 0, $__g_WV2_hAddRef = 0, $__g_WV2_hRelease = 0
 Global $__g_WV2_pEnvHandler = 0, $__g_WV2_pCtrlHandler = 0, $__g_WV2_pMsgHandler = 0, $__g_WV2_pScriptHandler = 0
@@ -71,19 +71,25 @@ Func _WV2_Exec($sScript)
 EndFunc
 
 ; Kuyruktaki ilk sayfa mesajını (JSON) döndürür; boşsa "".
+; @extended: mesajın kuyrukta beklediği süre (ms). Uzun bir iş sürerken (ör. analiz)
+; kuyrukta kalmış komutlar bu süreye bakılarak yok sayılabilir.
 Func _WV2_NextMessage()
     If UBound($__g_WV2_aQueue) = 0 Then Return ""
     Local $s = $__g_WV2_aQueue[0]
+    Local $iAge = Int(TimerDiff($__g_WV2_aQueueT[0]))
     If UBound($__g_WV2_aQueue) = 1 Then
-        Local $aEmpty[0]
+        Local $aEmpty[0], $aEmptyT[0]
         $__g_WV2_aQueue = $aEmpty
+        $__g_WV2_aQueueT = $aEmptyT
     Else
         For $i = 1 To UBound($__g_WV2_aQueue) - 1
             $__g_WV2_aQueue[$i - 1] = $__g_WV2_aQueue[$i]
+            $__g_WV2_aQueueT[$i - 1] = $__g_WV2_aQueueT[$i]
         Next
         ReDim $__g_WV2_aQueue[UBound($__g_WV2_aQueue) - 1]
+        ReDim $__g_WV2_aQueueT[UBound($__g_WV2_aQueueT) - 1]
     EndIf
-    Return $s
+    Return SetExtended($iAge, $s)
 EndFunc
 
 ; Pencere boyutu değişince çağrılır (WM_SIZE).
@@ -91,6 +97,13 @@ Func _WV2_Resize()
     If $__g_WV2_pCtrl = 0 Then Return
     Local $tRect = _WinAPI_GetClientRect($__g_WV2_hWnd)
     DllCallAddress("long", __WV2_Vt($__g_WV2_pCtrl, 6), "ptr", $__g_WV2_pCtrl, "struct*", $tRect) ; put_Bounds
+EndFunc
+
+; Pencere başlık çubuğunu sayfanın temasına uydurur ($iCaptionRgb: başlık rengi, RGB).
+Func _WV2_SetCaption($hWnd, $bDark, $iCaptionRgb)
+    DllCall("dwmapi.dll", "long", "DwmSetWindowAttribute", "hwnd", $hWnd, "dword", 20, "int*", $bDark ? 1 : 0, "dword", 4)
+    Local $iBgr = BitOR(BitShift(BitAND($iCaptionRgb, 0xFF), -16), BitAND($iCaptionRgb, 0xFF00), BitShift(BitAND($iCaptionRgb, 0xFF0000), 16))
+    DllCall("dwmapi.dll", "long", "DwmSetWindowAttribute", "hwnd", $hWnd, "dword", 35, "dword*", $iBgr, "dword", 4)
 EndFunc
 
 ; Pencere gizlenip gösterilirken WebView2'nin görünürlüğü.
@@ -224,7 +237,9 @@ Func __WV2_OnMessage($pThis, $pSender, $pArgs)
     Local $n = UBound($__g_WV2_aQueue)
     If $n >= 64 Then Return 0 ; aşırı mesaj: yok say
     ReDim $__g_WV2_aQueue[$n + 1]
+    ReDim $__g_WV2_aQueueT[$n + 1]
     $__g_WV2_aQueue[$n] = $sJson
+    $__g_WV2_aQueueT[$n] = TimerInit()
     Return 0
 EndFunc
 
