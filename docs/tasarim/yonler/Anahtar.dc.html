@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Anahtar yönü</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#B7ADFF}a:hover{color:#D6CFFF}
+</style>
+</helmet>
+<div style="width: 440px; height: 600px; box-sizing: border-box; background: #1A1625; color: #EEEAF7; font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; padding: 26px 28px; display: flex; flex-direction: column;">
+  <header style="display: flex; align-items: center; justify-content: space-between;">
+    <span style="font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; font-size: 20px; font-weight: 700;">Zapret</span>
+    <button aria-label="Menü" style="width: 36px; height: 36px; border-radius: 10px; border: 0; background: #262036; display: flex; align-items: center; justify-content: center;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B9B1CF" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+    </button>
+  </header>
+  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;">
+    <button aria-label="Zapret'i durdur" style="width: 176px; height: 176px; border-radius: 88px; border: 10px solid #9B8CFF; background: #2A2240; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#EEEAF7" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v8"></path><path d="M6.3 6.8a8 8 0 1 0 11.4 0"></path></svg>
+    </button>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+      <span style="font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; font-size: 28px; font-weight: 700;">Discord açık</span>
+      <span style="font-size: 14px; color: #B9B1CF;">Servis modunda, açılışta kendiliğinden başlar</span>
+    </div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 10px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #262036; border-radius: 12px;">
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <span style="font-size: 13px; color: #B9B1CF;">Strateji</span>
+        <span style="font-size: 15px;">Akıllı analiz önerisi</span>
+      </div>
+      <a href="#" style="font-size: 14px; text-decoration: none;">Değiştir</a>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <a href="#" style="flex: 1; text-decoration: none; color: #EEEAF7; padding: 12px 14px; background: #262036; border-radius: 12px; font-size: 14px;">Strateji bul</a>
+      <a href="#" style="flex: 1; text-decoration: none; color: #EEEAF7; padding: 12px 14px; background: #262036; border-radius: 12px; font-size: 14px;">DNS</a>
+      <a href="#" style="flex: 1; text-decoration: none; color: #EEEAF7; padding: 12px 14px; background: #262036; border-radius: 12px; font-size: 14px;">Servis</a>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":440,"height":600}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
