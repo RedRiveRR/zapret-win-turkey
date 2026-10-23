@@ -18,6 +18,7 @@
 #include <TrayConstants.au3>
 #include <ComboConstants.au3>
 #include <EditConstants.au3>
+#include <GuiComboBox.au3>
 #include "lib\Process.au3"
 #include "lib\Blockcheck.au3"
 #include "lib\Network.au3"
@@ -54,6 +55,9 @@ Global $g_sUiPreviewDir = ""
 ; Yeni arayüz (WebView2): config.ini [Arayuz] Yeni=1 veya /yeni-arayuz ile açılır.
 Global $g_bWebUi = False, $hWebGui = 0, $g_bWebPageReady = False, $g_sWebLastJson = ""
 Global $g_hWebStartTimer = 0, $g_hWebSyncTimer = 0, $g_hWebHealthTimer = 0, $g_sWebHealth = "", $g_sWebLastStatus = ""
+; Yeni arayüzün Strateji ekranı: seçilen analiz türü (-1 = seçici penceresi açılır), son gönderilen mesaj
+Global $g_iWebAnalysisChoice = -1, $g_sWebLastStratJson = "", $g_hWebStratTimer = 0, $g_sWebSmartStamp = ""
+Global $g_sWebSmartSummary = "", $g_aWebSmartRows[0][1]
 If $CmdLine[0] >= 2 And $CmdLine[1] = "/arayuz-onizleme" Then $g_sUiPreviewDir = $CmdLine[2]
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
@@ -871,6 +875,11 @@ Func _MainWindowHide()
     GUISetState(@SW_HIDE, $g_bWebUi ? $hWebGui : $hGUI)
 EndFunc
 
+; Alt pencerelerin sahibi: kullanıcının gördüğü ana pencere (yeni arayüzde gizli eski pencere değil).
+Func _MainWindowHandle()
+    Return $g_bWebUi ? $hWebGui : $hGUI
+EndFunc
+
 Func ExitApp()
     If $isZapretRunning Then StopWinws($btnRunZapret, $lblStatusText, $aOtherButtons)
     If ProcessExists("go-pcap2socks.exe") Then ProcessClose("go-pcap2socks.exe")
@@ -1171,7 +1180,7 @@ EndFunc
 ; Tepsi: ayarlar penceresi.
 Func _OpenSettings()
     ShowGUI()
-    _SettingsUI_Show(@ScriptDir, $serviceName, $APP_NAME, $hGUI)
+    _SettingsUI_Show(@ScriptDir, $serviceName, $APP_NAME, _MainWindowHandle())
     _RefreshFooter()
 EndFunc
 
@@ -1339,7 +1348,7 @@ EndFunc
 
 Func RunBlockcheck2($ctrlID)
     ; Ana pencereyi modal olarak kilitle; popup sadece ana pencerenin önünde kalsın.
-    GUISetState(@SW_DISABLE, $hGUI)
+    GUISetState(@SW_DISABLE, _MainWindowHandle())
 
     Local $isNoBypassNeeded = False
     Local $bUserStopped = False
@@ -1349,7 +1358,7 @@ Func RunBlockcheck2($ctrlID)
     If FileExists(_BlockcheckResultsPath()) Then FileDelete(_BlockcheckResultsPath())
     If FileExists($logPath) Then FileDelete($logPath)
 
-    Local $hScanGUI = GUICreate("Zapret2 Blockcheck", 360, 170, -1, -1, BitOR($WS_CAPTION, $WS_SYSMENU), 0, $hGUI)
+    Local $hScanGUI = GUICreate("Zapret2 Blockcheck", 360, 170, -1, -1, BitOR($WS_CAPTION, $WS_SYSMENU), 0, _MainWindowHandle())
     GUISetBkColor(0xFFFFFF, $hScanGUI)
     Local $lblScanTitle = GUICtrlCreateLabel("Taranıyor...", 18, 16, 324, 25, $SS_CENTER)
     GUICtrlSetFont($lblScanTitle, 12, 700, 0, "Segoe UI")
@@ -1368,7 +1377,7 @@ Func RunBlockcheck2($ctrlID)
 
     If $iPidBash = 0 Then
         GUIDelete($hScanGUI)
-        GUISetState(@SW_ENABLE, $hGUI)
+        GUISetState(@SW_ENABLE, _MainWindowHandle())
         _MainWindowShow()
         MsgBox(16 + 8192, "Analiz Başlatılamadı", "Blockcheck2 süreci başlatılamadı.")
         Return
@@ -1458,7 +1467,7 @@ Func RunBlockcheck2($ctrlID)
         MsgBox(16 + 8192, "Başarısız", "Analiz tamamlandı ancak kullanılabilir strateji bulunamadı.")
     EndIf
 
-    GUISetState(@SW_ENABLE, $hGUI)
+    GUISetState(@SW_ENABLE, _MainWindowHandle())
     _MainWindowShow()
 EndFunc
 
@@ -1471,7 +1480,17 @@ EndFunc
 
 ; Zapret2 analiz seçici. Yeni blockcheck taraması başlatılacaksa True döner.
 Func _HandleZapret2AnalysisChoice()
-    Return _RunAnalysisChoice(_SmartUI_Chooser(FileExists(_BlockcheckResultsPath()), FileExists(_SmartResultsPath()), $hGUI))
+    Return _RunAnalysisChoice(_AnalysisChooser())
+EndFunc
+
+; Analiz türü: yeni arayüzde seçildiyse o, değilse seçici penceresi.
+Func _AnalysisChooser()
+    If $g_iWebAnalysisChoice <> -1 Then
+        Local $iChoice = $g_iWebAnalysisChoice
+        $g_iWebAnalysisChoice = -1
+        Return $iChoice
+    EndIf
+    Return _SmartUI_Chooser(FileExists(_BlockcheckResultsPath()), FileExists(_SmartResultsPath()), _MainWindowHandle())
 EndFunc
 
 ; Servis kuruluyken: servisi durdurur, seçilen analizi çalıştırır; strateji değiştiyse servisi
@@ -1481,7 +1500,7 @@ Func _ServiceStrategyUpdateFlow()
         Return MsgBox(48 + 8192, "Servis Stratejisi", "Kurulu servis klasik Zapret motorunu kullanıyor; akıllı analiz yalnızca Zapret2 ile çalışır." & @CRLF & @CRLF & _
                 "'Servis ve Kalıntıları Temizle' ile kaldırıp Zapret2 ile yeniden kurabilirsiniz.")
     EndIf
-    Local $iChoice = _SmartUI_Chooser(FileExists(_BlockcheckResultsPath()), FileExists(_SmartResultsPath()), $hGUI)
+    Local $iChoice = _AnalysisChooser()
     If $iChoice = $SMARTUI_CANCEL Then Return
 
     Local $sBefore = StringStripWS(FileRead($strategyFile), 3)
@@ -1524,7 +1543,7 @@ Func _RunAnalysisChoice($iChoice)
             Local $aCand = _BuildSmartCandidates($aNone, True)
             _RunSmartAnalysisFlow($aCand, False)
         Case $SMARTUI_PREV_SMART
-            If _SmartUI_ShowSaved(_SmartResultsPath(), $strategyFile, $winwsPath, $hGUI) <> "" Then _AfterSmartStrategyChosen()
+            If _SmartUI_ShowSaved(_SmartResultsPath(), $strategyFile, $winwsPath, _MainWindowHandle()) <> "" Then _AfterSmartStrategyChosen()
         Case $SMARTUI_PREV_LIST
             Local $aPrev[1] = [0]
             _LoadBlockcheckResults($aPrev)
@@ -1564,11 +1583,11 @@ Func _RunSmartAnalysisFlow(ByRef $aCand, $bMainAlreadyDisabled)
     _LogInfo("Akıllı analiz başlıyor: " & UBound($aCand) & " aday")
     Local $sPrevStatus = GUICtrlRead($lblStatusText)
     GUICtrlSetData($lblStatusText, "AKILLI ANALİZ YAPILIYOR...")
-    If Not $bMainAlreadyDisabled Then GUISetState(@SW_DISABLE, $hGUI)
+    If Not $bMainAlreadyDisabled Then GUISetState(@SW_DISABLE, _MainWindowHandle())
     Local $sTargets = IniRead($iniPath, "SmartAnalysis", "Targets", $SMART_DEFAULT_TARGETS)
-    Local $sChosen = _SmartUI_Run($aCand, @ScriptDir, $winwsPath, $sTargets, _SmartResultsPath(), $strategyFile, $hGUI)
+    Local $sChosen = _SmartUI_Run($aCand, @ScriptDir, $winwsPath, $sTargets, _SmartResultsPath(), $strategyFile, _MainWindowHandle())
     If Not $bMainAlreadyDisabled Then
-        GUISetState(@SW_ENABLE, $hGUI)
+        GUISetState(@SW_ENABLE, _MainWindowHandle())
         _MainWindowShow()
     EndIf
     GUICtrlSetData($lblStatusText, $sPrevStatus)
@@ -1590,9 +1609,9 @@ EndFunc
 
 Func _ShowStrategyTestWindow(ByRef $aStrategies, $bMainAlreadyDisabled = False)
     ; Önceki sonuçlar ana menüden açılırsa burada modal kilitle; analiz akışından gelirse kilit zaten aktiftir.
-    If Not $bMainAlreadyDisabled Then GUISetState(@SW_DISABLE, $hGUI)
+    If Not $bMainAlreadyDisabled Then GUISetState(@SW_DISABLE, _MainWindowHandle())
 
-    Local $hTestGUI = GUICreate("Bulunan Stratejileri Test Et", 500, 325, -1, -1, BitOR($WS_CAPTION, $WS_SYSMENU), 0, $hGUI)
+    Local $hTestGUI = GUICreate("Bulunan Stratejileri Test Et", 500, 325, -1, -1, BitOR($WS_CAPTION, $WS_SYSMENU), 0, _MainWindowHandle())
     GUISetBkColor(0xFFFFFF, $hTestGUI)
 
     GUICtrlCreateLabel("Bulunan stratejilerden birini seçip test edebilirsin.", 15, 14, 470, 22)
@@ -1710,7 +1729,7 @@ Func _ShowStrategyTestWindow(ByRef $aStrategies, $bMainAlreadyDisabled = False)
     GUIDelete($hTestGUI)
 
     If Not $bMainAlreadyDisabled Then
-        GUISetState(@SW_ENABLE, $hGUI)
+        GUISetState(@SW_ENABLE, _MainWindowHandle())
         _MainWindowShow()
     EndIf
 EndFunc
@@ -1845,6 +1864,8 @@ EndFunc
 
 ; Ana döngüde her turda: sayfa mesajlarını işler, durumu aktarır. Dönüş: işlenecek olay.
 Func _WebUiTick($nMsg)
+    ; Önceki turda seçilen analiz türü o turun olayında kullanıldı (kullanılmadıysa seçici açılsın).
+    $g_iWebAnalysisChoice = -1
     Local $iState = _WV2_State()
     If $iState = $WV2_STATE_FAILED Or ($iState = $WV2_STATE_STARTING And TimerDiff($g_hWebStartTimer) > 10000) Then
         _WebUiFallback()
@@ -1858,6 +1879,7 @@ Func _WebUiTick($nMsg)
             Case "hazir"
                 $g_bWebPageReady = True
                 $g_sWebLastJson = ""
+                $g_sWebLastStratJson = ""
                 _WV2_Post(_WebJsonObj("tip", "tema", "tema", _WebUiTheme()))
             Case "tema"
                 Local $sTheme = (_WebJsonGet($sMsg, "tema") = "koyu") ? "koyu" : "acik"
@@ -1875,6 +1897,23 @@ Func _WebUiTick($nMsg)
                     Return $nMsg
                 ElseIf ($sCmd = "baslat" And Not $isZapretRunning) Or ($sCmd = "durdur" And $isZapretRunning) Then
                     If BitAND(GUICtrlGetState($btnRunZapret), $GUI_ENABLE) Then Return $btnRunZapret
+                ElseIf $sCmd = "analiz" Or $sCmd = "sonuclar" Then
+                    $g_sWebLastStratJson = ""
+                    If BitAND(GUICtrlGetState($btnAnalyze), $GUI_ENABLE) Then
+                        ; Eski Analiz düğmesiyle aynı akış (servis kuruluysa servis güncellemesi dahil); seçici atlanır.
+                        If $sCmd = "sonuclar" Then
+                            $g_iWebAnalysisChoice = $SMARTUI_PREV_SMART
+                        Else
+                            $g_iWebAnalysisChoice = (_WebJsonGet($sMsg, "tur") = "tam") ? $SMARTUI_FULL : $SMARTUI_QUICK
+                        EndIf
+                        Return $btnAnalyze
+                    EndIf
+                EndIf
+            Case "secim"
+                $g_sWebLastStratJson = ""
+                If $iAge <= 2000 Then
+                    Local $iCtrl = _WebUiSelectCombo(_WebJsonGet($sMsg, "alan"), _WebJsonGet($sMsg, "deger"))
+                    If $iCtrl <> 0 Then Return $iCtrl
                 EndIf
         EndSwitch
     EndIf
@@ -1895,8 +1934,80 @@ Func _WebUiTick($nMsg)
             $g_sWebLastJson = $sJson
             _WV2_Post($sJson)
         EndIf
+        _WebUiSyncStrategy()
     EndIf
     Return $nMsg
+EndFunc
+
+; Strateji ekranının durumunu eski denetimlerden ve son akıllı analiz dosyasından gönderir.
+Func _WebUiSyncStrategy()
+    ; Sonuç dosyası 2 sn'de bir, yalnızca değiştiyse yeniden okunur.
+    If $g_hWebStratTimer = 0 Or TimerDiff($g_hWebStratTimer) > 2000 Then
+        $g_hWebStratTimer = TimerInit()
+        Local $sPath = _SmartResultsPath()
+        Local $sStamp = FileExists($sPath) ? FileGetTime($sPath, 0, 1) & "/" & FileGetSize($sPath) : ""
+        If $sStamp <> $g_sWebSmartStamp Then
+            $g_sWebSmartStamp = $sStamp
+            $g_aWebSmartRows = _SmartLoadResults($sPath, $g_sWebSmartSummary)
+        EndIf
+    EndIf
+    Local $sJson = _WebStrategyJson(_WebUiComboItems($cmbStrategy), GUICtrlRead($cmbStrategy), GUICtrlRead($cmbEngine), _
+            _WebUiComboItems($cmbFilter), GUICtrlRead($cmbFilter), BitAND(GUICtrlGetState($cmbStrategy), $GUI_ENABLE) <> 0, _
+            BitAND(GUICtrlGetState($cmbFilter), $GUI_ENABLE) <> 0, BitAND(GUICtrlGetState($btnAnalyze), $GUI_ENABLE) <> 0, _
+            $g_sWebSmartSummary, $g_aWebSmartRows)
+    If $sJson <> $g_sWebLastStratJson Then
+        $g_sWebLastStratJson = $sJson
+        _WV2_Post($sJson)
+    EndIf
+EndFunc
+
+; Açılır kutunun öğeleri, "|" ile ayrılmış.
+Func _WebUiComboItems($idCombo)
+    Local $a = _GUICtrlComboBox_GetListArray(GUICtrlGetHandle($idCombo))
+    If @error Or Not IsArray($a) Then Return ""
+    Local $s = ""
+    For $i = 1 To $a[0]
+        $s &= ($i > 1 ? "|" : "") & $a[$i]
+    Next
+    Return $s
+EndFunc
+
+; Yeni arayüzdeki seçimi eski açılır kutuya uygular. Dönüş: işlenecek olay (kutu kimliği) ya da 0.
+; Kutu kapalıysa veya değer listede yoksa hiçbir şey değişmez.
+Func _WebUiSelectCombo($sField, $sValue)
+    Local $idCombo
+    Switch $sField
+        Case "strateji"
+            $idCombo = $cmbStrategy
+        Case "motor"
+            $idCombo = $cmbEngine
+        Case "filtre"
+            $idCombo = $cmbFilter
+        Case Else
+            Return 0
+    EndSwitch
+    If Not BitAND(GUICtrlGetState($idCombo), $GUI_ENABLE) Then Return 0
+    If GUICtrlRead($idCombo) == $sValue Then Return 0
+    Local $hCombo = GUICtrlGetHandle($idCombo)
+    Local $iIdx = _GUICtrlComboBox_FindStringExact($hCombo, $sValue)
+    If $iIdx < 0 Then Return 0
+    _GUICtrlComboBox_SetCurSel($hCombo, $iIdx)
+    _LogInfo("Yeni arayüz: " & $sField & " seçildi: " & $sValue)
+    Return $idCombo
+EndFunc
+
+; Önizleme yardımcısı: $iMs boyunca yeni arayüzü çalıştırır, komutların hangi olaya çevrildiğini kaydeder.
+Func __WebUiPreviewPump($iMs, $sLog)
+    Local $hT = TimerInit()
+    While TimerDiff($hT) < $iMs
+        Local $nMsg = _WebUiTick(GUIGetMsg())
+        Switch $nMsg
+            Case $btnAnalyze
+                FileWriteLine($sLog, "Analiz komutu -> btnAnalyze olayı, seçim=" & $g_iWebAnalysisChoice & " (önizlemede çalıştırılmadı)")
+            Case $cmbStrategy, $cmbEngine, $cmbFilter
+                FileWriteLine($sLog, "Seçim -> kutu olayı " & $nMsg & ": " & GUICtrlRead($nMsg))
+        EndSwitch
+    WEnd
 EndFunc
 
 ; Önizleme (/arayuz-onizleme <klasör> /yeni-arayuz): yeni arayüzü örnek durumlarla açar,
@@ -1930,6 +2041,25 @@ Func _WebUiPreviewAndExit($sDir)
             $hShot = TimerInit()
         EndIf
     WEnd
+    ; Strateji ekranı: denetimler kullanılabilir varsayılır; olaylar yalnızca kaydedilir, işlenmez.
+    If $g_bWebUi Then
+        GUICtrlSetState($cmbStrategy, $GUI_ENABLE)
+        GUICtrlSetState($cmbEngine, $GUI_ENABLE)
+        GUICtrlSetState($cmbFilter, $GUI_ENABLE)
+        GUICtrlSetState($btnAnalyze, $GUI_ENABLE)
+        _WV2_Exec("document.querySelector('nav a[data-gorunum=strateji]').click()")
+        __WebUiPreviewPump(1500, $sLog)
+        _ScreenCapture_CaptureWnd($sDir & "\strateji.png", $hWebGui)
+        _WV2_Exec("document.querySelector('[data-tur=tam]').click(); document.getElementById('analiz-baslat').click()")
+        __WebUiPreviewPump(1000, $sLog)
+        _WV2_Exec("const f = document.getElementById('sec-filtre'); f.value = 'Manuel (hostlist.txt)'; f.dispatchEvent(new Event('change'))")
+        __WebUiPreviewPump(1000, $sLog)
+        _WV2_Exec("document.getElementById('tema').click()")
+        __WebUiPreviewPump(1200, $sLog)
+        _ScreenCapture_CaptureWnd($sDir & "\strateji-koyu.png", $hWebGui)
+        _WV2_Exec("document.getElementById('tema').click()")
+        __WebUiPreviewPump(500, $sLog)
+    EndIf
     ; Eski arayüze geçiş düğmesi
     If $g_bWebUi Then
         _WV2_Exec("document.querySelector('[data-komut=eskiArayuz]').click()")
