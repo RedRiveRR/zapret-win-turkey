@@ -26,6 +26,9 @@ Func _TestUpdate()
     _AssertTrue(StringInStr($APP_RELEASES_URL, "RedRiveRR/") > 0, "indirme sayfası fork'un sürümleri")
     _AssertTrue(_IsVersionTag("v4.5.1-fork"), "fork etiket biçimi geçerli")
     _AssertEq(_VersionCompare("v4.5.1-fork", "4.5"), 1, "v4.5.1-fork > 4.5")
+    _AssertTrue(_IsVersionTag("v4.5.1-RedRiveRR"), "takma adlı etiket geçerli")
+    _AssertEq(_VersionCompare("v4.5.1-RedRiveRR", $APP_VERSION), 0, "kendi sürümünde bildirim yok")
+    _AssertEq(_VersionCompare("v4.5.2-RedRiveRR", $APP_VERSION), 1, "sonraki sürüm bildirilir")
 
     ; --- _UpdatePoll: sorgu başlatılmadıysa boş ---
     _AssertEq(_UpdatePoll("4.5"), "", "başlatılmamış sorgu boş döner")

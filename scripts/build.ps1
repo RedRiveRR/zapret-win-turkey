@@ -40,6 +40,8 @@ if (-not (Test-Path $aut2exe)) { throw "Aut2exe_x64.exe bulunamadı (AutoItDir: 
 $version = [regex]::Match((Get-Content (Join-Path $repo 'lib\Version.au3') -Raw), 'APP_VERSION\s*=\s*"([^"]+)"').Groups[1].Value
 $commit = (git -C $repo rev-parse --short HEAD).Trim()
 $suffix = "$version-$commit"
+# Etiketle tetiklenen derlemede (release) ZIP adları etiketi taşır: zapret-win-turkey-v4.5.1-RedRiveRR.zip
+if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME) { $suffix = $env:GITHUB_REF_NAME }
 
 # Aut2Exe ve Au3Check Türkçe karakterli yollarda sorun çıkardığı için ASCII geçici klasör.
 $work = Join-Path ([IO.Path]::GetTempPath()) ("zwt-build-" + [guid]::NewGuid().ToString('N').Substring(0, 8))

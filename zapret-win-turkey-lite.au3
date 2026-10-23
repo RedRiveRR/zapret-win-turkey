@@ -3,8 +3,8 @@
 #AutoIt3Wrapper_Icon=bin\zapret\zapret-winws\winws2.ico
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Description=Zapret Windows Türkiye Lite
-#AutoIt3Wrapper_Res_Fileversion=4.5.0.0
-#AutoIt3Wrapper_Res_ProductVersion=4.5
+#AutoIt3Wrapper_Res_Fileversion=4.5.1.0
+#AutoIt3Wrapper_Res_ProductVersion=4.5.1
 #AutoIt3Wrapper_Res_LegalCopyright=Ali Mali
 #AutoIt3Wrapper_Res_Language=1055
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****

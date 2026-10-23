@@ -2,7 +2,9 @@
 
 Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-turkey) üzerine bu fork'ta (`gelistirme` dalı) yapılan değişiklikleri listeler. Temel: upstream `9eeac04` (v4.5 kaynakları).
 
-## [Yayınlanmadı]
+## [v4.5.1-RedRiveRR] — 2026-10-23
+
+RedRiveRR fork'unun ilk sürümü. Temel: upstream v4.5.
 
 ### Yeni
 - **Akıllı ISS analizi.** "ISS Analizi" artık şu seçenekleri sunuyor:

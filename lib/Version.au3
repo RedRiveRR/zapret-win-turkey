@@ -8,7 +8,7 @@
 ; sürüm değiştiğinde onları da güncelleyin (scripts/check.ps1 uyumsuzluğu yakalar).
 ; =========================================================================
 
-Global Const $APP_VERSION = "4.5"
+Global Const $APP_VERSION = "4.5.1"
 Global Const $APP_NAME = "Zapret Windows Türkiye"
 Global Const $ENGINE_ZAPRET2_VERSION = "1.0.5.2"
 Global Const $ENGINE_ZAPRET1_VERSION = "72.12"
