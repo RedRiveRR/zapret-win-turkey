@@ -22,6 +22,14 @@ Func _TestNetwork()
     _AssertFalse(_DnsAnswerNeedsRetry("162.159.135.232" & @CRLF), "Cloudflare IP yeniden denenmez")
     _AssertFalse(_DnsAnswerNeedsRetry("2606:4700::6810:84e5"), "IPv6 yanıt yeniden denenmez")
 
+    ; --- _DnsIsPoisonVerdict (H17): yanıtsız DNS + internet yok = zehirlenme değil ---
+    Local $sNoHost = 'Exception calling "GetHostAddresses" with "1" argument(s): "No such host is known"'
+    _AssertFalse(_DnsIsPoisonVerdict($sNoHost, False), "H17: internet yokken yanıtsız DNS zehirli sayılmaz")
+    _AssertFalse(_DnsIsPoisonVerdict("", False), "H17: internet yokken boş yanıt zehirli sayılmaz")
+    _AssertTrue(_DnsIsPoisonVerdict($sNoHost, True), "internet varken DNS hiç çözmüyorsa sorunlu sayılır")
+    _AssertTrue(_DnsIsPoisonVerdict("195.175.254.2", False), "kesin zehirli yanıt internetten bağımsız zehirli")
+    _AssertFalse(_DnsIsPoisonVerdict("162.159.135.232", True), "Cloudflare yanıtı temiz")
+
     ; --- _NetWithAdapter ---
     Local $sScript = _NetWithAdapter("Write-Output x")
     _AssertTrue(StringLeft($sScript, StringLen($NET_PS_SELECT_ADAPTER)) == $NET_PS_SELECT_ADAPTER, "bağdaştırıcı seçimiyle başlar")

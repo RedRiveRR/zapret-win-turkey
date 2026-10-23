@@ -93,7 +93,8 @@ Func _IsDnsAnswerSafe($sIP)
 EndFunc
 
 ; discord.com sorgusuyla DNS zehirlenmesini sessizce kontrol eder. Zehirliyse veya
-; iki denemede de geçerli yanıt alınamazsa True döner.
+; internet varken iki denemede de geçerli yanıt alınamazsa True döner.
+; İnternet tamamen kesikse (DNS'ten bağımsız bağlantı da yok) False: DNS değiştirmek işe yaramaz (H17).
 Func CheckDnsPoisoningSilent()
     Local $sIP = __NetQueryDiscord()
     ; Boş yanıt, zaman aşımı veya hata metni geçici bir ağ sorunu olabilir; bir kez daha dene.
@@ -104,9 +105,30 @@ Func CheckDnsPoisoningSilent()
         $sIP = __NetQueryDiscord()
     EndIf
 
-    Local $bSafe = _IsDnsAnswerSafe($sIP)
-    _LogInfo("DNS kontrolü: discord.com -> " & StringLeft(StringStripWS($sIP, 3), 80) & " => " & ($bSafe ? "temiz" : "zehirli"))
-    Return Not $bSafe
+    Local $bInternet = True
+    If _DnsAnswerNeedsRetry($sIP) Then
+        $bInternet = __NetInternetReachable()
+        If Not $bInternet Then _LogWarn("DNS kontrolü: internet bağlantısı yok (1.1.1.1/8.8.8.8 erişilemiyor); DNS zehirli sayılmadı")
+    EndIf
+    Local $bPoison = _DnsIsPoisonVerdict($sIP, $bInternet)
+    _LogInfo("DNS kontrolü: discord.com -> " & StringLeft(StringStripWS($sIP, 3), 80) & " => " & _
+            ($bPoison ? "zehirli" : ($bInternet ? "temiz" : "bilinmiyor (internet yok)")))
+    Return $bPoison
+EndFunc
+
+; DNS yanıtı ve internet durumundan karar: True = DNS zehirli/sorunlu (düzeltme önerilir).
+; Yanıt bir IP değilse ve internet de yoksa sorun DNS'te değildir.
+Func _DnsIsPoisonVerdict($sIP, $bInternetUp)
+    If _DnsAnswerNeedsRetry($sIP) And Not $bInternetUp Then Return False
+    Return Not _IsDnsAnswerSafe($sIP)
+EndFunc
+
+; DNS kullanmadan internete çıkılabiliyor mu (1.1.1.1 / 8.8.8.8, TCP 443, en fazla ~2 sn).
+Func __NetInternetReachable()
+    Local $sPs = "foreach ($h in '1.1.1.1','8.8.8.8') { $c = New-Object Net.Sockets.TcpClient; " & _
+            "try { if ($c.ConnectAsync($h, 443).Wait(2000)) { exit 0 } } catch {} finally { $c.Close() } }; exit 1"
+    Local $iRc = RunWait('powershell.exe -NoProfile -NonInteractive -Command "' & $sPs & '"', "", @SW_HIDE)
+    Return $iRc = 0
 EndFunc
 
 ; Yanıt bir IPv4/IPv6 adresi değilse (boş, zaman aşımı, PowerShell hata metni) True.
