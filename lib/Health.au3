@@ -7,6 +7,7 @@
 #include "Network.au3"
 #include "Winws.au3"
 #include "Strategies.au3"
+#include "Schedule.au3"
 
 ; =========================================================================
 ; --- SAĞLIK KONTROLÜ (kendini onaran servis) ---
@@ -226,6 +227,41 @@ Func _HealthRun($sRoot, $sName, $sAppName)
     EndIf
 
     Return __HealthFail($sIni, "Otomatik onarım başarısız. Programı açıp 'ISS Analizi' ile tam analiz yapabilirsiniz.")
+EndFunc
+
+; Servis kurulduktan sonra sorulur: otomatik onarım (sağlık kontrolü görevi) kurulsun mu?
+; Cevap config.ini [Health] Enabled'da saklanır. Kurulduysa True.
+Func _HealthOfferSetup($sIni)
+    Local $iAns = MsgBox(4 + 32 + 8192, "Otomatik Onarım", _
+            "Zapret'in Discord bağlantısını arka planda kontrol edip sorun olunca kendini onarması istensin mi? (önerilen)" & @CRLF & @CRLF & _
+            "• Oturum açılışında, 30 dakikada bir ve ağ bağlantısı değişince kısa bir kontrol yapılır." & @CRLF & _
+            "• Sorun varsa sırasıyla: DNS düzeltme, son analizdeki yedek stratejiler, gerekirse hızlı analiz (günde en fazla " & $HEALTH_MAX_ANALYZE_PER_DAY & ")." & @CRLF & _
+            "• Servis kapatılmışsa (ör. oyun hile koruması) yalnızca 'otomatik yeniden başlatma'ya izin verdiyseniz açılır; aksi halde sadece bildirilir.")
+    If $iAns <> 6 Then
+        IniWrite($sIni, "Health", "Enabled", "0")
+        _ScheduleRemove($HEALTH_TASK_NAME)
+        _LogInfo("Otomatik onarım kullanıcı tarafından kapatıldı")
+        Return False
+    EndIf
+    IniWrite($sIni, "Health", "Enabled", "1")
+    Local $sCmd, $sArgs
+    _ScheduleSelfCommand($sCmd, $sArgs, $HEALTH_ARG)
+    Local $iRc = _ScheduleInstall($HEALTH_TASK_NAME, $sCmd, $sArgs, @ScriptDir, $HEALTH_INTERVAL_MIN, _
+            "Zapret Windows Türkiye: Discord bağlantısını kontrol eder, gerekirse servisi onarır.")
+    _LogInfo("Otomatik onarım görevi kuruldu (schtasks çıkış kodu " & $iRc & "): " & $sCmd & " " & $sArgs)
+    If $iRc <> 0 Then
+        MsgBox(48 + 8192, "Otomatik Onarım", "Zamanlanmış görev oluşturulamadı (hata kodu " & $iRc & "). Servis yine de çalışır.")
+        Return False
+    EndIf
+    Return True
+EndFunc
+
+; Servis kaldırılınca sağlık kontrolü görevi de kaldırılır.
+Func _HealthRemoveTask()
+    If _ScheduleExists($HEALTH_TASK_NAME) Then
+        _ScheduleRemove($HEALTH_TASK_NAME)
+        _LogInfo("Otomatik onarım görevi kaldırıldı")
+    EndIf
 EndFunc
 
 Func __HealthSaveStrategy($sRoot, $sStrategy)

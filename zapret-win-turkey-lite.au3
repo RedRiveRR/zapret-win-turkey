@@ -28,8 +28,17 @@
 #include "lib\SmartAnalysis.au3"
 #include "lib\Service.au3"
 #include "ui\SmartAnalysisUI.au3"
+#include "lib\Health.au3"
+#include "lib\Schedule.au3"
 
 #include <ProgressConstants.au3>
+
+; --- BAŞSIZ SAĞLIK KONTROLÜ (Görev Zamanlayıcı: /saglik) ---
+; Pencere açılmaz; servis modunda Discord bağlantısını kontrol edip gerekirse onarır (lib/Health.au3).
+If $CmdLine[0] >= 1 And $CmdLine[1] = $HEALTH_ARG Then
+    _LogInit(@ScriptDir & "\logs\app.log")
+    Exit _HealthRun(@ScriptDir, "ZapretService", $APP_NAME)
+EndIf
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
 Local $currentDir = @ScriptDir
@@ -628,6 +637,7 @@ Func InstallServiceClean($chkID)
     If $iCreate = 0 Then
         MsgBox(64 + 8192, "Başarılı", "Seçilen profil servis olarak kuruldu. Bilgisayar açılınca otomatik başlar." & @CRLF & @CRLF & _
                 ($bRecovery ? "Servis kapanırsa Windows en fazla 2 kez (10 sn ve 60 sn sonra) yeniden başlatır." : "Servis kapanırsa otomatik yeniden başlatılmaz; program uyarır."))
+        _HealthOfferSetup($iniPath)
     Else
         MsgBox(16 + 8192, "Servis Kurulamadı", "Windows servisi oluşturulamadı (sc create hata kodu " & $iCreate & ")." & @CRLF & @CRLF & _
                 "'Servis ve Kalıntıları Temizle' butonuna basıp tekrar deneyin. Sorun sürerse logs\app.log dosyasıyla birlikte bildirin.")
@@ -636,5 +646,6 @@ EndFunc
 
 Func RemoveService()
     _LogInfo("Servis ve WinDivert kalıntıları kaldırılıyor")
+    _HealthRemoveTask()
     RunWait(@ComSpec & " /c sc stop " & $serviceName & " & sc delete " & $serviceName & " & sc stop WinDivert & sc delete WinDivert & sc stop WinDivert14 & sc delete WinDivert14 & sc stop monkey & sc delete monkey", "", @SW_HIDE)
 EndFunc
