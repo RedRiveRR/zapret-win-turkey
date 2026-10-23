@@ -696,22 +696,7 @@ While 1
             EndIf
 
             ; --- AÇILIŞTAKİ GÜVENLİ KONTROL AKIŞININ AYNISI (BAŞTAN AÇILMIŞ GİBİ) ---
-            GUICtrlSetData($lblStatusText, "DNS TEST EDİLİYOR...")
-            Sleep(1000) ; Ağın ve adaptörün kendine gelmesi için bekleme
-
-			Local $isPoisoned = CheckDnsPoisoningSilent()
-
-            If $isPoisoned Then
-				_SetButtonsState($aCriticalButtons, $GUI_DISABLE)
-				GUICtrlSetState($btnDnscrypt, $GUI_ENABLE) ; DNS zehirlense bile bu buton hep tıklanabilir olsun
-				GUICtrlSetData($lblStatusText, "DNS ZEHİRLENMESİ SAPTANDI!")
-				GUICtrlSetColor($lblStatusText, 0xC0392B)
-			Else
-				; Zehirlenme yoksa her şey normal devam etsin
-				CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
-				GUICtrlSetState($btnDnscrypt, $GUI_ENABLE)
-				_RefreshStrategyLabel()
-			EndIf
+            _DnsRecheckAfterChange()
 
             ; Yardımcı fonksiyonlar butonu tekrar açmış olsa bile işlem sonunda kilitle.
             ; Kuyrukta bekleyen tıklamalar kilit süresince ana döngüde atlanır.
@@ -1770,6 +1755,23 @@ Func HasFirewallRule($fullPath)
     ProcessWaitClose($iPID)
 
     Return (StringLen(StdoutRead($iPID)) > 10)
+EndFunc
+
+; DNS değiştikten sonra açılıştaki kontrolün aynısı: zehirlenme varsa kritik düğmeler kilitlenir.
+Func _DnsRecheckAfterChange()
+    GUICtrlSetData($lblStatusText, "DNS TEST EDİLİYOR...")
+    Sleep(1000) ; Ağın ve adaptörün kendine gelmesi için bekleme
+    If CheckDnsPoisoningSilent() Then
+        _SetButtonsState($aCriticalButtons, $GUI_DISABLE)
+        GUICtrlSetState($btnDnscrypt, $GUI_ENABLE) ; DNS zehirlense bile bu buton hep tıklanabilir olsun
+        GUICtrlSetData($lblStatusText, "DNS ZEHİRLENMESİ SAPTANDI!")
+        GUICtrlSetColor($lblStatusText, 0xC0392B)
+    Else
+        ; Zehirlenme yoksa her şey normal devam etsin
+        CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
+        GUICtrlSetState($btnDnscrypt, $GUI_ENABLE)
+        _RefreshStrategyLabel()
+    EndIf
 EndFunc
 
 Func _CheckDnscryptStatus()
