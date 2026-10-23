@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Kompakt, DNS</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:inherit}
+</style>
+</helmet>
+<div style="width: 460px; height: 660px; box-sizing: border-box; background: {{c.bg}}; color: {{c.text}}; font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; display: flex; flex-direction: column;">
+  <header style="padding: 20px 22px 0; display: flex; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="{{c.logoBg}}"></rect><path d="M47.6 23 A 18 18 0 1 0 47.6 41" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"></path><path d="M19 32 H53 M46 25 L53 32 L46 39" fill="none" stroke="{{c.logoRiver}}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      <span style="font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.2px;">RedRiveRR <span style="font-weight: 400;">Zapret</span></span>
+    </div>
+    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 12px; background: {{c.okTint}}; font-size: 12px; font-weight: 600; color: {{c.okText}};"><span style="width: 7px; height: 7px; border-radius: 4px; background: {{c.ok}};"></span>Yol açık</span>
+  </header>
+  <main style="flex: 1; min-height: 0; padding: 16px 18px 12px; display: flex; flex-direction: column; gap: 12px;">
+    <div style="padding: 0 4px;">
+      <h1 style="margin: 0; font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; font-size: 24px; font-weight: 700; letter-spacing: -0.3px;">DNS</h1>
+      <p style="margin: 3px 0 0; font-size: 13px; color: {{c.muted}};">Sağlayıcın site adreslerini yanlış gösteriyorsa buradan düzelt.</p>
+    </div>
+    <section style="background: {{c.okTint}}; border-radius: 22px; padding: 16px 18px; display: flex; align-items: center; gap: 14px;">
+      <span style="width: 44px; height: 44px; border-radius: 14px; background: {{c.ok}}; display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{c.onAccent}}" stroke-width="2.6" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+      <span style="flex: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 16px; font-weight: 700;">Adresler doğru</span><span style="font-size: 12px; color: {{c.okText}};">discord.com gerçek Discord sunucusuna gidiyor</span></span>
+    </section>
+    <fieldset style="margin: 0; border: 0; padding: 6px; background: {{c.surface}}; border-radius: 18px; display: flex; flex-direction: column; gap: 2px;">
+      <legend style="position: absolute; width: 1px; height: 1px; overflow: hidden;">DNS seçimi</legend>
+      <label style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; cursor: pointer;">
+        <input type="radio" name="dns" style="width: 18px; height: 18px; accent-color: {{c.accent}}; margin: 0;">
+        <span style="flex: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 600;">Sağlayıcının DNS'i</span><span style="font-size: 12px; color: {{c.muted}};">Otomatik ayar. Türk Telekom'da Discord engellenebilir.</span></span>
+      </label>
+      <label style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; background: {{c.accentTint}}; cursor: pointer;">
+        <input type="radio" name="dns" checked style="width: 18px; height: 18px; accent-color: {{c.accent}}; margin: 0;">
+        <span style="flex: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 600;">Cloudflare (1.1.1.1)</span><span style="font-size: 12px; color: {{c.muted}};">Şu an kullanılıyor. Çoğu bağlantıda yeterli.</span></span>
+      </label>
+      <label style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; cursor: pointer;">
+        <input type="radio" name="dns" style="width: 18px; height: 18px; accent-color: {{c.accent}}; margin: 0;">
+        <span style="flex: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 600;">Şifreli DNS</span><span style="font-size: 12px; color: {{c.muted}};">Sağlayıcı DNS sorgularına müdahale ediyorsa. Arka planda küçük bir servis kurar.</span></span>
+      </label>
+    </fieldset>
+    <button style="margin-top: auto; height: 48px; border-radius: 16px; border: 0; background: {{c.surface2}}; color: {{c.muted}}; font-family: inherit; font-size: 15px; font-weight: 600;" disabled>Değişiklik yok</button>
+  </main>
+  <nav aria-label="Bölümler" style="margin: 0 14px 14px; height: 60px; border-radius: 20px; background: {{c.surface}}; display: flex; padding: 6px; box-sizing: border-box; gap: 4px;">
+    <a href="Kompakt.dc.html" style="flex: 1; text-decoration: none; border-radius: 14px; color: {{c.muted}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 12h4l3-7 4 14 3-7h2"></path></svg>Bağlantı</a>
+    <a href="Strateji.dc.html" style="flex: 1; text-decoration: none; border-radius: 14px; color: {{c.muted}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.5-4.5"></path></svg>Strateji</a>
+    <a href="Servis.dc.html" style="flex: 1; text-decoration: none; border-radius: 14px; color: {{c.muted}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v8"></path><path d="M6.3 6.8a8 8 0 1 0 11.4 0"></path></svg>Servis</a>
+    <a href="#" style="flex: 1; text-decoration: none; border-radius: 14px; background: {{c.accentTint}}; color: {{c.accentText}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; font-weight: 600;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"></path></svg>DNS</a>
+    <a href="Diger.dc.html" style="flex: 1; text-decoration: none; border-radius: 14px; color: {{c.muted}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle></svg>Diğer</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Açık","Koyu"],"default":"Açık"},"$preview":{"width":460,"height":660}}'>
+class Component extends DCLogic {
+renderVals() {
+const acik = {logoBg:'#5B5BD6',logoRiver:'#B7F5D0',bg:'#F2F4F7',surface:'#FFFFFF',surface2:'#E9EDF2',line:'#EDF0F4',text:'#1D2433',muted:'#677489',accent:'#5B5BD6',accentTint:'#ECECFC',accentText:'#4342B8',onAccent:'#FFFFFF',ok:'#2F9E6E',okTint:'#E3F4EC',okText:'#1C6E4A'};
+const koyu = {logoBg:'#6466E0',logoRiver:'#B7F5D0',bg:'#14161B',surface:'#1D2027',surface2:'#2A2E37',line:'#262A32',text:'#E7EAF0',muted:'#99A2B2',accent:'#7E80EE',accentTint:'#2A2B4D',accentText:'#B9BAFA',onAccent:'#101218',ok:'#4CC38A',okTint:'#17302A',okText:'#7FDBAE'};
+return { c: (this.props.tema ?? 'Açık') === 'Koyu' ? koyu : acik };
+}
+}
+</script>
+</body>
+</html>
