@@ -184,6 +184,7 @@ function servisUygula(m) {
 
 // --- DNS ---
 let dnsMod = '';
+let dnsGonderildi = false; // uygulandıktan sonra gelen ilk durumda seçim gerçek DNS'e döner
 function dnsSecili() {
   const r = document.querySelector('input[name=dns]:checked');
   return r ? r.value : '';
@@ -199,6 +200,7 @@ document.querySelectorAll('input[name=dns]').forEach((r) => r.addEventListener('
 $('dns-uygula').addEventListener('click', () => {
   $('dns-uygula').disabled = true;
   $('dns-secim').disabled = true;
+  dnsGonderildi = true;
   gonder({ tip: 'komut', ad: 'dns', mod: dnsSecili() });
 });
 
@@ -215,7 +217,8 @@ function dnsUygula(m) {
   cf.disabled = dnsMod === 'sifreli';
   document.querySelector('[data-not=cloudflare]').textContent = dnsMod === 'sifreli'
     ? "Önce şifreli DNS'i kaldır; DNS sağlayıcınınkine döner, sonra buradan seçebilirsin." : 'Çoğu bağlantıda yeterli.';
-  if (modDegisti || !dnsSecili()) {
+  if (modDegisti || dnsGonderildi || !dnsSecili()) {
+    dnsGonderildi = false;
     document.querySelectorAll('input[name=dns]').forEach((r) => { r.checked = r.value === dnsMod; });
   }
   dnsDugmesi();
