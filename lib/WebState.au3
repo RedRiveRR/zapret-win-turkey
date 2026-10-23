@@ -165,6 +165,19 @@ Func _WebDnsJson($sStatus, $sServers, $bChangeOn)
     Return $s
 EndFunc
 
+; Diğer ekranı mesajı.
+;   $sLanText: ağ paylaşımı düğmesinin metni ("Ağdaki Cihazlarla Paylaş" = kapalı), $bLanOn: düğme kullanılabilir mi
+;   $sUpdateCheck: config.ini [Settings] UpdateCheck, $sEngine: "Zapret2 v1.0.5.2" gibi, $bCleanOn: temizle düğmesi
+Func _WebOtherJson($sLanText, $bLanOn, $sUpdateCheck, $sVersion, $sEngine, $bCleanOn)
+    Local $s = _WebJsonObj("tip", "diger", "paylasim", $sLanText <> "Ağdaki Cihazlarla Paylaş", "paylasimAcik", $bLanOn = True)
+    $s = _WebJsonAdd($s, "guncelleme", $sUpdateCheck <> "0")
+    Local $sAbout = "Sürüm " & $sVersion
+    If $sEngine <> "" Then $sAbout &= ", " & StringReplace($sEngine, " v", " motoru ")
+    $s = _WebJsonAdd($s, "hakkinda", $sAbout)
+    $s = _WebJsonAdd($s, "temizleAcik", $bCleanOn = True)
+    Return $s
+EndFunc
+
 ; Strateji satırından kısa ad: kullanılan yöntemler "fake + multisplit"; bulunamazsa ilk 40 karakter.
 Func _WebStrategyShort($sStrategy)
     Local $a = StringRegExp($sStrategy, "--(?:lua|dpi)-desync=([A-Za-z0-9_,]+)", 3)

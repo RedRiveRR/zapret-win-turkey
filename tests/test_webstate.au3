@@ -129,6 +129,18 @@ Func _TestWebState()
     $s = _WebDnsJson("SERVİS MODU AKTİF", "1.1.1.1", False)
     _AssertEq(_WebJsonGet($s, "durum"), "aktif", "sorun yok")
     _AssertEq(_WebJsonGet($s, "sunucular"), "1.1.1.1", "sunucular")
+
+    ; --- Diğer ekranı ---
+    $s = _WebOtherJson("Ağdaki Cihazlarla Paylaş", True, "1", "4.5.1", "Zapret2 v1.0.5.2", True)
+    _AssertEq(_WebJsonGet($s, "tip"), "diger", "diğer mesajı")
+    _AssertEq(_WebJsonGet($s, "paylasim"), "false", "paylaşım kapalı")
+    _AssertEq(_WebJsonGet($s, "guncelleme"), "true", "güncelleme kontrolü açık")
+    _AssertEq(_WebJsonGet($s, "hakkinda"), "Sürüm 4.5.1, Zapret2 motoru 1.0.5.2", "hakkında metni")
+    $s = _WebOtherJson("[ ✓ ] Paylaşım Aktif / Durdur", False, "0", "4.5.1", "", False)
+    _AssertEq(_WebJsonGet($s, "paylasim"), "true", "paylaşım açık")
+    _AssertEq(_WebJsonGet($s, "paylasimAcik"), "false", "paylaşım düğmesi kapalı")
+    _AssertEq(_WebJsonGet($s, "guncelleme"), "false", "güncelleme kontrolü kapalı")
+    _AssertEq(_WebJsonGet($s, "hakkinda"), "Sürüm 4.5.1", "motor bilinmiyorsa yalnız sürüm")
 EndFunc
 
 Func _StringRepeatW($s, $n)
