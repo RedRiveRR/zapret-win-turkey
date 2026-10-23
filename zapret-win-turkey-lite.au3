@@ -32,6 +32,7 @@
 #include "lib\Schedule.au3"
 #include "ui\SettingsUI.au3"
 #include "lib\Install.au3"
+#include "ui\Theme.au3"
 
 #include <ProgressConstants.au3>
 
@@ -100,8 +101,10 @@ Global $hInstallServiceUnlockTimer = 0
 Global $bInstallServiceEnableAfterLock = True
 
 ; --- GUI Tasarımı ---
-Global $hGUI = GUICreate($APP_NAME & " v" & $APP_VERSION & " Lite", 400, 405)
-GUISetBkColor(0xFFFFFF)
+_UiInit()
+Global $hGUI = GUICreate($APP_NAME & " v" & $APP_VERSION & " Lite", 420, 520)
+_UiDarkWindow($hGUI)
+Global $g_sUiLastStatus = "", $g_sUiLastRun = ""
 
 ; --- Tepsi Menüsü ---
 Local $trayShow = TrayCreateItem("Göster")
@@ -118,47 +121,41 @@ TrayItemSetOnEvent(-1, "_SaveConfigAndExit")
 TraySetOnEvent($TRAY_EVENT_PRIMARYDOUBLE, "ShowGUI")
 TraySetClick(16)
 
-; --- Üst Durum Paneli ---
-Local $lblStatusBg = GUICtrlCreateLabel("", 15, 15, 370, 75)
-GUICtrlSetBkColor(-1, 0xF2F4F7)
-Local $lblStatusText = GUICtrlCreateLabel("SİSTEM HAZIRLANIYOR...", 15, 30, 370, 25, $SS_CENTER)
-GUICtrlSetFont(-1, 12, 800, 0, "Segoe UI")
-GUICtrlSetColor(-1, 0xE67E22)
+; --- Başlık ---
+_UiLabel("Zapret", 24, 14, 200, 30, 17, $UI_TEXT, 700, 0, $UI_FONT_SEMI)
+_UiLabel("Windows Türkiye Lite  ·  v" & $APP_VERSION, 26, 42, 240, 18, 8.5, $UI_MUTED)
+Global $btnLiteSettings = _UiButton("Ayarlar", 312, 20, 84, 32, $UI_KIND_SECONDARY, 9.5, 8, $UI_BG)
 
-Local $pBar = GUICtrlCreateProgress(15, 75, 370, 15, $PBS_MARQUEE)
+; İşlem sürerken görünen ince ilerleme çubuğu
+Local $pBar = GUICtrlCreateProgress(24, 66, 372, 4, $PBS_MARQUEE)
 GUICtrlSetState(-1, $GUI_HIDE)
 
-Local $lblStrategyInfo = GUICtrlCreateLabel("Strateji Durumu: Kontrol Ediliyor...", 15, 55, 370, 20, $SS_CENTER)
-GUICtrlSetFont(-1, 9, 400, 0, "Segoe UI")
-GUICtrlSetColor(-1, 0x666666)
+; --- Durum kartı ---
+_UiCard(24, 76, 372, 96)
+Global $lblStatusDot = _UiLabel("●", 38, 90, 30, 34, 18, $UI_YELLOW, 400, BitOR($SS_CENTER, $SS_CENTERIMAGE))
+Local $lblStatusText = _UiLabel("SİSTEM HAZIRLANIYOR...", 72, 90, 310, 32, 13.5, $UI_YELLOW, 700, 0, $UI_FONT_SEMI)
+Local $lblStrategyInfo = _UiLabel("Strateji Durumu: Kontrol Ediliyor...", 74, 126, 306, 34, 9, $UI_TEXT2)
 
-; =========================================================================
-; --- 1. ANA BUTON (EN ÜSTE ALINDI) ---
-; =========================================================================
-Local $btnRunZapret = GUICtrlCreateButton("ZAPRET'İ BAŞLAT", 50, 95, 300, 55)
-GUICtrlSetState(-1, $GUI_DISABLE)
-GUICtrlSetFont(-1, 11, 800, 0, "Segoe UI")
+; --- Ana buton ---
+Local $btnRunZapret = _UiButton("▶   Başlat", 24, 184, 372, 50, $UI_KIND_SUCCESS, 12, 12, $UI_BG)
+GUICtrlSetState($btnRunZapret, $GUI_DISABLE)
 
-; MOTOR
-GUICtrlCreateLabel("Motor:", 50, 177, 120, 20)
-GUICtrlSetFont(-1, 9, 600, 0, "Segoe UI")
-Local $cmbEngine = GUICtrlCreateCombo("Zapret2 (Yeni LUA Motoru)", 175, 174, 175, 25, $CBS_DROPDOWNLIST)
+; --- Motor / Strateji / Filtre ---
+_UiCard(24, 248, 372, 150)
+_UiLabel("MOTOR", 44, 270, 100, 18, 8.5, $UI_MUTED, 700)
+_UiLabel("STRATEJİ", 44, 312, 100, 18, 8.5, $UI_MUTED, 700)
+_UiLabel("FİLTRE", 44, 354, 100, 18, 8.5, $UI_MUTED, 700)
+Local $cmbEngine = GUICtrlCreateCombo("Zapret2 (Yeni LUA Motoru)", 150, 266, 226, 25, $CBS_DROPDOWNLIST)
 GUICtrlSetData(-1, "Zapret (Eski Klasik Motor)")
 If $iniEngine == "1" Then GUICtrlSetData($cmbEngine, "Zapret (Eski Klasik Motor)", "Zapret (Eski Klasik Motor)")
-GUICtrlSetFont(-1, 9, 400, 0, "Segoe UI")
-GUICtrlSetState(-1, $GUI_DISABLE)
+GUICtrlSetFont($cmbEngine, 10, 400, 0, $UI_FONT)
+GUICtrlSetState($cmbEngine, $GUI_DISABLE)
 
-; STRATEJİ
-GUICtrlCreateLabel("Strateji:", 50, 212, 120, 20)
-GUICtrlSetFont(-1, 9, 600, 0, "Segoe UI")
-Global $cmbStrategy = GUICtrlCreateCombo("Turk Telekom", 175, 209, 175, 25, $CBS_DROPDOWNLIST)
-GUICtrlSetFont(-1, 9, 400, 0, "Segoe UI")
-GUICtrlSetState(-1, $GUI_DISABLE)
+Global $cmbStrategy = GUICtrlCreateCombo("Turk Telekom", 150, 308, 226, 25, $CBS_DROPDOWNLIST)
+GUICtrlSetFont($cmbStrategy, 10, 400, 0, $UI_FONT)
+GUICtrlSetState($cmbStrategy, $GUI_DISABLE)
 
-; FİLTRE
-GUICtrlCreateLabel("Filtre:", 50, 247, 120, 20)
-GUICtrlSetFont(-1, 9, 600, 0, "Segoe UI")
-Global $cmbFilter = GUICtrlCreateCombo("Kapalı (Tüm trafik)", 175, 244, 175, 25, $CBS_DROPDOWNLIST)
+Global $cmbFilter = GUICtrlCreateCombo("Kapalı (Tüm trafik)", 150, 350, 226, 25, $CBS_DROPDOWNLIST)
 Global $sFilterSelectionBeforeOOB = ""
 Global $bFilterWasEnabledBeforeOOB = False
 Global $bOOBFilterLock = False
@@ -173,23 +170,20 @@ Else
     GUICtrlSetData($cmbFilter, "Kapalı (Tüm trafik)", "Kapalı (Tüm trafik)")
 EndIf
 $sFilterSelectionBeforeOOB = GUICtrlRead($cmbFilter)
-
-GUICtrlSetFont(-1, 9, 400, 0, "Segoe UI")
-GUICtrlSetState(-1, $GUI_DISABLE)
+GUICtrlSetFont($cmbFilter, 10, 400, 0, $UI_FONT)
+GUICtrlSetState($cmbFilter, $GUI_DISABLE)
+_UiDarkControl($cmbEngine)
+_UiDarkControl($cmbStrategy)
+_UiDarkControl($cmbFilter)
 
 ; =========================================================================
 ; --- LITE SÜRÜMÜNÜN TEMEL İŞLEMLERİ ---
 ; =========================================================================
-Local $btnInstallService = GUICtrlCreateButton("Servis Olarak Yükle (Otomatik Başlat)", 50, 290, 300, 35)
-GUICtrlSetState(-1, $GUI_DISABLE)
-GUICtrlSetFont(-1, 10, 600, 0, "Segoe UI")
+Local $btnInstallService = _UiButton("Servis olarak yükle", 24, 412, 236, 40, $UI_KIND_PRIMARY, 10, 8, $UI_BG)
+GUICtrlSetState($btnInstallService, $GUI_DISABLE)
+Local $btnRemoveService = _UiButton("Temizle", 272, 412, 124, 40, $UI_KIND_SECONDARY, 10, 8, $UI_BG)
 
-Local $btnRemoveService = GUICtrlCreateButton("Servis ve Kalıntıları Temizle", 50, 335, 300, 35)
-GUICtrlSetFont(-1, 10, 600, 0, "Segoe UI")
-
-Global $lblFooter = GUICtrlCreateLabel("Zapret Windows Türkiye Lite", 0, 380, 400, 20, $SS_CENTER)
-GUICtrlSetFont(-1, 10, 400, 0, "Consolas")
-GUICtrlSetColor(-1, 0xBDC3C7)
+Global $lblFooter = _UiLabel("Zapret Windows Türkiye Lite", 24, 466, 372, 40, 8.5, $UI_MUTED)
 
 Local $aCriticalButtons[5] = [$btnRunZapret, $btnInstallService, $cmbEngine, $cmbStrategy, $cmbFilter]
 Local $aOtherButtons[5] = [$btnInstallService, $btnRemoveService, $cmbEngine, $cmbStrategy, $cmbFilter]
@@ -214,7 +208,7 @@ While 1
     If $isPoisoned Then
         _SetButtonsState($aCriticalButtons, $GUI_DISABLE)
         GUICtrlSetData($lblStatusText, "DNS ZEHİRLENMESİ SAPTANDI!")
-        GUICtrlSetColor($lblStatusText, 0xC0392B)
+        GUICtrlSetColor($lblStatusText, $UI_RED)
 
         ; 2. TUR: Uygulama DNS değiştirdi ama hala zehirliyse (TT engelliyorsa)
         If $isDnsChangedByApp Then
@@ -257,6 +251,8 @@ Local $hProcessTimer = TimerInit()
 
 While 1
     Local $nMsg = GUIGetMsg()
+    _UiTick($hGUI)
+    _LiteUiSync()
 
     ; Servis kurulumu sırasında kuyruğa alınan tıklamaları atla.
     If $nMsg = $btnInstallService And $bInstallServiceBusy Then ContinueLoop
@@ -301,6 +297,9 @@ While 1
     Switch $nMsg
         Case $GUI_EVENT_CLOSE
             _SaveConfigAndExit()
+
+        Case $btnLiteSettings
+            _OpenSettings()
 
         Case $GUI_EVENT_MINIMIZE
             GUISetState(@SW_HIDE, $hGUI)
@@ -349,7 +348,7 @@ While 1
             If $isPoisonedAfterCleanup Then
                 _SetButtonsState($aCriticalButtons, $GUI_DISABLE)
                 GUICtrlSetData($lblStatusText, "DNS ZEHİRLENMESİ SAPTANDI!")
-                GUICtrlSetColor($lblStatusText, 0xC0392B)
+                GUICtrlSetColor($lblStatusText, $UI_RED)
             Else
                 CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
                 _RefreshStrategyLabel()
@@ -383,12 +382,12 @@ Func _UpdateFilterForStrategy()
         EndIf
         GUICtrlSetData($cmbFilter, "")
         GUICtrlSetData($cmbFilter, "Filtre Uygulanamaz", "Filtre Uygulanamaz")
-        GUICtrlSetColor($cmbFilter, 0xCC0000)
+        GUICtrlSetColor($cmbFilter, $UI_RED)
         GUICtrlSetState($cmbFilter, $GUI_DISABLE)
     ElseIf $bOOBFilterLock Then
         GUICtrlSetData($cmbFilter, "")
         GUICtrlSetData($cmbFilter, "Kapalı (Tüm trafik)|Auto (Zapret oluşturur)|Manuel ('hostlist.txt' İçeriği)", $sFilterSelectionBeforeOOB)
-        GUICtrlSetColor($cmbFilter, 0x000000)
+        GUICtrlSetColor($cmbFilter, $UI_TEXT)
         GUICtrlSetState($cmbFilter, $GUI_ENABLE)
         $bOOBFilterLock = False
     EndIf
@@ -486,11 +485,11 @@ Func CheckServiceStatus($manualBtn, $statusID, $lockArray, $chkID)
         ; --- YENİ EKLENEN KISIM: SERVİS DURUMUNU (RUNNING/STOPPED) KONTROL ET ---
         If StringInStr($sOutput, "RUNNING") Then
             GUICtrlSetData($statusID, "SERVİS MODU AKTİF")
-            GUICtrlSetColor($statusID, 0x27AE60)
+            GUICtrlSetColor($statusID, $UI_GREEN)
         Else
             ; Servis yüklü ama durmuş!
             GUICtrlSetData($statusID, "SERVİS YÜKLÜ - DURDU")
-            GUICtrlSetColor($statusID, 0xC0392B) ; Kırmızı renkle uyar
+            GUICtrlSetColor($statusID, $UI_RED) ; Kırmızı renkle uyar
 
             ; Kullanıcıyı yalnızca bir kez uyar (sürekli MsgBox çıkıp darlamasın)
             If Not $bServiceStoppedWarned Then
@@ -505,7 +504,7 @@ Func CheckServiceStatus($manualBtn, $statusID, $lockArray, $chkID)
         _SetButtonsState($lockArray, $GUI_ENABLE)
 
         GUICtrlSetData($statusID, "ÇALIŞMAYA HAZIR")
-        GUICtrlSetColor($statusID, 0x2C3E50)
+        GUICtrlSetColor($statusID, $UI_TEXT)
     EndIf
     _UpdateFilterForStrategy()
 EndFunc
@@ -523,9 +522,9 @@ Func StartWinws($ctrlID, $statusID, $aBtns)
     If $zapretPID > 0 Then
         ; --- 1. ARAYÜZÜ ANINDA GÜNCELLE (Kullanıcıya anında tepki ver) ---
         $isZapretRunning = True
-        GUICtrlSetData($ctrlID, "DURDUR")
+        GUICtrlSetData($ctrlID, "■   Durdur")
         GUICtrlSetData($statusID, "MANUEL MOD AKTİF")
-        GUICtrlSetColor($statusID, 0xE67E22)
+        GUICtrlSetColor($statusID, $UI_YELLOW)
         _SetButtonsState($aBtns, $GUI_DISABLE)
 
         ; --- 2. ARKA PLANDA 1 SANİYE BEKLE VE KONTROL ET ---
@@ -536,7 +535,7 @@ Func StartWinws($ctrlID, $statusID, $aBtns)
             $isZapretRunning = False
             $zapretPID = 0
 
-            GUICtrlSetData($ctrlID, "ZAPRET'İ BAŞLAT")
+            GUICtrlSetData($ctrlID, "▶   Başlat")
             ; CheckServiceStatus fonksiyonumuz zaten yazıları yeşil yapıp butonları açma işini kusursuz yapıyor
             CheckServiceStatus($ctrlID, $statusID, $aBtns, $cmbFilter)
 
@@ -630,6 +629,28 @@ Func _RefreshFooter()
     GUICtrlSetData($lblFooter, $g_sEngineFooter & ($sHealth = "" ? "" : "  ·  " & $sHealth))
 EndFunc
 
+; Durum noktası rengi ve Başlat/Durdur butonunun rengi (durum metninden).
+Func _LiteUiSync()
+    Local $s = GUICtrlRead($lblStatusText)
+    If $s <> $g_sUiLastStatus Then
+        $g_sUiLastStatus = $s
+        Local $iDot = $UI_YELLOW
+        If (StringInStr($s, "DURDU") And Not StringInStr($s, "GEÇİCİ")) Or StringInStr($s, "ZEHİRLEN") Then
+            $iDot = $UI_RED
+        ElseIf StringInStr($s, "AKTİF") Then
+            $iDot = $UI_GREEN
+        ElseIf StringInStr($s, "ÇALIŞMAYA HAZIR") Then
+            $iDot = $UI_MUTED
+        EndIf
+        GUICtrlSetColor($lblStatusDot, $iDot)
+    EndIf
+    Local $r = GUICtrlRead($btnRunZapret)
+    If $r <> $g_sUiLastRun Then
+        $g_sUiLastRun = $r
+        _UiButtonSetKind($btnRunZapret, StringInStr($r, "Durdur") ? $UI_KIND_DANGER : $UI_KIND_SUCCESS)
+    EndIf
+EndFunc
+
 ; Tepsi: ayarlar penceresi.
 Func _OpenSettings()
     ShowGUI()
@@ -649,7 +670,7 @@ Func StopWinws($ctrlID, $statusID, $aBtns)
     RunWait(@ComSpec & " /c sc stop WinDivert & sc delete WinDivert & sc stop WinDivert14 & sc delete WinDivert14 & sc stop monkey & sc delete monkey", "", @SW_HIDE)
     _LogInfo("Manuel mod durduruldu")
     $isZapretRunning = False
-    GUICtrlSetData($ctrlID, "ZAPRET'İ BAŞLAT")
+    GUICtrlSetData($ctrlID, "▶   Başlat")
     CheckServiceStatus($ctrlID, $statusID, $aBtns, $cmbFilter)
 EndFunc
 
