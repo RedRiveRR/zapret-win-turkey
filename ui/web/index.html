@@ -48,7 +48,33 @@
       <div class="bilgi" id="bilgi"></div>
     </section>
     <!-- Diğer sekmeler: sonraki adımlarda -->
-    <section class="gorunum" id="g-strateji"><div class="yakinda">Strateji bölümü sonraki adımda bu arayüze taşınacak.<br>Şimdilik bu işlemler eski arayüzde.<br><button class="ikinci" data-komut="eskiArayuz">Eski arayüze geç</button></div></section>
+    <!-- Strateji -->
+    <section class="gorunum" id="g-strateji">
+      <div class="sayfabaslik">
+        <h1>Strateji bul</h1>
+        <p>Sağlayıcına en uygun yöntemi ölçerek seçer.</p>
+      </div>
+      <div class="secimler" id="analiz-turu" role="radiogroup" aria-label="Analiz türü">
+        <button class="secim" role="radio" aria-checked="true" data-tur="hizli">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"></path></svg>
+          <b>Hızlı test</b><span class="kucuk">Hazır ve kayıtlı stratejiler, 1–3 dk</span>
+        </button>
+        <button class="secim" role="radio" aria-checked="false" data-tur="tam">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5M11 8v3l2 2"></path></svg>
+          <b>Tam analiz</b><span class="kucuk">Sağlayıcı baştan taranır, 5–15 dk</span>
+        </button>
+      </div>
+      <section class="kart sonuclar" id="sonuclar" hidden>
+        <div class="sonucbas"><h2 id="sonuc-zaman">Son analiz</h2><button class="baglanti" id="tum-sonuclar">Tüm sonuçlar</button></div>
+        <div id="sonuc-liste"></div>
+      </section>
+      <section class="kart liste">
+        <label class="satir"><span class="ad"><b>Strateji</b></span><select id="sec-strateji" data-alan="strateji" disabled></select></label>
+        <label class="satir"><span class="ad"><b>Motor</b></span><select id="sec-motor" data-alan="motor" disabled></select></label>
+        <label class="satir"><span class="ad"><b>Site filtresi</b><span class="kucuk" id="filtre-not"></span></span><select id="sec-filtre" data-alan="filtre" disabled></select></label>
+      </section>
+      <button class="birincil" id="analiz-baslat" disabled>Hızlı testi başlat</button>
+    </section>
     <section class="gorunum" id="g-servis"><div class="yakinda">Servis bölümü sonraki adımda bu arayüze taşınacak.<br>Şimdilik bu işlemler eski arayüzde.<br><button class="ikinci" data-komut="eskiArayuz">Eski arayüze geç</button></div></section>
     <section class="gorunum" id="g-dns"><div class="yakinda">DNS bölümü sonraki adımda bu arayüze taşınacak.<br>Şimdilik bu işlemler eski arayüzde.<br><button class="ikinci" data-komut="eskiArayuz">Eski arayüze geç</button></div></section>
     <section class="gorunum" id="g-diger"><div class="yakinda">Diğer bölümü sonraki adımda bu arayüze taşınacak.<br>Şimdilik bu işlemler eski arayüzde.<br><button class="ikinci" data-komut="eskiArayuz">Eski arayüze geç</button></div></section>
