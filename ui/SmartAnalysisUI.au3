@@ -10,6 +10,7 @@
 #include "..\lib\SmartAnalysis.au3"
 #include "..\lib\Log.au3"
 #include "..\lib\Process.au3"
+#include "Theme.au3"
 
 ; =========================================================================
 ; --- AKILLI ANALİZ ARAYÜZÜ ---
@@ -23,7 +24,7 @@ Global Const $SMARTUI_PREV_LIST = 3
 Global Const $SMARTUI_PREV_SMART = 4
 
 Global $__g_idSmartBar = 0, $__g_idSmartPhase = 0, $__g_idSmartElapsed = 0, $__g_idSmartStop = 0
-Global $__g_hSmartTimer = 0, $__g_sSmartLastText = "", $__g_iSmartLastPct = -1, $__g_iSmartLastSec = -1, $__g_bSmartStopping = False
+Global $__g_hSmartProg = 0, $__g_hSmartTimer = 0, $__g_sSmartLastText = "", $__g_iSmartLastPct = -1, $__g_iSmartLastSec = -1, $__g_bSmartStopping = False
 
 Global Const $SMARTUI_BROWSER_NOTE = "Not: Puan mesajlaşma/sunucu bağlantısını (TCP) ölçer; SESLİ GÖRÜŞME (UDP) ölçülmez, kısa bir sesli görüşmeyle ayrıca deneyin. " & _
         "Tarayıcıda denemek yanıltıcıdır; Discord uygulamasını tepsiden tamamen kapatıp yeniden açarak deneyin."
@@ -31,31 +32,32 @@ Global Const $SMARTUI_BROWSER_NOTE = "Not: Puan mesajlaşma/sunucu bağlantısı
 ; Analiz türü seçici. Dönüş: $SMARTUI_* sabiti.
 Func _SmartUI_Chooser($bHasPrevList, $bHasPrevSmart, $hParent)
     GUISetState(@SW_DISABLE, $hParent)
-    Local $h = GUICreate("ISS Analizi", 440, 330, -1, -1, BitOR($WS_CAPTION, $WS_SYSMENU), 0, $hParent)
-    GUISetBkColor(0xFFFFFF, $h)
-    GUICtrlCreateLabel("Nasıl bir analiz yapılsın?", 20, 14, 400, 24)
-    GUICtrlSetFont(-1, 11, 700, 0, "Segoe UI")
+    Local $aMark = _UiMark()
+    Local $h = _UiWindow("ISS Analizi", 480, 400, $hParent)
+    _UiLabel("Nasıl bir analiz yapılsın?", 24, 18, 432, 30, 15, $UI_TEXT, 700, 0, $UI_FONT_SEMI)
 
-    Local $bFull = GUICtrlCreateButton("Tam analiz (önerilen)", 20, 46, 400, 38)
-    GUICtrlSetFont(-1, 10, 700, 0, "Segoe UI")
-    __SmartUI_Hint("ISS'iniz baştan taranır, bulunan stratejiler otomatik sınanıp en uygunu seçilir. (10-15 dk)", 20, 86)
+    _UiCard(24, 60, 432, 96)
+    Local $bFull = _UiButton("Tam analiz (önerilen)", 42, 76, 396, 38, $UI_KIND_PRIMARY, 10.5)
+    __SmartUI_Hint("ISS'iniz baştan taranır, bulunan stratejiler otomatik sınanıp en uygunu seçilir. (5-15 dk)", 42, 120)
 
-    Local $bQuick = GUICtrlCreateButton("Hızlı akıllı test", 20, 120, 400, 38)
-    GUICtrlSetFont(-1, 10, 600, 0, "Segoe UI")
-    __SmartUI_Hint("Tarama yapılmaz; hazır profiller, kayıtlı ve önceki stratejiler sınanır. (1-3 dk)", 20, 160)
+    _UiCard(24, 168, 432, 96)
+    Local $bQuick = _UiButton("Hızlı akıllı test", 42, 184, 396, 38, $UI_KIND_SECONDARY, 10.5)
+    __SmartUI_Hint("Tarama yapılmaz; hazır profiller, kayıtlı ve önceki stratejiler sınanır. (1-3 dk)", 42, 228)
 
-    Local $bPrevSmart = GUICtrlCreateButton("Önceki akıllı analiz sonucu", 20, 200, 195, 34)
-    Local $bPrevList = GUICtrlCreateButton("Önceki tarama listesi (elle)", 225, 200, 195, 34)
+    Local $bPrevSmart = _UiButton("Önceki akıllı analiz sonucu", 24, 280, 210, 34, $UI_KIND_SECONDARY, 9.5, 8, $UI_BG)
+    Local $bPrevList = _UiButton("Önceki tarama listesi (elle)", 246, 280, 210, 34, $UI_KIND_SECONDARY, 9.5, 8, $UI_BG)
     If Not $bHasPrevSmart Then GUICtrlSetState($bPrevSmart, $GUI_DISABLE)
     If Not $bHasPrevList Then GUICtrlSetState($bPrevList, $GUI_DISABLE)
 
-    __SmartUI_Hint("Analiz sırasında internet bağlantınızda kısa kesintiler olabilir.", 20, 246)
-    Local $bCancel = GUICtrlCreateButton("Vazgeç", 160, 276, 120, 32)
+    _UiLabel("Analiz sırasında internet bağlantınızda kısa kesintiler olabilir.", 24, 324, 432, 18, 8.5, $UI_MUTED)
+    Local $bCancel = _UiButton("Vazgeç", 336, 350, 120, 34, $UI_KIND_SECONDARY, 10, 8, $UI_BG)
     GUISetState(@SW_SHOW, $h)
 
     Local $iChoice = $SMARTUI_CANCEL
     While 1
-        Switch GUIGetMsg()
+        Local $nMsg = GUIGetMsg()
+        _UiTick($h)
+        Switch $nMsg
             Case $GUI_EVENT_CLOSE, $bCancel
                 ExitLoop
             Case $bFull
@@ -73,14 +75,13 @@ Func _SmartUI_Chooser($bHasPrevList, $bHasPrevSmart, $hParent)
         EndSwitch
     WEnd
     GUIDelete($h)
+    _UiRelease($aMark)
     GUISetState(@SW_ENABLE, $hParent)
     Return $iChoice
 EndFunc
 
 Func __SmartUI_Hint($sText, $iX, $iY)
-    GUICtrlCreateLabel($sText, $iX, $iY, 400, 30)
-    GUICtrlSetFont(-1, 8.5, 400, 0, "Segoe UI")
-    GUICtrlSetColor(-1, 0x666666)
+    _UiLabel($sText, $iX, $iY, 396, 32, 8.5, $UI_TEXT2)
 EndFunc
 
 ; Analizi çalıştırır ve sonuç penceresini gösterir.
@@ -98,15 +99,17 @@ Func _SmartUI_Run(ByRef $aCandidates, $sRoot, $sWinwsPath, $sTargetsSpec, $sResu
     EndIf
 
     Local $iMin = _SmartEstimateMinutes(UBound($aCandidates))
-    Local $hProg = GUICreate("Akıllı Analiz", 520, 190, -1, -1, BitOR($WS_CAPTION, $WS_SYSMENU), 0, $hParent)
-    GUISetBkColor(0xFFFFFF, $hProg)
-    GUICtrlCreateLabel(UBound($aCandidates) & " strateji sınanıyor (tahmini " & $iMin & " dk)", 18, 14, 484, 24, $SS_CENTER)
-    GUICtrlSetFont(-1, 11, 700, 0, "Segoe UI")
-    $__g_idSmartPhase = GUICtrlCreateLabel("Hazırlanıyor...", 18, 46, 484, 36, $SS_CENTER)
-    GUICtrlSetFont(-1, 9, 400, 0, "Segoe UI")
-    $__g_idSmartBar = GUICtrlCreateProgress(18, 88, 484, 18)
-    $__g_idSmartElapsed = GUICtrlCreateLabel("Geçen süre: 00:00", 18, 112, 484, 20, $SS_CENTER)
-    $__g_idSmartStop = GUICtrlCreateButton("Durdur (şimdiye kadarki sonuçları göster)", 110, 140, 300, 32)
+    Local $aMark = _UiMark()
+    Local $hProg = _UiWindow("Akıllı Analiz", 540, 230, $hParent)
+    $__g_hSmartProg = $hProg
+    _UiLabel(UBound($aCandidates) & " strateji sınanıyor", 24, 18, 492, 28, 14, $UI_TEXT, 700, 0, $UI_FONT_SEMI)
+    _UiLabel("Tahmini en fazla " & $iMin & " dk  ·  Analiz sırasında kısa bağlantı kesintileri olabilir.", 24, 48, 492, 18, 8.5, $UI_MUTED)
+    _UiCard(24, 76, 492, 86)
+    $__g_idSmartPhase = _UiLabel("Hazırlanıyor...", 42, 88, 456, 36, 9, $UI_TEXT2)
+    $__g_idSmartBar = GUICtrlCreateProgress(42, 128, 456, 8)
+    _UiProgressStyle($__g_idSmartBar)
+    $__g_idSmartElapsed = _UiLabel("Geçen süre: 00:00", 42, 140, 456, 18, 8.5, $UI_MUTED)
+    $__g_idSmartStop = _UiButton("Durdur (şimdiye kadarki sonuçları göster)", 24, 176, 320, 38, $UI_KIND_DANGER, 10, 8, $UI_BG)
     GUISetState(@SW_SHOW, $hProg)
     $__g_hSmartTimer = TimerInit()
     $__g_sSmartLastText = ""
@@ -119,6 +122,8 @@ Func _SmartUI_Run(ByRef $aCandidates, $sRoot, $sWinwsPath, $sTargetsSpec, $sResu
     Local $iErr = @error
     Local $iSecs = Int(TimerDiff($__g_hSmartTimer) / 1000)
     GUIDelete($hProg)
+    _UiRelease($aMark)
+    $__g_hSmartProg = 0
     ; Güvenlik: test için açılmış winws2 kalmasın (analiz yalnızca zapret kapalıyken çalışır).
     _KillProcessesUnderDir($sRoot & "\bin\zapret\zapret-winws")
 
@@ -162,6 +167,7 @@ Func __SmartUI_Progress($iDone, $iTotal, $sText)
         $__g_iSmartLastSec = $iSecs
     EndIf
     Local $nMsg = GUIGetMsg()
+    If $__g_hSmartProg Then _UiTick($__g_hSmartProg)
     If $nMsg = $__g_idSmartStop Or $nMsg = $GUI_EVENT_CLOSE Then
         ; Anında geri bildirim: çalışan ölçüm birkaç yüz ms içinde kapanır.
         $__g_bSmartStopping = True
@@ -195,19 +201,22 @@ EndFunc
 ; Sonuç tablosu. Dönüş: kullanılmak üzere seçilen strateji ya da "".
 Func _SmartUI_ShowResults(ByRef $aRows, $sSummary, $sStrategyFile, $sWinwsPath, $hParent)
     GUISetState(@SW_DISABLE, $hParent)
-    Local $h = GUICreate("Akıllı Analiz Sonuçları", 820, 540, -1, -1, BitOR($WS_CAPTION, $WS_SYSMENU), 0, $hParent)
-    GUISetBkColor(0xFFFFFF, $h)
+    Local $aMark = _UiMark()
+    Local $h = _UiWindow("Akıllı Analiz Sonuçları", 860, 580, $hParent)
 
     Local $bHasBest = $aRows[0][$SMART_COL_SCORE] > 0
-    GUICtrlCreateLabel($bHasBest ? "★ Önerilen strateji listenin en üstünde." : "Çalışan strateji bulunamadı.", 15, 10, 790, 22)
-    GUICtrlSetFont(-1, 11, 700, 0, "Segoe UI")
-    GUICtrlSetColor(-1, $bHasBest ? 0x1B5E20 : 0xB71C1C)
-    GUICtrlCreateLabel($sSummary, 15, 34, 790, 32)
-    GUICtrlSetFont(-1, 8.5, 400, 0, "Segoe UI")
-    GUICtrlSetColor(-1, 0x555555)
+    _UiLabel($bHasBest ? "★  Önerilen strateji listenin en üstünde" : "Çalışan strateji bulunamadı", 24, 16, 812, 30, 15, _
+            $bHasBest ? $UI_TEXT : $UI_RED, 700, 0, $UI_FONT_SEMI)
+    _UiLabel($sSummary, 24, 48, 812, 34, 8.5, $UI_TEXT2)
 
-    Local $idLV = GUICtrlCreateListView("#|Puan|Başarı %|TLS1.3 %|Gecikme ms|Durum|Kaynak|Strateji", 15, 70, 790, 280, _
-            BitOR($LVS_SHOWSELALWAYS, $LVS_SINGLESEL, $LVS_REPORT), BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_GRIDLINES))
+    Local $idLV = GUICtrlCreateListView("#|Puan|Başarı %|TLS1.3 %|Gecikme ms|Durum|Kaynak|Strateji", 24, 86, 812, 270, _
+            BitOR($LVS_SHOWSELALWAYS, $LVS_SINGLESEL, $LVS_REPORT), BitOR($LVS_EX_FULLROWSELECT, $LVS_EX_DOUBLEBUFFER))
+    _UiDarkControl($idLV, "DarkMode_Explorer")
+    DllCall("uxtheme.dll", "long", "SetWindowTheme", "hwnd", _GUICtrlListView_GetHeader($idLV), "wstr", "DarkMode_ItemsView", "ptr", 0)
+    _GUICtrlListView_SetBkColor($idLV, __UiBgr($UI_CARD))
+    _GUICtrlListView_SetTextBkColor($idLV, __UiBgr($UI_CARD))
+    _GUICtrlListView_SetTextColor($idLV, __UiBgr($UI_TEXT))
+    GUICtrlSetFont($idLV, 9.5, 400, 0, $UI_FONT)
     Local $n = UBound($aRows)
     Local $aItems[$n]
     For $i = 0 To $n - 1
@@ -216,23 +225,23 @@ Func _SmartUI_ShowResults(ByRef $aRows, $sSummary, $sStrategyFile, $sWinwsPath, 
                 $aRows[$i][$SMART_COL_TLS13] & "|" & $aRows[$i][$SMART_COL_MS] & "|" & _SmartUI_StatusText($aRows, $i) & "|" & _
                 $aRows[$i][$SMART_COL_SOURCE] & "|" & $aRows[$i][$SMART_COL_STRATEGY], $idLV)
     Next
-    Local $aWidths[8] = [40, 50, 65, 65, 80, 85, 140, 900]
+    Local $aWidths[8] = [44, 52, 70, 70, 86, 90, 150, 900]
     For $c = 0 To 7
         _GUICtrlListView_SetColumnWidth($idLV, $c, $aWidths[$c])
     Next
 
-    GUICtrlCreateLabel("Seçili strateji ayrıntısı:", 15, 358, 790, 18)
-    GUICtrlSetFont(-1, 9, 700, 0, "Segoe UI")
-    Local $idDetail = GUICtrlCreateEdit("", 15, 378, 790, 58, BitOR($ES_READONLY, $ES_AUTOVSCROLL, $WS_VSCROLL))
-    Local $idNote = GUICtrlCreateLabel($SMARTUI_BROWSER_NOTE, 15, 440, 790, 30)
-    GUICtrlSetFont($idNote, 8.5, 400, 0, "Segoe UI")
-    GUICtrlSetColor($idNote, 0x8A4B08)
+    _UiLabel("SEÇİLİ STRATEJİ", 24, 366, 300, 18, 8.5, $UI_MUTED, 700)
+    Local $idDetail = GUICtrlCreateEdit("", 24, 386, 812, 62, BitOR($ES_READONLY, $ES_AUTOVSCROLL, $WS_VSCROLL), 0)
+    GUICtrlSetBkColor($idDetail, $UI_CARD)
+    GUICtrlSetColor($idDetail, $UI_TEXT)
+    GUICtrlSetFont($idDetail, 9, 400, 0, "Consolas")
+    _UiDarkControl($idDetail, "DarkMode_Explorer")
+    Local $idNote = _UiLabel($SMARTUI_BROWSER_NOTE, 24, 456, 812, 34, 8.5, $UI_YELLOW)
 
-    Local $bUseBest = GUICtrlCreateButton("★ Önerileni Kullan", 15, 482, 190, 36)
-    GUICtrlSetFont(-1, 10, 700, 0, "Segoe UI")
-    Local $bUseSel = GUICtrlCreateButton("Seçileni Kullan", 215, 482, 160, 36)
-    Local $bTry = GUICtrlCreateButton("Seçileni Dene", 385, 482, 160, 36)
-    Local $bClose = GUICtrlCreateButton("Kapat", 685, 482, 120, 36)
+    Local $bUseBest = _UiButton("★  Önerileni Kullan", 24, 520, 200, 38, $UI_KIND_PRIMARY, 10.5, 8, $UI_BG)
+    Local $bUseSel = _UiButton("Seçileni Kullan", 236, 520, 160, 38, $UI_KIND_SECONDARY, 10, 8, $UI_BG)
+    Local $bTry = _UiButton("Seçileni Dene", 408, 520, 170, 38, $UI_KIND_SECONDARY, 10, 8, $UI_BG)
+    Local $bClose = _UiButton("Kapat", 716, 520, 120, 38, $UI_KIND_SECONDARY, 10, 8, $UI_BG)
     If Not $bHasBest Then GUICtrlSetState($bUseBest, $GUI_DISABLE)
     GUISetState(@SW_SHOW, $h)
 
@@ -242,6 +251,7 @@ Func _SmartUI_ShowResults(ByRef $aRows, $sSummary, $sStrategyFile, $sWinwsPath, 
 
     While 1
         Local $nMsg = GUIGetMsg()
+        _UiTick($h)
         Switch $nMsg
             Case $GUI_EVENT_CLOSE, $bClose
                 ExitLoop
@@ -295,6 +305,7 @@ Func _SmartUI_ShowResults(ByRef $aRows, $sSummary, $sStrategyFile, $sWinwsPath, 
 
     If $iTryPid > 0 Then __SmartStopWinws($iTryPid)
     GUIDelete($h)
+    _UiRelease($aMark)
     GUISetState(@SW_ENABLE, $hParent)
 
     If $sChosen <> "" And $sStrategyFile <> "" Then

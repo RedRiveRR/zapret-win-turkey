@@ -59,8 +59,12 @@ Global $__g_aUiKinds[6][3] = [ _
         [$UI_SIDEBAR, 0x2E3035, $UI_TEXT2], _
         [0x404249, 0x404249, 0xFFFFFF]]
 
-; Kayıtlı butonlar: [n][8] = etiket, görüntü, tür, son görünüm, genişlik, yükseklik, köşe, zemin
-Global $__g_aUiBtn[0][8]
+; Kayıtlı butonlar: etiket, görüntü, tür, son görünüm, genişlik, yükseklik, köşe, zemin,
+;   x, y, yazı boyutu (-1: devre dışı yazısı çizilmez), bitmap'e çizilen yazı, ortalı mı
+Global Const $__UI_BTN_COLS = 13
+Global $__g_aUiBtn[0][$__UI_BTN_COLS]
+; Aç/kapa anahtarları: [n][4] = etiket, görüntü, açık mı, zemin
+Global $__g_aUiToggle[0][4]
 ; Etiket -> eşlik eden görüntü (_UiSetVisible için)
 Global $__g_oUiCompanion = 0
 ; Çizilmiş görüntü önbelleği: "g|y|köşe|dolgu|zemin" -> HBITMAP
@@ -87,8 +91,8 @@ Func _UiDarkWindow($hWnd, $iCaption = $UI_SIDEBAR)
 EndFunc
 
 ; Yuvarlak köşeli dolgu görüntüsü (köşe dışı $iBack ile doldurulur). Önbelleklidir.
-Func __UiRoundBitmap($w, $h, $r, $iFill, $iBack)
-    Local $sKey = $w & "|" & $h & "|" & $r & "|" & $iFill & "|" & $iBack
+Func __UiRoundBitmap($w, $h, $r, $iFill, $iBack, $sText = "", $fSize = 10, $iText = 0, $bCenter = True)
+    Local $sKey = $w & "|" & $h & "|" & $r & "|" & $iFill & "|" & $iBack & "|" & $sText & "|" & $fSize & "|" & $iText & "|" & $bCenter
     If $__g_oUiBmp.Exists($sKey) Then Return $__g_oUiBmp.Item($sKey)
     Local $hBmp = _GDIPlus_BitmapCreateFromScan0($w, $h)
     Local $hG = _GDIPlus_ImageGetGraphicsContext($hBmp)
@@ -108,6 +112,21 @@ Func __UiRoundBitmap($w, $h, $r, $iFill, $iBack)
         _GDIPlus_PathDispose($hPath)
     EndIf
     _GDIPlus_BrushDispose($hBrush)
+    If $sText <> "" Then
+        _GDIPlus_GraphicsSetTextRenderingHint($hG, 5) ; ClearType
+        Local $hFamily = _GDIPlus_FontFamilyCreate($UI_FONT_SEMI)
+        Local $hFont = _GDIPlus_FontCreate($hFamily, $fSize)
+        Local $hFormat = _GDIPlus_StringFormatCreate()
+        _GDIPlus_StringFormatSetAlign($hFormat, $bCenter ? 1 : 0)
+        _GDIPlus_StringFormatSetLineAlign($hFormat, 1)
+        Local $tRect = _GDIPlus_RectFCreate(0, 0, $w, $h)
+        Local $hTextBrush = _GDIPlus_BrushCreateSolid(BitOR(0xFF000000, $iText))
+        _GDIPlus_GraphicsDrawStringEx($hG, $sText, $hFont, $tRect, $hFormat, $hTextBrush)
+        _GDIPlus_BrushDispose($hTextBrush)
+        _GDIPlus_StringFormatDispose($hFormat)
+        _GDIPlus_FontDispose($hFont)
+        _GDIPlus_FontFamilyDispose($hFamily)
+    EndIf
     _GDIPlus_GraphicsDispose($hG)
     Local $hHB = _GDIPlus_BitmapCreateHBITMAPFromBitmap($hBmp)
     _GDIPlus_BitmapDispose($hBmp)
@@ -153,7 +172,7 @@ Func _UiButton($sText, $x, $y, $w, $h, $iKind = $UI_KIND_PRIMARY, $fSize = 10, $
     GUICtrlSetBkColor($id, $GUI_BKCOLOR_TRANSPARENT)
     GUICtrlSetCursor($id, 0)
     Local $n = UBound($__g_aUiBtn)
-    ReDim $__g_aUiBtn[$n + 1][8]
+    ReDim $__g_aUiBtn[$n + 1][$__UI_BTN_COLS]
     $__g_aUiBtn[$n][0] = $id
     $__g_aUiBtn[$n][1] = $idPic
     $__g_aUiBtn[$n][2] = $iKind
@@ -162,6 +181,11 @@ Func _UiButton($sText, $x, $y, $w, $h, $iKind = $UI_KIND_PRIMARY, $fSize = 10, $
     $__g_aUiBtn[$n][5] = $h
     $__g_aUiBtn[$n][6] = $iRadius
     $__g_aUiBtn[$n][7] = $iBack
+    $__g_aUiBtn[$n][8] = $x
+    $__g_aUiBtn[$n][9] = $y
+    $__g_aUiBtn[$n][10] = $fSize
+    $__g_aUiBtn[$n][11] = ""
+    $__g_aUiBtn[$n][12] = BitAND($iStyle, $SS_CENTER) = $SS_CENTER
     $__g_oUiCompanion.Item(String($id)) = $idPic
     __UiPaint($n, 0)
     Return $id
@@ -170,6 +194,7 @@ EndFunc
 ; Kenar menüsü öğesi (ikon + sola yaslı yazı).
 Func _UiNavItem($iGlyph, $sText, $x, $y, $w, $h = 40)
     Local $id = _UiButton("           " & $sText, $x, $y, $w, $h, $UI_KIND_NAV, 10.5, 8, $UI_SIDEBAR, BitOR($SS_LEFT, $SS_CENTERIMAGE))
+    $__g_aUiBtn[UBound($__g_aUiBtn) - 1][10] = -1 ; devre dışı yazısı çizilmez (menü öğeleri kapatılmaz)
     GUICtrlSetFont($id, 10.5, 500, 0, $UI_FONT)
     Local $idIcon = _UiIcon($iGlyph, $x + 10, $y, 26, $h, 12, $UI_TEXT2)
     GUICtrlSetState($idIcon, $GUI_DISABLE)
@@ -192,15 +217,30 @@ Func __UiPaint($i, $iLook)
     If $__g_aUiBtn[$i][3] = $iLook Then Return
     $__g_aUiBtn[$i][3] = $iLook
     Local $id = $__g_aUiBtn[$i][0], $k = $__g_aUiBtn[$i][2]
-    Local $iFill, $iText
+    Local $iFill, $iText, $sText = ""
     If $iLook = 2 Then
         $iFill = ($k = $UI_KIND_NAV) ? $UI_SIDEBAR : $UI_DISABLED_BG
         $iText = $UI_DISABLED_TX
+        ; Windows devre dışı etiketi kabartmalı çizer; yazıyı bitmap'e çizip etiketi görünmez alana alırız.
+        If $__g_aUiBtn[$i][10] > 0 Then $sText = GUICtrlRead($id)
     Else
         $iFill = $__g_aUiKinds[$k][$iLook]
         $iText = $__g_aUiKinds[$k][2]
     EndIf
-    __UiSetPicBitmap($__g_aUiBtn[$i][1], __UiRoundBitmap($__g_aUiBtn[$i][4], $__g_aUiBtn[$i][5], $__g_aUiBtn[$i][6], $iFill, $__g_aUiBtn[$i][7]))
+    $__g_aUiBtn[$i][11] = $sText
+    Local $hBmp
+    If $sText = "" Then
+        $hBmp = __UiRoundBitmap($__g_aUiBtn[$i][4], $__g_aUiBtn[$i][5], $__g_aUiBtn[$i][6], $iFill, $__g_aUiBtn[$i][7])
+    Else
+        $hBmp = __UiRoundBitmap($__g_aUiBtn[$i][4], $__g_aUiBtn[$i][5], $__g_aUiBtn[$i][6], $iFill, $__g_aUiBtn[$i][7], _
+                $sText, $__g_aUiBtn[$i][10], $iText, $__g_aUiBtn[$i][12])
+    EndIf
+    __UiSetPicBitmap($__g_aUiBtn[$i][1], $hBmp)
+    If $sText = "" Then
+        GUICtrlSetPos($id, $__g_aUiBtn[$i][8], $__g_aUiBtn[$i][9])
+    Else
+        GUICtrlSetPos($id, -30000, -30000)
+    EndIf
     GUICtrlSetColor($id, $iText)
     ; saydam etiket yeni zemine göre yeniden çizilsin
     DllCall("user32.dll", "bool", "InvalidateRect", "hwnd", GUICtrlGetHandle($id), "ptr", 0, "bool", True)
@@ -216,6 +256,7 @@ Func _UiTick($hWnd)
         Local $iLook = 0
         If BitAND(GUICtrlGetState($id), $GUI_DISABLE) Then
             $iLook = 2
+            If $__g_aUiBtn[$i][10] > 0 And GUICtrlRead($id) <> $__g_aUiBtn[$i][11] Then $__g_aUiBtn[$i][3] = -1
         ElseIf $id = $iHover Then
             $iLook = 1
         EndIf
@@ -228,6 +269,112 @@ Func _UiSetVisible($id, $bShow)
     Local $iState = $bShow ? $GUI_SHOW : $GUI_HIDE
     If IsObj($__g_oUiCompanion) And $__g_oUiCompanion.Exists(String($id)) Then GUICtrlSetState($__g_oUiCompanion.Item(String($id)), $iState)
     GUICtrlSetState($id, $iState)
+EndFunc
+
+; Diyalog açılmadan önce alınır; diyalog GUIDelete ile kapatıldıktan sonra _UiRelease ile
+; o diyaloğun buton/anahtar kayıtları silinir (AutoIt denetim kimliklerini yeniden kullanır,
+; eski kayıtlar yeni pencerelerdeki başka denetimleri boyayabilirdi).
+Func _UiMark()
+    Local $a[2] = [UBound($__g_aUiBtn), UBound($__g_aUiToggle)]
+    Return $a
+EndFunc
+
+Func _UiRelease($aMark)
+    For $i = $aMark[0] To UBound($__g_aUiBtn) - 1
+        If IsObj($__g_oUiCompanion) Then $__g_oUiCompanion.Remove(String($__g_aUiBtn[$i][0]))
+    Next
+    If UBound($__g_aUiBtn) > $aMark[0] Then ReDim $__g_aUiBtn[$aMark[0]][$__UI_BTN_COLS]
+    If UBound($__g_aUiToggle) > $aMark[1] Then ReDim $__g_aUiToggle[$aMark[1]][4]
+EndFunc
+
+; Koyu temalı alt pencere (diyalog) oluşturur.
+Func _UiWindow($sTitle, $w, $h, $hParent = 0)
+    Local $hWnd = GUICreate($sTitle, $w, $h, -1, -1, BitOR($WS_CAPTION, $WS_SYSMENU), 0, $hParent)
+    _UiDarkWindow($hWnd)
+    Return $hWnd
+EndFunc
+
+; İlerleme çubuğunu düz, vurgu renkli hale getirir (Windows görsel stili kaldırılır).
+Func _UiProgressStyle($id, $iBack = $UI_CARD)
+    DllCall("uxtheme.dll", "long", "SetWindowTheme", "hwnd", GUICtrlGetHandle($id), "wstr", "", "wstr", "")
+    GUICtrlSetColor($id, $UI_ACCENT)
+    GUICtrlSetBkColor($id, $iBack)
+EndFunc
+
+; --- Aç/kapa anahtarı (Discord tarzı) ---
+
+Func __UiToggleBitmap($bOn, $iBack)
+    Local $sKey = "toggle|" & $bOn & "|" & $iBack
+    If $__g_oUiBmp.Exists($sKey) Then Return $__g_oUiBmp.Item($sKey)
+    Local $w = 40, $h = 24
+    Local $hBmp = _GDIPlus_BitmapCreateFromScan0($w, $h)
+    Local $hG = _GDIPlus_ImageGetGraphicsContext($hBmp)
+    _GDIPlus_GraphicsSetSmoothingMode($hG, $GDIP_SMOOTHINGMODE_ANTIALIAS8X8)
+    _GDIPlus_GraphicsClear($hG, BitOR(0xFF000000, $iBack))
+    Local $hTrack = _GDIPlus_BrushCreateSolid(BitOR(0xFF000000, $bOn ? $UI_GREEN : 0x80848E))
+    Local $hPath = _GDIPlus_PathCreate()
+    _GDIPlus_PathAddArc($hPath, 0, 0, $h - 1, $h - 1, 90, 180)
+    _GDIPlus_PathAddArc($hPath, $w - $h, 0, $h - 1, $h - 1, 270, 180)
+    _GDIPlus_PathCloseFigure($hPath)
+    _GDIPlus_GraphicsFillPath($hG, $hPath, $hTrack)
+    Local $hKnob = _GDIPlus_BrushCreateSolid(0xFFFFFFFF)
+    _GDIPlus_GraphicsFillEllipse($hG, $bOn ? $w - $h + 3 : 3, 3, $h - 7, $h - 7, $hKnob)
+    _GDIPlus_PathDispose($hPath)
+    _GDIPlus_BrushDispose($hTrack)
+    _GDIPlus_BrushDispose($hKnob)
+    _GDIPlus_GraphicsDispose($hG)
+    Local $hHB = _GDIPlus_BitmapCreateHBITMAPFromBitmap($hBmp)
+    _GDIPlus_BitmapDispose($hBmp)
+    $__g_oUiBmp.Item($sKey) = $hHB
+    Return $hHB
+EndFunc
+
+; Anahtar + yazı. Dönüş: yazı etiketi kimliği (tıklama hem yazıda hem anahtarda çalışır).
+Func _UiToggle($sText, $x, $y, $w, $bOn, $iBack = $UI_CARD)
+    Local $idPic = GUICtrlCreatePic("", $x, $y, 40, 24)
+    __UiSetPicBitmap($idPic, __UiToggleBitmap($bOn, $iBack))
+    Local $id = GUICtrlCreateLabel($sText, $x + 52, $y, $w - 52, 24, BitOR($SS_LEFT, $SS_CENTERIMAGE, $SS_NOTIFY))
+    GUICtrlSetFont($id, 10, 400, 0, $UI_FONT)
+    GUICtrlSetColor($id, $UI_TEXT)
+    GUICtrlSetBkColor($id, $GUI_BKCOLOR_TRANSPARENT)
+    GUICtrlSetCursor($id, 0)
+    GUICtrlSetCursor($idPic, 0)
+    Local $n = UBound($__g_aUiToggle)
+    ReDim $__g_aUiToggle[$n + 1][4]
+    $__g_aUiToggle[$n][0] = $id
+    $__g_aUiToggle[$n][1] = $idPic
+    $__g_aUiToggle[$n][2] = $bOn
+    $__g_aUiToggle[$n][3] = $iBack
+    Return $id
+EndFunc
+
+; GUIGetMsg sonucu bir anahtara aitse durumunu çevirir ve True döner.
+Func _UiToggleHandle($nMsg)
+    If $nMsg <= 0 Then Return False
+    For $i = 0 To UBound($__g_aUiToggle) - 1
+        If $nMsg = $__g_aUiToggle[$i][0] Or $nMsg = $__g_aUiToggle[$i][1] Then
+            _UiToggleSet($__g_aUiToggle[$i][0], Not $__g_aUiToggle[$i][2])
+            Return True
+        EndIf
+    Next
+    Return False
+EndFunc
+
+Func _UiToggleSet($id, $bOn)
+    For $i = 0 To UBound($__g_aUiToggle) - 1
+        If $__g_aUiToggle[$i][0] = $id Then
+            $__g_aUiToggle[$i][2] = $bOn
+            __UiSetPicBitmap($__g_aUiToggle[$i][1], __UiToggleBitmap($bOn, $__g_aUiToggle[$i][3]))
+            Return
+        EndIf
+    Next
+EndFunc
+
+Func _UiToggleGet($id)
+    For $i = 0 To UBound($__g_aUiToggle) - 1
+        If $__g_aUiToggle[$i][0] = $id Then Return $__g_aUiToggle[$i][2]
+    Next
+    Return False
 EndFunc
 
 ; Yerel denetimi koyu temaya alır (combobox: "DarkMode_CFD", liste/edit: "DarkMode_Explorer").
