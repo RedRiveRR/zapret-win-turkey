@@ -6,7 +6,7 @@
 //   {tip:"bilgi", metin}
 //   {tip:"tema", tema:"acik|koyu"}
 // Sayfa -> program (postMessage):
-//   {tip:"hazir"}, {tip:"komut", ad:"baslat|durdur"}, {tip:"tema", tema}
+//   {tip:"hazir"}, {tip:"komut", ad:"baslat|durdur|eskiArayuz"}, {tip:"tema", tema}
 'use strict';
 
 const wv = window.chrome && window.chrome.webview;
@@ -28,6 +28,9 @@ document.querySelectorAll('nav a').forEach((a) => a.addEventListener('click', (e
   gorunumAc(a.dataset.gorunum);
 }));
 $('strateji-kart').addEventListener('click', (e) => { e.preventDefault(); gorunumAc('strateji'); });
+
+// Taşınmamış bölümler: eski arayüze geçiş
+document.querySelectorAll('[data-komut]').forEach((b) => b.addEventListener('click', () => gonder({ tip: 'komut', ad: b.dataset.komut })));
 
 // --- Tema ---
 function temaUygula(t) { document.documentElement.dataset.tema = t === 'koyu' ? 'koyu' : 'acik'; }
