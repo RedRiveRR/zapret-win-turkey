@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Geçit yönü</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#3DD6C3}a:hover{color:#7FE6DA}
+</style>
+</helmet>
+<div style="width: 920px; height: 600px; box-sizing: border-box; background: #0F1B2D; color: #E8EEF6; font-family: Bahnschrift, 'Segoe UI', sans-serif; display: flex; flex-direction: column;">
+  <nav style="height: 60px; box-sizing: border-box; padding: 0 28px; display: flex; align-items: center; gap: 28px; border-bottom: 1px solid #22344F;">
+    <div style="display: flex; align-items: center; gap: 10px; margin-right: 12px;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3DD6C3" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 3v6M12 15v6"></path></svg>
+      <span style="font-size: 19px; font-weight: 600; letter-spacing: 0.2px;">Zapret</span>
+    </div>
+    <a href="#" style="color: #E8EEF6; text-decoration: none; font-size: 14px; padding: 19px 0; border-bottom: 2px solid #3DD6C3;">Bağlantı</a>
+    <a href="#" style="color: #8DA2BF; text-decoration: none; font-size: 14px;">Analiz</a>
+    <a href="#" style="color: #8DA2BF; text-decoration: none; font-size: 14px;">Servis</a>
+    <a href="#" style="color: #8DA2BF; text-decoration: none; font-size: 14px;">Ağ paylaşımı</a>
+    <a href="#" style="color: #8DA2BF; text-decoration: none; font-size: 14px;">DNS</a>
+    <button aria-label="Ayarlar" style="margin-left: auto; width: 36px; height: 36px; border-radius: 18px; border: 1px solid #2A4062; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8DA2BF" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg>
+    </button>
+  </nav>
+  <div style="flex: 1; display: flex; min-height: 0;">
+    <section style="width: 430px; box-sizing: border-box; padding: 36px 28px 28px 40px; display: flex; flex-direction: column; align-items: center;">
+      <div style="position: relative; width: 248px; height: 248px;">
+        <svg width="248" height="248" viewBox="0 0 248 248" aria-hidden="true">
+          <circle cx="124" cy="124" r="112" fill="none" stroke="#1C2E48" stroke-width="14"></circle>
+          <circle cx="124" cy="124" r="112" fill="none" stroke="#3DD6C3" stroke-width="14" stroke-linecap="round" stroke-dasharray="640 704" transform="rotate(-90 124 124)"></circle>
+          <circle cx="124" cy="124" r="90" fill="#13233A"></circle>
+        </svg>
+        <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;">
+          <span style="font-size: 40px; font-weight: 600; color: #3DD6C3; line-height: 1;">Açık</span>
+          <span style="font-size: 14px; color: #8DA2BF;">Discord erişilebilir</span>
+        </div>
+      </div>
+      <p style="margin: 22px 0 0; font-size: 14px; color: #B9C7DA; text-align: center; line-height: 1.5; max-width: 300px;">Servis olarak çalışıyor, bilgisayar açılınca kendiliğinden başlar.</p>
+      <button style="margin-top: auto; width: 280px; height: 48px; border-radius: 24px; border: 1px solid #3A5378; background: #16263D; color: #E8EEF6; font-family: inherit; font-size: 15px; cursor: pointer;">Durdur</button>
+    </section>
+    <section style="flex: 1; box-sizing: border-box; padding: 36px 40px 28px 12px; display: flex; flex-direction: column; gap: 22px;">
+      <div>
+        <h2 style="margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #E8EEF6;">Son kontrol, 2 dakika önce</h2>
+        <div style="display: flex; flex-direction: column; border: 1px solid #22344F; border-radius: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #22344F;">
+            <span style="width: 9px; height: 9px; border-radius: 5px; background: #3DD6C3;"></span>
+            <span style="flex: 1; font-size: 15px;">Discord</span>
+            <span style="font-size: 14px; color: #8DA2BF;">92 ms</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #22344F;">
+            <span style="width: 9px; height: 9px; border-radius: 5px; background: #3DD6C3;"></span>
+            <span style="flex: 1; font-size: 15px;">Sohbet bağlantısı (gateway)</span>
+            <span style="font-size: 14px; color: #8DA2BF;">118 ms</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px; padding: 14px 18px;">
+            <span style="width: 9px; height: 9px; border-radius: 5px; background: #F2B84B;"></span>
+            <span style="flex: 1; font-size: 15px;">Roblox</span>
+            <span style="font-size: 14px; color: #F2B84B;">yavaş, 640 ms</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h2 style="margin: 0 0 12px; font-size: 15px; font-weight: 600;">Strateji</h2>
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: #16263D; border-radius: 12px;">
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            <span style="font-size: 16px;">Akıllı analiz önerisi</span>
+            <span style="font-size: 13px; color: #8DA2BF;">multidisorder, 99,6 puan</span>
+          </div>
+          <a href="#" style="font-size: 14px; text-decoration: none;">Değiştir</a>
+        </div>
+      </div>
+      <div style="display: flex; gap: 16px;">
+        <div style="flex: 1;">
+          <h2 style="margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #B9C7DA;">Motor</h2>
+          <div style="display: flex; padding: 3px; background: #16263D; border-radius: 10px;">
+            <button style="flex: 1; height: 34px; border: 0; border-radius: 8px; background: #2A4062; color: #E8EEF6; font-family: inherit; font-size: 14px;">Zapret2</button>
+            <button style="flex: 1; height: 34px; border: 0; border-radius: 8px; background: transparent; color: #8DA2BF; font-family: inherit; font-size: 14px;">Klasik</button>
+          </div>
+        </div>
+        <div style="flex: 1.4;">
+          <h2 style="margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #B9C7DA;">Hangi siteler</h2>
+          <div style="display: flex; padding: 3px; background: #16263D; border-radius: 10px;">
+            <button style="flex: 1; height: 34px; border: 0; border-radius: 8px; background: #2A4062; color: #E8EEF6; font-family: inherit; font-size: 14px;">Otomatik</button>
+            <button style="flex: 1; height: 34px; border: 0; border-radius: 8px; background: transparent; color: #8DA2BF; font-family: inherit; font-size: 14px;">Listem</button>
+            <button style="flex: 1; height: 34px; border: 0; border-radius: 8px; background: transparent; color: #8DA2BF; font-family: inherit; font-size: 14px;">Tümü</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":920,"height":600}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
