@@ -41,10 +41,18 @@ Func _WebStateJson($sStatus, $sRunText, $bRunEnabled, $sStrategy, $sEngine, $sFi
     $s = _WebJsonAdd($s, "dugme", $bRunEnabled = True)
     $s = _WebJsonAdd($s, "strateji", $sStrategy)
     Local $sDetail = (StringInStr($sEngine, "Zapret2") ? "Zapret2 motoru" : "Klasik motor")
-    If $sFilter <> "" Then $sDetail &= ", " & _WebLowerFirst(StringRegExpReplace($sFilter, "\s*\(.*$", "")) & " filtre"
+    If $sFilter <> "" Then $sDetail &= ", " & _WebFilterText($sFilter)
     $s = _WebJsonAdd($s, "stratejiDetay", $sDetail)
     $s = _WebJsonAdd($s, "onarim", $sHealth = "" ? "Servis kurulunca etkinleşir" : $sHealth)
     Return $s
+EndFunc
+
+; Filtre seçimi metnini kullanıcı diline çevirir.
+Func _WebFilterText($sFilter)
+    If StringInStr($sFilter, "Auto") Then Return "otomatik site listesi"
+    If StringInStr($sFilter, "Manuel") Then Return "kendi site listen"
+    If StringInStr($sFilter, "Kapalı") Then Return "tüm trafik"
+    Return _WebLowerFirst(StringRegExpReplace($sFilter, "\s*\(.*$", ""))
 EndFunc
 
 ; Türkçe kurallarıyla küçük harf (İ->i, I->ı).
