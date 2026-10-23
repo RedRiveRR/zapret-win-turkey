@@ -1907,15 +1907,14 @@ Func _WebUiTick($nMsg)
                     Return $nMsg
                 ElseIf ($sCmd = "baslat" And Not $isZapretRunning) Or ($sCmd = "durdur" And $isZapretRunning) Then
                     If BitAND(GUICtrlGetState($btnRunZapret), $GUI_ENABLE) Then Return $btnRunZapret
-                ElseIf $sCmd = "analiz" Or $sCmd = "sonuclar" Then
+                ElseIf $sCmd = "sonuclar" Then
+                    $g_sWebLastStratJson = ""
+                    If BitAND(GUICtrlGetState($btnAnalyze), $GUI_ENABLE) Then _WebUiShowSmartResults()
+                ElseIf $sCmd = "analiz" Then
                     $g_sWebLastStratJson = ""
                     If BitAND(GUICtrlGetState($btnAnalyze), $GUI_ENABLE) Then
                         ; Eski Analiz düğmesiyle aynı akış (servis kuruluysa servis güncellemesi dahil); seçici atlanır.
-                        If $sCmd = "sonuclar" Then
-                            $g_iWebAnalysisChoice = $SMARTUI_PREV_SMART
-                        Else
-                            $g_iWebAnalysisChoice = (_WebJsonGet($sMsg, "tur") = "tam") ? $SMARTUI_FULL : $SMARTUI_QUICK
-                        EndIf
+                        $g_iWebAnalysisChoice = (_WebJsonGet($sMsg, "tur") = "tam") ? $SMARTUI_FULL : $SMARTUI_QUICK
                         Return $btnAnalyze
                     EndIf
                 ElseIf $sCmd = "servisKur" Or $sCmd = "servisKaldir" Or $sCmd = "servisAyarlar" Then
@@ -2081,6 +2080,36 @@ Func _WebUiApplySetting($sName, $bOn)
 EndFunc
 
 ; Strateji ekranının durumunu eski denetimlerden ve son akıllı analiz dosyasından gönderir.
+; "Tüm sonuçlar": yalnızca bakmak servisi durdurmaz. Servis kuruluysa "Dene" kapalıdır (WinDivert çakışır);
+; yeni bir strateji seçilirse servis yalnızca o zaman durdurulup yeni stratejiyle başlatılır.
+Func _WebUiShowSmartResults()
+    Local $bService = _ServiceIsInstalled($serviceName)
+    Local $sBefore = StringStripWS(FileRead($strategyFile), 3)
+    If $g_sUiPreviewDir <> "" Then
+        _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", "Önizleme: sonuç penceresi açılmadı (servis kurulu: " & $bService & ")"))
+        Return
+    EndIf
+    If _SmartUI_ShowSaved(_SmartResultsPath(), $strategyFile, $winwsPath, _MainWindowHandle(), Not $bService) = "" Then Return
+    _AfterSmartStrategyChosen()
+    Local $sAfter = StringStripWS(FileRead($strategyFile), 3)
+    If Not $bService Or $sAfter = "" Or $sAfter = $sBefore Then Return
+    If Not StringInStr(_ServiceParseBinPath(_ServiceGetConfig($serviceName)), "winws2.exe") Then
+        MsgBox(48 + 8192, "Servis Stratejisi", "Strateji kaydedildi, ancak kurulu servis klasik Zapret motorunu kullandığı için servise uygulanmadı.")
+        Return
+    EndIf
+    GUICtrlSetData($lblStatusText, "SERVİS GEÇİCİ OLARAK DURDURULDU")
+    Local $sArgs = _BuildActiveWinwsArgs($sAfter)
+    Local $bOk = _ServiceUpdateArgs($serviceName, $winwsPath, $sArgs)
+    _LogInfo("Servis stratejisi sonuç penceresinden güncellendi (" & ($bOk ? "çalışıyor" : "BAŞLATILAMADI") & "): " & $sArgs)
+    If $bOk Then
+        MsgBox(64 + 8192, "Servis Güncellendi", "Servis yeni stratejiyle yeniden başlatıldı:" & @CRLF & $sAfter)
+    Else
+        MsgBox(16 + 8192, "Servis Güncellenemedi", "Servis yeni stratejiyle başlatılamadı. logspp.log dosyasına bakın.")
+    EndIf
+    $bServiceStoppedWarned = False
+    CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
+EndFunc
+
 Func _WebUiSyncStrategy()
     ; Sonuç dosyası 2 sn'de bir, yalnızca değiştiyse yeniden okunur.
     If $g_hWebStratTimer = 0 Or TimerDiff($g_hWebStratTimer) > 2000 Then
@@ -2197,6 +2226,9 @@ Func _WebUiPreviewAndExit($sDir)
         _WV2_Exec("document.querySelector('nav a[data-gorunum=strateji]').click()")
         __WebUiPreviewPump(1500, $sLog)
         _ScreenCapture_CaptureWnd($sDir & "\strateji.png", $hWebGui)
+        _WV2_Exec("document.getElementById('tum-sonuclar').click()")
+        __WebUiPreviewPump(800, $sLog)
+        FileWriteLine($sLog, "Tüm sonuçlar: Analiz olayı yok (servis durdurulmaz)")
         _WV2_Exec("document.querySelector('[data-tur=tam]').click(); document.getElementById('analiz-baslat').click()")
         __WebUiPreviewPump(1000, $sLog)
         _WV2_Exec("const f = document.getElementById('sec-filtre'); f.value = 'Manuel (hostlist.txt)'; f.dispatchEvent(new Event('change'))")

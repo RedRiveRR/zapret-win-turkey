@@ -180,14 +180,15 @@ Func __SmartUI_Progress($iDone, $iTotal, $sText)
 EndFunc
 
 ; Önceki sonuç dosyasını açar.
-Func _SmartUI_ShowSaved($sResultsPath, $sStrategyFile, $sWinwsPath, $hParent)
+; $bAllowTry = False: "Seçileni Dene" kapalı (servis çalışırken ikinci winws WinDivert'te çakışır).
+Func _SmartUI_ShowSaved($sResultsPath, $sStrategyFile, $sWinwsPath, $hParent, $bAllowTry = True)
     Local $sSummary
     Local $aRows = _SmartLoadResults($sResultsPath, $sSummary)
     If UBound($aRows) = 0 Then
         MsgBox(48 + 8192, "Akıllı Analiz", "Kayıtlı akıllı analiz sonucu bulunamadı.")
         Return ""
     EndIf
-    Return _SmartUI_ShowResults($aRows, $sSummary, $sStrategyFile, $sWinwsPath, $hParent)
+    Return _SmartUI_ShowResults($aRows, $sSummary, $sStrategyFile, $sWinwsPath, $hParent, $bAllowTry)
 EndFunc
 
 ; Durum metni
@@ -199,7 +200,7 @@ Func _SmartUI_StatusText(ByRef $aRows, $i)
 EndFunc
 
 ; Sonuç tablosu. Dönüş: kullanılmak üzere seçilen strateji ya da "".
-Func _SmartUI_ShowResults(ByRef $aRows, $sSummary, $sStrategyFile, $sWinwsPath, $hParent)
+Func _SmartUI_ShowResults(ByRef $aRows, $sSummary, $sStrategyFile, $sWinwsPath, $hParent, $bAllowTry = True)
     GUISetState(@SW_DISABLE, $hParent)
     Local $aMark = _UiMark()
     Local $h = _UiWindow("Akıllı Analiz Sonuçları", 860, 580, $hParent)
@@ -242,6 +243,7 @@ Func _SmartUI_ShowResults(ByRef $aRows, $sSummary, $sStrategyFile, $sWinwsPath, 
     Local $bUseSel = _UiButton("Seçileni Kullan", 236, 520, 160, 38, $UI_KIND_SECONDARY, 10, 8, $UI_BG)
     Local $bTry = _UiButton("Seçileni Dene", 408, 520, 170, 38, $UI_KIND_SECONDARY, 10, 8, $UI_BG)
     Local $bClose = _UiButton("Kapat", 716, 520, 120, 38, $UI_KIND_SECONDARY, 10, 8, $UI_BG)
+    If Not $bAllowTry Then GUICtrlSetState($bTry, $GUI_DISABLE)
     If Not $bHasBest Then GUICtrlSetState($bUseBest, $GUI_DISABLE)
     GUISetState(@SW_SHOW, $h)
 
