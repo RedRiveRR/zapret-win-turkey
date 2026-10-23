@@ -1,0 +1,236 @@
+﻿#include-once
+#include <GUIConstantsEx.au3>
+#include <StaticConstants.au3>
+#include <WindowsConstants.au3>
+#include <GDIPlus.au3>
+#include <WinAPIGdi.au3>
+
+; =========================================================================
+; --- ARAYÜZ TEMASI (Discord benzeri koyu tema) ---
+; Kartlar ve butonlar GDI+ ile kenar yumuşatmalı, yuvarlak köşeli görüntü
+; olarak çizilir (Picture denetimi); yazı üstte saydam etikettir.
+;
+; Buton kimliği = üstteki etiket: GUIGetMsg tıklamada onu döndürür,
+; GUICtrlSetState/GUICtrlSetData normal çalışır. Üzerine gelme ve devre dışı
+; görünümü _UiTick() ile güncellenir (ana döngüde her turda çağrılmalı).
+; Sayfa gösterme/gizleme için _UiSetVisible kullanılmalı (alt görüntü de gizlenir).
+; =========================================================================
+
+; --- Renkler (RGB) ---
+Global Const $UI_BG = 0x313338
+Global Const $UI_SIDEBAR = 0x1E1F22
+Global Const $UI_CARD = 0x383A40
+Global Const $UI_TEXT = 0xF2F3F5
+Global Const $UI_TEXT2 = 0xB5BAC1
+Global Const $UI_MUTED = 0x80848E
+Global Const $UI_ACCENT = 0x5865F2
+Global Const $UI_GREEN = 0x23A55A
+Global Const $UI_RED = 0xDA373C
+Global Const $UI_YELLOW = 0xF0B232
+Global Const $UI_DISABLED_BG = 0x45474E
+Global Const $UI_DISABLED_TX = 0x8E9297
+
+Global Const $UI_FONT = "Segoe UI"
+Global Const $UI_FONT_SEMI = "Segoe UI Semibold"
+Global Const $UI_ICON_FONT = "Segoe MDL2 Assets"
+
+; Segoe MDL2 Assets ikonları
+Global Const $UI_ICON_HOME = 0xE80F
+Global Const $UI_ICON_SEARCH = 0xE721
+Global Const $UI_ICON_SHIELD = 0xEA18
+Global Const $UI_ICON_SHARE = 0xE72D
+Global Const $UI_ICON_GLOBE = 0xE774
+Global Const $UI_ICON_SETTINGS = 0xE713
+Global Const $UI_ICON_HEART = 0xEB51
+Global Const $UI_ICON_INFO = 0xE946
+
+; Buton türleri: [normal, üzerinde, yazı]
+Global Const $UI_KIND_PRIMARY = 0
+Global Const $UI_KIND_SUCCESS = 1
+Global Const $UI_KIND_DANGER = 2
+Global Const $UI_KIND_SECONDARY = 3
+Global Const $UI_KIND_NAV = 4
+Global Const $UI_KIND_NAV_ACTIVE = 5
+Global $__g_aUiKinds[6][3] = [ _
+        [$UI_ACCENT, 0x4752C4, 0xFFFFFF], _
+        [$UI_GREEN, 0x1A8B4A, 0xFFFFFF], _
+        [$UI_RED, 0xA12828, 0xFFFFFF], _
+        [0x4E5058, 0x6D6F78, 0xFFFFFF], _
+        [$UI_SIDEBAR, 0x2E3035, $UI_TEXT2], _
+        [0x404249, 0x404249, 0xFFFFFF]]
+
+; Kayıtlı butonlar: [n][8] = etiket, görüntü, tür, son görünüm, genişlik, yükseklik, köşe, zemin
+Global $__g_aUiBtn[0][8]
+; Etiket -> eşlik eden görüntü (_UiSetVisible için)
+Global $__g_oUiCompanion = 0
+; Çizilmiş görüntü önbelleği: "g|y|köşe|dolgu|zemin" -> HBITMAP
+Global $__g_oUiBmp = 0
+
+Func _UiInit()
+    _GDIPlus_Startup()
+    $__g_oUiCompanion = ObjCreate("Scripting.Dictionary")
+    $__g_oUiBmp = ObjCreate("Scripting.Dictionary")
+    DllCall("uxtheme.dll", "int", 135, "int", 2) ; SetPreferredAppMode(ForceDark): koyu açılır listeler
+    DllCall("uxtheme.dll", "none", 136)          ; FlushMenuThemes
+EndFunc
+
+; RGB -> COLORREF (BGR)
+Func __UiBgr($iRgb)
+    Return BitOR(BitShift(BitAND($iRgb, 0xFF), -16), BitAND($iRgb, 0xFF00), BitShift(BitAND($iRgb, 0xFF0000), 16))
+EndFunc
+
+; Koyu başlık çubuğu ve başlık rengi (Windows 11'de tam, 10'da koyu başlık).
+Func _UiDarkWindow($hWnd, $iCaption = $UI_SIDEBAR)
+    DllCall("dwmapi.dll", "long", "DwmSetWindowAttribute", "hwnd", $hWnd, "dword", 20, "int*", 1, "dword", 4)
+    DllCall("dwmapi.dll", "long", "DwmSetWindowAttribute", "hwnd", $hWnd, "dword", 35, "dword*", __UiBgr($iCaption), "dword", 4)
+    GUISetBkColor($UI_BG, $hWnd)
+EndFunc
+
+; Yuvarlak köşeli dolgu görüntüsü (köşe dışı $iBack ile doldurulur). Önbelleklidir.
+Func __UiRoundBitmap($w, $h, $r, $iFill, $iBack)
+    Local $sKey = $w & "|" & $h & "|" & $r & "|" & $iFill & "|" & $iBack
+    If $__g_oUiBmp.Exists($sKey) Then Return $__g_oUiBmp.Item($sKey)
+    Local $hBmp = _GDIPlus_BitmapCreateFromScan0($w, $h)
+    Local $hG = _GDIPlus_ImageGetGraphicsContext($hBmp)
+    _GDIPlus_GraphicsSetSmoothingMode($hG, $GDIP_SMOOTHINGMODE_ANTIALIAS8X8)
+    _GDIPlus_GraphicsClear($hG, BitOR(0xFF000000, $iBack))
+    Local $hBrush = _GDIPlus_BrushCreateSolid(BitOR(0xFF000000, $iFill))
+    If $r <= 0 Then
+        _GDIPlus_GraphicsFillRect($hG, 0, 0, $w, $h, $hBrush)
+    Else
+        Local $d = $r * 2, $hPath = _GDIPlus_PathCreate()
+        _GDIPlus_PathAddArc($hPath, 0, 0, $d, $d, 180, 90)
+        _GDIPlus_PathAddArc($hPath, $w - $d - 1, 0, $d, $d, 270, 90)
+        _GDIPlus_PathAddArc($hPath, $w - $d - 1, $h - $d - 1, $d, $d, 0, 90)
+        _GDIPlus_PathAddArc($hPath, 0, $h - $d - 1, $d, $d, 90, 90)
+        _GDIPlus_PathCloseFigure($hPath)
+        _GDIPlus_GraphicsFillPath($hG, $hPath, $hBrush)
+        _GDIPlus_PathDispose($hPath)
+    EndIf
+    _GDIPlus_BrushDispose($hBrush)
+    _GDIPlus_GraphicsDispose($hG)
+    Local $hHB = _GDIPlus_BitmapCreateHBITMAPFromBitmap($hBmp)
+    _GDIPlus_BitmapDispose($hBmp)
+    $__g_oUiBmp.Item($sKey) = $hHB
+    Return $hHB
+EndFunc
+
+Func __UiSetPicBitmap($idPic, $hHB)
+    GUICtrlSendMsg($idPic, 0x0172, 0, $hHB) ; STM_SETIMAGE, IMAGE_BITMAP
+EndFunc
+
+; Yuvarlak köşeli kart. Üzerindeki denetimlerden ÖNCE oluşturulmalı; tıklamaları yutmaz.
+;   $iBack: kartın oturduğu zemin rengi (köşe dışı).
+Func _UiCard($x, $y, $w, $h, $iColor = $UI_CARD, $iRadius = 14, $iBack = $UI_BG)
+    Local $id = GUICtrlCreatePic("", $x, $y, $w, $h)
+    __UiSetPicBitmap($id, __UiRoundBitmap($w, $h, $iRadius, $iColor, $iBack))
+    GUICtrlSetState($id, $GUI_DISABLE)
+    Return $id
+EndFunc
+
+; Yazı etiketi (saydam zemin).
+Func _UiLabel($sText, $x, $y, $w, $h, $fSize = 10, $iColor = $UI_TEXT, $iWeight = 400, $iStyle = 0, $sFont = $UI_FONT)
+    Local $id = GUICtrlCreateLabel($sText, $x, $y, $w, $h, $iStyle)
+    GUICtrlSetFont($id, $fSize, $iWeight, 0, $sFont)
+    GUICtrlSetColor($id, $iColor)
+    GUICtrlSetBkColor($id, $GUI_BKCOLOR_TRANSPARENT)
+    Return $id
+EndFunc
+
+; İkon etiketi (Segoe MDL2 Assets).
+Func _UiIcon($iGlyph, $x, $y, $w, $h, $fSize = 14, $iColor = $UI_TEXT2)
+    Return _UiLabel(ChrW($iGlyph), $x, $y, $w, $h, $fSize, $iColor, 400, BitOR($SS_CENTER, $SS_CENTERIMAGE), $UI_ICON_FONT)
+EndFunc
+
+; Düz, yuvarlak köşeli buton. Dönüş: etiket kimliği (GUIGetMsg ile yakalanır).
+;   $iBack: butonun oturduğu zemin (kart üstündeyse $UI_CARD).
+Func _UiButton($sText, $x, $y, $w, $h, $iKind = $UI_KIND_PRIMARY, $fSize = 10, $iRadius = 8, $iBack = $UI_CARD, $iStyle = -1)
+    Local $idPic = GUICtrlCreatePic("", $x, $y, $w, $h)
+    GUICtrlSetState($idPic, $GUI_DISABLE)
+    If $iStyle = -1 Then $iStyle = BitOR($SS_CENTER, $SS_CENTERIMAGE)
+    Local $id = GUICtrlCreateLabel($sText, $x, $y, $w, $h, BitOR($iStyle, $SS_NOTIFY))
+    GUICtrlSetFont($id, $fSize, 600, 0, $UI_FONT_SEMI)
+    GUICtrlSetBkColor($id, $GUI_BKCOLOR_TRANSPARENT)
+    GUICtrlSetCursor($id, 0)
+    Local $n = UBound($__g_aUiBtn)
+    ReDim $__g_aUiBtn[$n + 1][8]
+    $__g_aUiBtn[$n][0] = $id
+    $__g_aUiBtn[$n][1] = $idPic
+    $__g_aUiBtn[$n][2] = $iKind
+    $__g_aUiBtn[$n][3] = -1
+    $__g_aUiBtn[$n][4] = $w
+    $__g_aUiBtn[$n][5] = $h
+    $__g_aUiBtn[$n][6] = $iRadius
+    $__g_aUiBtn[$n][7] = $iBack
+    $__g_oUiCompanion.Item(String($id)) = $idPic
+    __UiPaint($n, 0)
+    Return $id
+EndFunc
+
+; Kenar menüsü öğesi (ikon + sola yaslı yazı).
+Func _UiNavItem($iGlyph, $sText, $x, $y, $w, $h = 40)
+    Local $id = _UiButton("           " & $sText, $x, $y, $w, $h, $UI_KIND_NAV, 10.5, 8, $UI_SIDEBAR, BitOR($SS_LEFT, $SS_CENTERIMAGE))
+    GUICtrlSetFont($id, 10.5, 500, 0, $UI_FONT)
+    Local $idIcon = _UiIcon($iGlyph, $x + 10, $y, 26, $h, 12, $UI_TEXT2)
+    GUICtrlSetState($idIcon, $GUI_DISABLE)
+    Return $id
+EndFunc
+
+; Butonun türünü (rengini) değiştirir; ör. Başlat (yeşil) <-> Durdur (kırmızı).
+Func _UiButtonSetKind($id, $iKind)
+    For $i = 0 To UBound($__g_aUiBtn) - 1
+        If $__g_aUiBtn[$i][0] = $id Then
+            $__g_aUiBtn[$i][2] = $iKind
+            $__g_aUiBtn[$i][3] = -1
+            __UiPaint($i, BitAND(GUICtrlGetState($id), $GUI_DISABLE) ? 2 : 0)
+            Return
+        EndIf
+    Next
+EndFunc
+
+Func __UiPaint($i, $iLook)
+    If $__g_aUiBtn[$i][3] = $iLook Then Return
+    $__g_aUiBtn[$i][3] = $iLook
+    Local $id = $__g_aUiBtn[$i][0], $k = $__g_aUiBtn[$i][2]
+    Local $iFill, $iText
+    If $iLook = 2 Then
+        $iFill = ($k = $UI_KIND_NAV) ? $UI_SIDEBAR : $UI_DISABLED_BG
+        $iText = $UI_DISABLED_TX
+    Else
+        $iFill = $__g_aUiKinds[$k][$iLook]
+        $iText = $__g_aUiKinds[$k][2]
+    EndIf
+    __UiSetPicBitmap($__g_aUiBtn[$i][1], __UiRoundBitmap($__g_aUiBtn[$i][4], $__g_aUiBtn[$i][5], $__g_aUiBtn[$i][6], $iFill, $__g_aUiBtn[$i][7]))
+    GUICtrlSetColor($id, $iText)
+    ; saydam etiket yeni zemine göre yeniden çizilsin
+    DllCall("user32.dll", "bool", "InvalidateRect", "hwnd", GUICtrlGetHandle($id), "ptr", 0, "bool", True)
+EndFunc
+
+; Üzerine gelme ve devre dışı görünümünü günceller. Ana döngüde her turda çağrılır.
+Func _UiTick($hWnd)
+    Local $iHover = 0
+    Local $a = GUIGetCursorInfo($hWnd)
+    If IsArray($a) Then $iHover = $a[4]
+    For $i = 0 To UBound($__g_aUiBtn) - 1
+        Local $id = $__g_aUiBtn[$i][0]
+        Local $iLook = 0
+        If BitAND(GUICtrlGetState($id), $GUI_DISABLE) Then
+            $iLook = 2
+        ElseIf $id = $iHover Then
+            $iLook = 1
+        EndIf
+        __UiPaint($i, $iLook)
+    Next
+EndFunc
+
+; Denetimi (butonsa alt görüntüsüyle birlikte) gösterir/gizler.
+Func _UiSetVisible($id, $bShow)
+    Local $iState = $bShow ? $GUI_SHOW : $GUI_HIDE
+    If IsObj($__g_oUiCompanion) And $__g_oUiCompanion.Exists(String($id)) Then GUICtrlSetState($__g_oUiCompanion.Item(String($id)), $iState)
+    GUICtrlSetState($id, $iState)
+EndFunc
+
+; Yerel denetimi koyu temaya alır (combobox: "DarkMode_CFD", liste/edit: "DarkMode_Explorer").
+Func _UiDarkControl($id, $sTheme = "DarkMode_CFD")
+    DllCall("uxtheme.dll", "long", "SetWindowTheme", "hwnd", GUICtrlGetHandle($id), "wstr", $sTheme, "ptr", 0)
+EndFunc
