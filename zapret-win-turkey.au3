@@ -63,6 +63,7 @@ Global $g_sWebLastSvcJson = "", $g_hWebSvcTimer = 0, $g_hWebTaskTimer = 0, $g_sW
 Global $g_bWebHealthIni = True, $g_bWebRestartIni = False, $g_sWebSvcHealth = ""
 ; DNS ekranı: etkin DNS sunucuları ("?" = okunmadı; PowerShell gerektirir, yalnızca sekme açılınca ve değişiklikten sonra okunur)
 Global $g_sWebDnsServers = "?", $g_bWebDnsReread = False, $g_sWebLastDnsJson = ""
+Global $g_sWebLastOtherJson = "", $g_sWebUpdateIni = "1"
 If $CmdLine[0] >= 2 And $CmdLine[1] = "/arayuz-onizleme" Then $g_sUiPreviewDir = $CmdLine[2]
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
@@ -1887,6 +1888,7 @@ Func _WebUiTick($nMsg)
                 $g_bWebPageReady = True
                 $g_sWebLastJson = ""
                 $g_sWebLastStratJson = ""
+                $g_sWebLastOtherJson = ""
                 _WebUiServiceRefreshSoon()
                 _WV2_Post(_WebJsonObj("tip", "tema", "tema", _WebUiTheme()))
             Case "tema"
@@ -1920,6 +1922,23 @@ Func _WebUiTick($nMsg)
                     _WebUiServiceRefreshSoon()
                     Local $idSvcBtn = ($sCmd = "servisKur") ? $btnInstallService : (($sCmd = "servisKaldir") ? $btnRemoveService : $btnSvcSettings)
                     If BitAND(GUICtrlGetState($idSvcBtn), $GUI_ENABLE) Then Return $idSvcBtn
+                ElseIf $sCmd = "tanilama" Or $sCmd = "kayitlar" Or $sCmd = "ayarlar" Or $sCmd = "paylasim" Or $sCmd = "temizle" Then
+                    $g_sWebLastOtherJson = ""
+                    _WebUiServiceRefreshSoon()
+                    Local $idOther
+                    Switch $sCmd
+                        Case "tanilama"
+                            $idOther = $btnPageDiag
+                        Case "kayitlar"
+                            $idOther = $btnPageLogs
+                        Case "ayarlar"
+                            $idOther = $btnPageSettings
+                        Case "paylasim"
+                            $idOther = $btnLanShare
+                        Case Else
+                            $idOther = $btnRemoveService
+                    EndSwitch
+                    If BitAND(GUICtrlGetState($idOther), $GUI_ENABLE) Then Return $idOther
                 ElseIf $sCmd = "dns" Then
                     $g_bWebDnsReread = True
                     $g_sWebLastDnsJson = ""
@@ -1959,6 +1978,12 @@ Func _WebUiTick($nMsg)
         _WebUiSyncStrategy()
         _WebUiSyncService()
         _WebUiSyncDns()
+        Local $sOther = _WebOtherJson(GUICtrlRead($btnLanShare), BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) <> 0, $g_sWebUpdateIni, _
+                $APP_VERSION, $g_sEngineFooter, BitAND(GUICtrlGetState($btnRemoveService), $GUI_ENABLE) <> 0)
+        If $sOther <> $g_sWebLastOtherJson Then
+            $g_sWebLastOtherJson = $sOther
+            _WV2_Post($sOther)
+        EndIf
     EndIf
     Return $nMsg
 EndFunc
@@ -1983,6 +2008,7 @@ Func _WebUiSyncService()
         ; Ayarlar penceresiyle aynı kural: servis varken görev yoksa onarım kapalı sayılır.
         $g_bWebHealthIni = $sEnabled = "1" And ($g_bWebTaskExists Or Not $bService)
         $g_bWebRestartIni = IniRead($iniPath, "Service", "AutoRestart", "0") = "1"
+        $g_sWebUpdateIni = IniRead($iniPath, "Settings", "UpdateCheck", "1")
         $g_sWebSvcHealth = _HealthStatusFormat($bService, $sEnabled, IniRead($iniPath, "Health", "LastCheck", ""), _
                 IniRead($iniPath, "Health", "LastResult", ""), @YEAR & "/" & @MON & "/" & @MDAY)
     EndIf
@@ -2038,13 +2064,15 @@ Func _WebUiApplySetting($sName, $bOn)
         _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", "Önizleme: " & $sName & "=" & $bOn & " uygulanmadı"))
         Return
     EndIf
-    Local $bService = _ServiceIsInstalled($serviceName)
+    Local $bService = ($sName = "guncelleme") ? False : _ServiceIsInstalled($serviceName)
     Local $sNote = ""
     Switch $sName
         Case "onarim"
             $sNote = _SettingsApplyHealth($iniPath, $bService, $bOn)
         Case "yenidenBaslat"
             _SettingsApplyRestart($iniPath, $serviceName, $bService, $bOn)
+        Case "guncelleme"
+            IniWrite($iniPath, "Settings", "UpdateCheck", $bOn ? "1" : "0")
         Case Else
             Return
     EndSwitch
@@ -2121,6 +2149,8 @@ Func __WebUiPreviewPump($iMs, $sLog)
                 FileWriteLine($sLog, "Seçim -> kutu olayı " & $nMsg & ": " & GUICtrlRead($nMsg))
             Case $btnDnscrypt
                 FileWriteLine($sLog, "DNS komutu -> btnDnscrypt olayı (önizlemede çalıştırılmadı)")
+            Case $btnPageDiag, $btnPageLogs, $btnPageSettings, $btnLanShare
+                FileWriteLine($sLog, "Diğer komutu -> olay " & $nMsg & " (önizlemede çalıştırılmadı)")
             Case $btnInstallService, $btnRemoveService, $btnSvcSettings
                 FileWriteLine($sLog, "Servis komutu -> " & ($nMsg = $btnRemoveService ? "btnRemoveService" : ($nMsg = $btnInstallService ? "btnInstallService" : "btnSvcSettings")) & " olayı (önizlemede çalıştırılmadı)")
         EndSwitch
@@ -2193,6 +2223,14 @@ Func _WebUiPreviewAndExit($sDir)
         _WV2_Exec("document.querySelector('input[name=dns][value=saglayici]').click(); document.getElementById('dns-uygula').click()")
         __WebUiPreviewPump(4000, $sLog) ; DNS yeniden okunur (PowerShell)
         _ScreenCapture_CaptureWnd($sDir & "\dns-secim.png", $hWebGui)
+        ; Diğer ekranı
+        _WV2_Exec("document.querySelector('nav a[data-gorunum=diger]').click()")
+        __WebUiPreviewPump(1200, $sLog)
+        _ScreenCapture_CaptureWnd($sDir & "\diger.png", $hWebGui)
+        _WV2_Exec("document.querySelector('[data-komut=tanilama]').click()")
+        __WebUiPreviewPump(500, $sLog)
+        _WV2_Exec("document.getElementById('temizle').click(); document.getElementById('temizle').click()")
+        __WebUiPreviewPump(800, $sLog)
     EndIf
     ; Eski arayüze geçiş düğmesi
     If $g_bWebUi Then
