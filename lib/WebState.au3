@@ -75,6 +75,51 @@ Func _WebStrategyJson($sOptions, $sSelected, $sEngine, $sFilterOptions, $sFilter
     Return _WebJsonAddRaw($s, "sonuclar", "[" & $sList & "]")
 EndFunc
 
+; Servis durumu -> [durum, başlık, açıklama]. durum: aktif | hata | uyari | yok
+;   $sSvcState: _ServiceGetState çıktısı ("" = kurulu değil, "RUNNING", "STOPPED"...), $sStatus: ana durum metni
+Func _WebServiceParts($sSvcState, $sStatus)
+    Local $a[4]
+    If $sSvcState = "" Then
+        __WebSet4($a, "yok", "Servis kurulu değil", "Kurarsan Zapret bilgisayar açılınca kendiliğinden başlar; programı açık tutman gerekmez.", "")
+    ElseIf StringInStr($sStatus, "GEÇİCİ") Then
+        __WebSet4($a, "uyari", "Servis analiz için durduruldu", "Analiz bitince servis yeniden başlatılır.", "")
+    ElseIf $sSvcState = "RUNNING" Then
+        __WebSet4($a, "aktif", "Servis çalışıyor", "Bilgisayar açılınca kendiliğinden başlar.", "")
+    ElseIf StringInStr($sSvcState, "PENDING") Then
+        __WebSet4($a, "uyari", "Servis durumu değişiyor", "Birkaç saniye içinde güncellenir.", "")
+    Else
+        __WebSet4($a, "hata", "Servis kurulu ama durmuş", "Zapret şu an servis üzerinden çalışmıyor.", "")
+    EndIf
+    ReDim $a[3]
+    Return $a
+EndFunc
+
+; Servis ekranı mesajı.
+;   $bHealthOn/$bRestartOn: anahtarların durumu, $sHealth: _HealthStatusFormat metni ("" = servis yok)
+;   $bInstallOn/$bRemoveOn/$bSettingsOn: ilgili eski düğmeler kullanılabilir mi
+Func _WebServiceJson($sSvcState, $sStatus, $bHealthOn, $bRestartOn, $sHealth, $bInstallOn, $bRemoveOn, $bSettingsOn)
+    Local $a = _WebServiceParts($sSvcState, $sStatus)
+    Local $s = _WebJsonObj("tip", "servis", "durum", $a[0], "baslik", $a[1], "aciklama", $a[2])
+    $s = _WebJsonAdd($s, "kurulu", $a[0] <> "yok")
+    $s = _WebJsonAdd($s, "onarim", $bHealthOn = True)
+    $s = _WebJsonAdd($s, "yenidenBaslat", $bRestartOn = True)
+    Local $sNote
+    If $a[0] = "yok" Then
+        $sNote = "Servis kurulunca etkinleşir."
+    ElseIf Not $bHealthOn Then
+        $sNote = "Kapalı."
+    Else
+        $sNote = StringRegExpReplace($sHealth, "^Onarım:\s*", "")
+        If $sNote = "" Then $sNote = "Açık."
+        $sNote = "Son durum: " & $sNote
+    EndIf
+    $s = _WebJsonAdd($s, "onarimNot", $sNote)
+    $s = _WebJsonAdd($s, "kurAcik", $bInstallOn = True)
+    $s = _WebJsonAdd($s, "kaldirAcik", $bRemoveOn = True)
+    $s = _WebJsonAdd($s, "ayarAcik", $bSettingsOn = True)
+    Return $s
+EndFunc
+
 ; Strateji satırından kısa ad: kullanılan yöntemler "fake + multisplit"; bulunamazsa ilk 40 karakter.
 Func _WebStrategyShort($sStrategy)
     Local $a = StringRegExp($sStrategy, "--(?:lua|dpi)-desync=([A-Za-z0-9_,]+)", 3)
