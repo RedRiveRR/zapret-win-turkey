@@ -58,6 +58,9 @@ Global $g_hWebStartTimer = 0, $g_hWebSyncTimer = 0, $g_hWebHealthTimer = 0, $g_s
 ; Yeni arayüzün Strateji ekranı: seçilen analiz türü (-1 = seçici penceresi açılır), son gönderilen mesaj
 Global $g_iWebAnalysisChoice = -1, $g_sWebLastStratJson = "", $g_hWebStratTimer = 0, $g_sWebSmartStamp = ""
 Global $g_sWebSmartSummary = "", $g_aWebSmartRows[0][1]
+; Servis ekranı: servis durumu 5 sn'de, onarım görevi 30 sn'de bir okunur (sc/schtasks süreç başlatır)
+Global $g_sWebLastSvcJson = "", $g_hWebSvcTimer = 0, $g_hWebTaskTimer = 0, $g_sWebSvcState = "", $g_bWebTaskExists = False
+Global $g_bWebHealthIni = True, $g_bWebRestartIni = False, $g_sWebSvcHealth = ""
 If $CmdLine[0] >= 2 And $CmdLine[1] = "/arayuz-onizleme" Then $g_sUiPreviewDir = $CmdLine[2]
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
@@ -1880,6 +1883,7 @@ Func _WebUiTick($nMsg)
                 $g_bWebPageReady = True
                 $g_sWebLastJson = ""
                 $g_sWebLastStratJson = ""
+                _WebUiServiceRefreshSoon()
                 _WV2_Post(_WebJsonObj("tip", "tema", "tema", _WebUiTheme()))
             Case "tema"
                 Local $sTheme = (_WebJsonGet($sMsg, "tema") = "koyu") ? "koyu" : "acik"
@@ -1908,7 +1912,14 @@ Func _WebUiTick($nMsg)
                         EndIf
                         Return $btnAnalyze
                     EndIf
+                ElseIf $sCmd = "servisKur" Or $sCmd = "servisKaldir" Or $sCmd = "servisAyarlar" Then
+                    _WebUiServiceRefreshSoon()
+                    Local $idSvcBtn = ($sCmd = "servisKur") ? $btnInstallService : (($sCmd = "servisKaldir") ? $btnRemoveService : $btnSvcSettings)
+                    If BitAND(GUICtrlGetState($idSvcBtn), $GUI_ENABLE) Then Return $idSvcBtn
                 EndIf
+            Case "ayar"
+                _WebUiServiceRefreshSoon()
+                If $iAge <= 2000 Then _WebUiApplySetting(_WebJsonGet($sMsg, "ad"), _WebJsonGet($sMsg, "deger") = "true")
             Case "secim"
                 $g_sWebLastStratJson = ""
                 If $iAge <= 2000 Then
@@ -1935,8 +1946,62 @@ Func _WebUiTick($nMsg)
             _WV2_Post($sJson)
         EndIf
         _WebUiSyncStrategy()
+        _WebUiSyncService()
     EndIf
     Return $nMsg
+EndFunc
+
+; Servis ekranı bir sonraki turda servis durumunu ve onarım görevini yeniden okusun.
+Func _WebUiServiceRefreshSoon()
+    $g_hWebSvcTimer = 0
+    $g_hWebTaskTimer = 0
+    $g_sWebLastSvcJson = ""
+EndFunc
+
+Func _WebUiSyncService()
+    If $g_hWebSvcTimer = 0 Or TimerDiff($g_hWebSvcTimer) > 5000 Then
+        $g_hWebSvcTimer = TimerInit()
+        $g_sWebSvcState = _ServiceGetState($serviceName)
+        If $g_hWebTaskTimer = 0 Or TimerDiff($g_hWebTaskTimer) > 30000 Then
+            $g_hWebTaskTimer = TimerInit()
+            $g_bWebTaskExists = _ScheduleExists($HEALTH_TASK_NAME)
+        EndIf
+        Local $sEnabled = IniRead($iniPath, "Health", "Enabled", "1")
+        Local $bService = $g_sWebSvcState <> ""
+        ; Ayarlar penceresiyle aynı kural: servis varken görev yoksa onarım kapalı sayılır.
+        $g_bWebHealthIni = $sEnabled = "1" And ($g_bWebTaskExists Or Not $bService)
+        $g_bWebRestartIni = IniRead($iniPath, "Service", "AutoRestart", "0") = "1"
+        $g_sWebSvcHealth = _HealthStatusFormat($bService, $sEnabled, IniRead($iniPath, "Health", "LastCheck", ""), _
+                IniRead($iniPath, "Health", "LastResult", ""), @YEAR & "/" & @MON & "/" & @MDAY)
+    EndIf
+    Local $sJson = _WebServiceJson($g_sWebSvcState, GUICtrlRead($lblStatusText), $g_bWebHealthIni, $g_bWebRestartIni, $g_sWebSvcHealth, _
+            BitAND(GUICtrlGetState($btnInstallService), $GUI_ENABLE) <> 0 And Not $bInstallServiceBusy, _
+            BitAND(GUICtrlGetState($btnRemoveService), $GUI_ENABLE) <> 0, BitAND(GUICtrlGetState($btnSvcSettings), $GUI_ENABLE) <> 0)
+    If $sJson <> $g_sWebLastSvcJson Then
+        $g_sWebLastSvcJson = $sJson
+        _WV2_Post($sJson)
+    EndIf
+EndFunc
+
+; Servis ekranındaki anahtarı Ayarlar penceresiyle aynı kodla uygular; not varsa sayfada gösterilir.
+Func _WebUiApplySetting($sName, $bOn)
+    ; Önizlemede gerçek servise/göreve dokunulmaz.
+    If $g_sUiPreviewDir <> "" Then
+        _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", "Önizleme: " & $sName & "=" & $bOn & " uygulanmadı"))
+        Return
+    EndIf
+    Local $bService = _ServiceIsInstalled($serviceName)
+    Local $sNote = ""
+    Switch $sName
+        Case "onarim"
+            $sNote = _SettingsApplyHealth($iniPath, $bService, $bOn)
+        Case "yenidenBaslat"
+            _SettingsApplyRestart($iniPath, $serviceName, $bService, $bOn)
+        Case Else
+            Return
+    EndSwitch
+    _LogInfo("Yeni arayüz: ayar " & $sName & "=" & $bOn & ($sNote = "" ? "" : " (" & $sNote & ")"))
+    If $sNote <> "" Then _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", $sNote))
 EndFunc
 
 ; Strateji ekranının durumunu eski denetimlerden ve son akıllı analiz dosyasından gönderir.
@@ -2006,6 +2071,8 @@ Func __WebUiPreviewPump($iMs, $sLog)
                 FileWriteLine($sLog, "Analiz komutu -> btnAnalyze olayı, seçim=" & $g_iWebAnalysisChoice & " (önizlemede çalıştırılmadı)")
             Case $cmbStrategy, $cmbEngine, $cmbFilter
                 FileWriteLine($sLog, "Seçim -> kutu olayı " & $nMsg & ": " & GUICtrlRead($nMsg))
+            Case $btnInstallService, $btnRemoveService, $btnSvcSettings
+                FileWriteLine($sLog, "Servis komutu -> " & ($nMsg = $btnRemoveService ? "btnRemoveService" : ($nMsg = $btnInstallService ? "btnInstallService" : "btnSvcSettings")) & " olayı (önizlemede çalıştırılmadı)")
         EndSwitch
     WEnd
 EndFunc
@@ -2059,6 +2126,15 @@ Func _WebUiPreviewAndExit($sDir)
         _ScreenCapture_CaptureWnd($sDir & "\strateji-koyu.png", $hWebGui)
         _WV2_Exec("document.getElementById('tema').click()")
         __WebUiPreviewPump(500, $sLog)
+        ; Servis ekranı (servis yalnızca sorgulanır; anahtarlar önizlemede uygulanmaz)
+        _WV2_Exec("document.querySelector('nav a[data-gorunum=servis]').click()")
+        __WebUiPreviewPump(1500, $sLog)
+        _ScreenCapture_CaptureWnd($sDir & "\servis.png", $hWebGui)
+        _WV2_Exec("document.getElementById('servis-kaldir').click(); document.querySelector('[data-ayar=onarim]').click()")
+        __WebUiPreviewPump(800, $sLog)
+        _ScreenCapture_CaptureWnd($sDir & "\servis-onay.png", $hWebGui)
+        _WV2_Exec("document.getElementById('servis-kaldir').click()")
+        __WebUiPreviewPump(800, $sLog)
     EndIf
     ; Eski arayüze geçiş düğmesi
     If $g_bWebUi Then
