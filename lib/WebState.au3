@@ -120,6 +120,51 @@ Func _WebServiceJson($sSvcState, $sStatus, $bHealthOn, $bRestartOn, $sHealth, $b
     Return $s
 EndFunc
 
+; Etkin DNS sunucularından seçim: sifreli (yerel DNSCrypt) | cloudflare | saglayici (otomatik/DHCP) | diger
+Func _WebDnsMode($sServers)
+    $sServers = StringStripWS($sServers, 3)
+    If StringInStr($sServers, "127.0.0.1") Then Return "sifreli"
+    If StringInStr($sServers, "1.1.1.1") Or StringInStr($sServers, "1.0.0.1") Then Return "cloudflare"
+    If $sServers = "" Then Return "saglayici"
+    ; Elle girilmiş başka bir DNS mi, modemin adresi mi ayırt edilemez; özel ağ adresleri modem sayılır.
+    If StringRegExp($sServers, "^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.|fe80:)") Then Return "saglayici"
+    Return "diger"
+EndFunc
+
+; Yalnızca IPv4 adresleri, ", " ile (IPv6 adresleri satıra sığmıyor).
+Func _WebDnsIPv4($sServers)
+    Local $sV4 = ""
+    For $sAddr In StringSplit(StringStripWS($sServers, 3), ",", 2)
+        $sAddr = StringStripWS($sAddr, 3)
+        If $sAddr <> "" And Not StringInStr($sAddr, ":") Then $sV4 &= ($sV4 = "" ? "" : ", ") & $sAddr
+    Next
+    Return $sV4
+EndFunc
+
+; DNS ekranı mesajı. $sServers: _GetActiveAdapterDnsServers çıktısı ("?" = henüz okunmadı),
+; $bChangeOn: DNS değiştirilebilir mi (DNSCrypt düğmesi açık ve meşgul değil)
+Func _WebDnsJson($sStatus, $sServers, $bChangeOn)
+    Local $sDurum, $sBaslik, $sAciklama
+    If $sStatus = "DNS ZEHİRLENMESİ SAPTANDI!" Then
+        $sDurum = "hata"
+        $sBaslik = "Adresler yanlış gösteriliyor"
+        $sAciklama = "Sağlayıcının DNS'i Discord'u yanlış adrese yönlendiriyor. Cloudflare'e veya şifreli DNS'e geç."
+    ElseIf StringRegExp($sStatus, "DNS|SİSTEM HAZIRLANIYOR") Then
+        $sDurum = "bekliyor"
+        $sBaslik = "DNS kontrol ediliyor"
+        $sAciklama = ""
+    Else
+        $sDurum = "aktif"
+        $sBaslik = "Adresler doğru görünüyor"
+        $sAciklama = "Son kontrolde DNS sorunu bulunmadı."
+    EndIf
+    Local $s = _WebJsonObj("tip", "dns", "durum", $sDurum, "baslik", $sBaslik, "aciklama", $sAciklama)
+    $s = _WebJsonAdd($s, "mod", $sServers = "?" ? "" : _WebDnsMode($sServers))
+    $s = _WebJsonAdd($s, "sunucular", $sServers = "?" ? "" : _WebDnsIPv4($sServers))
+    $s = _WebJsonAdd($s, "degistirAcik", $bChangeOn = True And $sServers <> "?")
+    Return $s
+EndFunc
+
 ; Strateji satırından kısa ad: kullanılan yöntemler "fake + multisplit"; bulunamazsa ilk 40 karakter.
 Func _WebStrategyShort($sStrategy)
     Local $a = StringRegExp($sStrategy, "--(?:lua|dpi)-desync=([A-Za-z0-9_,]+)", 3)
