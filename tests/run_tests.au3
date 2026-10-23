@@ -18,6 +18,7 @@
 #include "test_health.au3"
 #include "test_install.au3"
 #include "test_webmsg.au3"
+#include "test_webstate.au3"
 
 _TestProcess()
 _TestBlockcheck()
@@ -33,5 +34,6 @@ _TestService()
 _TestHealth()
 _TestInstall()
 _TestWebMsg()
+_TestWebState()
 
 Exit _AssertSummary()
