@@ -35,6 +35,8 @@
 #include "lib\Schedule.au3"
 #include "ui\SettingsUI.au3"
 #include "ui\Theme.au3"
+#include "ui\WebView2.au3"
+#include "lib\WebState.au3"
 #include <ScreenCapture.au3>
 #include "lib\Install.au3"
 
@@ -49,6 +51,9 @@ EndIf
 ; Açılış kontrollerini (çakışma, eski servisler, DNS, WinDivert temizliği) atlar; her sayfanın
 ; ekran görüntüsünü klasöre kaydedip çıkar. Çalışan bir kuruluma/servise dokunmaz.
 Global $g_sUiPreviewDir = ""
+; Yeni arayüz (WebView2): config.ini [Arayuz] Yeni=1 veya /yeni-arayuz ile açılır.
+Global $g_bWebUi = False, $hWebGui = 0, $g_bWebPageReady = False, $g_sWebLastJson = ""
+Global $g_hWebStartTimer = 0, $g_hWebSyncTimer = 0, $g_hWebHealthTimer = 0, $g_sWebHealth = "", $g_sWebLastStatus = ""
 If $CmdLine[0] >= 2 And $CmdLine[1] = "/arayuz-onizleme" Then $g_sUiPreviewDir = $CmdLine[2]
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
@@ -279,7 +284,11 @@ Local $aCriticalButtons[7] = [$btnRunZapret, $btnAnalyze, $btnInstallService, $c
 Local $aOtherButtons[7] = [$btnAnalyze, $btnInstallService, $btnRemoveService, $cmbEngine, $cmbStrategy, $cmbFilter, $btnDnscrypt]
 
 _MainShowPage($PAGE_HOME)
-GUISetState(@SW_SHOW)
+If $g_sUiPreviewDir = "" And _WebUiWanted() Then
+    _WebUiStart()
+Else
+    GUISetState(@SW_SHOW, $hGUI)
+EndIf
 If $g_sUiPreviewDir <> "" Then _MainUiPreviewAndExit($g_sUiPreviewDir)
 
 ; --- İLK YOLLARI VE STRATEJİ LİSTESİNİ DOĞRULA ---
@@ -351,6 +360,8 @@ _CheckDnscryptStatus()
 
 While 1
     Local $nMsg = GUIGetMsg()
+    ; Yeni arayüz: sayfa komutları eski düğme olaylarına çevrilir, durum sayfaya aktarılır.
+    If $g_bWebUi Then $nMsg = _WebUiTick($nMsg)
 
     ; Kenar menüsü, hover ve durum renkleri (ui/Theme.au3)
     If _MainNavClick($nMsg) Then ContinueLoop
@@ -462,7 +473,7 @@ While 1
             ShellExecute(@ScriptDir & "\logs")
 
         Case $GUI_EVENT_MINIMIZE
-            GUISetState(@SW_HIDE, $hGUI)
+            _MainWindowHide()
             TraySetToolTip("Zapret Windows Türkiye Çalışıyor")
 
         Case $cmbEngine
@@ -524,10 +535,7 @@ While 1
                 EndIf
             EndIf
 
-			GUISetState(@SW_SHOW, $hGUI)
-            GUISetState(@SW_RESTORE, $hGUI)
-            WinActivate($hGUI)
-            WinWaitActive($hGUI, "", 2)
+            _MainWindowShow(True)
 
             ; Analiz akışı içindeki genel buton açma işlemleri kilidi kaldıramasın.
             If GUICtrlRead($lblStatusText) = "DNS ZEHİRLENMESİ SAPTANDI!" Then $bBlockcheckEnableAfterLock = False
@@ -845,8 +853,22 @@ Func _UpdateEnginePaths($sEngineSelected)
 EndFunc
 
 Func ShowGUI()
-    GUISetState(@SW_SHOW, $hGUI)
-    GUISetState(@SW_RESTORE, $hGUI)
+    _MainWindowShow(True)
+EndFunc
+
+; Etkin arayüzün penceresini gösterir (yeni arayüz açıksa onu, değilse eskisini).
+Func _MainWindowShow($bActivate = False)
+    Local $h = $g_bWebUi ? $hWebGui : $hGUI
+    GUISetState(@SW_SHOW, $h)
+    If $bActivate Then
+        GUISetState(@SW_RESTORE, $h)
+        WinActivate($h)
+        WinWaitActive($h, "", 2)
+    EndIf
+EndFunc
+
+Func _MainWindowHide()
+    GUISetState(@SW_HIDE, $g_bWebUi ? $hWebGui : $hGUI)
 EndFunc
 
 Func ExitApp()
@@ -1022,6 +1044,7 @@ Func _MainUiPreviewAndExit($sDir)
     _SetButtonsState($aCriticalButtons, $GUI_ENABLE)
     GUICtrlSetState($btnLanShare, $GUI_ENABLE)
     DirCreate($sDir)
+    If $CmdLine[0] >= 3 And $CmdLine[3] = "/yeni-arayuz" Then _WebUiPreviewAndExit($sDir)
     For $p = 0 To 5
         _MainShowPage($p)
         For $k = 1 To 15
@@ -1346,7 +1369,7 @@ Func RunBlockcheck2($ctrlID)
     If $iPidBash = 0 Then
         GUIDelete($hScanGUI)
         GUISetState(@SW_ENABLE, $hGUI)
-        GUISetState(@SW_SHOW, $hGUI)
+        _MainWindowShow()
         MsgBox(16 + 8192, "Analiz Başlatılamadı", "Blockcheck2 süreci başlatılamadı.")
         Return
     EndIf
@@ -1436,7 +1459,7 @@ Func RunBlockcheck2($ctrlID)
     EndIf
 
     GUISetState(@SW_ENABLE, $hGUI)
-    GUISetState(@SW_SHOW, $hGUI)
+    _MainWindowShow()
 EndFunc
 
 ; =========================================================================
@@ -1546,7 +1569,7 @@ Func _RunSmartAnalysisFlow(ByRef $aCand, $bMainAlreadyDisabled)
     Local $sChosen = _SmartUI_Run($aCand, @ScriptDir, $winwsPath, $sTargets, _SmartResultsPath(), $strategyFile, $hGUI)
     If Not $bMainAlreadyDisabled Then
         GUISetState(@SW_ENABLE, $hGUI)
-        GUISetState(@SW_SHOW, $hGUI)
+        _MainWindowShow()
     EndIf
     GUICtrlSetData($lblStatusText, $sPrevStatus)
     If $sChosen <> "" Then _AfterSmartStrategyChosen()
@@ -1688,7 +1711,7 @@ Func _ShowStrategyTestWindow(ByRef $aStrategies, $bMainAlreadyDisabled = False)
 
     If Not $bMainAlreadyDisabled Then
         GUISetState(@SW_ENABLE, $hGUI)
-        GUISetState(@SW_SHOW, $hGUI)
+        _MainWindowShow()
     EndIf
 EndFunc
 
@@ -1748,4 +1771,150 @@ Func _CheckDnscryptStatus()
 
     ; Açılışta butonun disabled kalmaması için her kontrol bitiminde açıyoruz
     GUICtrlSetState($btnDnscrypt, $GUI_ENABLE)
+EndFunc
+
+; =========================================================================
+; --- YENİ ARAYÜZ (WebView2, ui/web) ---
+; Eski pencere gizli kalır ve program mantığı ona yazmaya devam eder; yeni pencere
+; aynı durumu gösterir, komutları eski düğme olayları olarak ana döngüye verir.
+; WebView2 yoksa veya başlamazsa eski arayüz açılır.
+; =========================================================================
+Func _WebUiWanted()
+    If $CmdLine[0] >= 1 And $CmdLine[1] = "/yeni-arayuz" Then Return True
+    Return IniRead($iniPath, "Arayuz", "Yeni", "0") = "1"
+EndFunc
+
+Func _WebUiTheme()
+    Return IniRead($iniPath, "Arayuz", "Tema", "acik") = "koyu" ? "koyu" : "acik"
+EndFunc
+
+Func _WebUiStart()
+    ; Başlık eski pencereyle aynı: sağlık kontrolü açık programı başlıktan tanır.
+    $hWebGui = GUICreate($APP_NAME & " v" & $APP_VERSION, 460, 660, -1, -1, BitOR($WS_CAPTION, $WS_SYSMENU, $WS_MINIMIZEBOX))
+    _WebUiApplyCaption(_WebUiTheme())
+    GUIRegisterMsg($WM_SIZE, "_WebUiOnSize")
+    If Not _WV2_Create($hWebGui, @ScriptDir & "\bin\webview2\WebView2Loader.dll", @LocalAppDataDir & "\RedRiveRR Zapret\WebView2", _
+            _WebFileUrl(@ScriptDir & "\ui\web\index.html")) Then
+        _WebUiFallback()
+        Return
+    EndIf
+    $g_bWebUi = True
+    $g_hWebStartTimer = TimerInit()
+    GUISetState(@SW_SHOW, $hWebGui)
+    GUISwitch($hGUI)
+    _LogInfo("Yeni arayüz başlatılıyor (WebView2 " & _WV2_RuntimeVersion() & ")")
+EndFunc
+
+Func _WebUiApplyCaption($sTheme)
+    If $sTheme = "koyu" Then
+        GUISetBkColor(0x14161B, $hWebGui)
+        _WV2_SetCaption($hWebGui, True, 0x14161B)
+    Else
+        GUISetBkColor(0xF2F4F7, $hWebGui)
+        _WV2_SetCaption($hWebGui, False, 0xF2F4F7)
+    EndIf
+EndFunc
+
+Func _WebUiFallback()
+    _LogWarn("Yeni arayüz açılamadı, eski arayüz kullanılıyor: " & _WV2_LastError())
+    _WV2_Close()
+    If $hWebGui <> 0 Then GUIDelete($hWebGui)
+    $hWebGui = 0
+    $g_bWebUi = False
+    $g_bWebPageReady = False
+    GUISwitch($hGUI)
+    GUISetState(@SW_SHOW, $hGUI)
+EndFunc
+
+Func _WebUiOnSize($hWnd, $iMsg, $wParam, $lParam)
+    #forceref $iMsg, $wParam, $lParam
+    If $hWnd = $hWebGui Then _WV2_Resize()
+    Return $GUI_RUNDEFMSG
+EndFunc
+
+; Ana döngüde her turda: sayfa mesajlarını işler, durumu aktarır. Dönüş: işlenecek olay.
+Func _WebUiTick($nMsg)
+    Local $iState = _WV2_State()
+    If $iState = $WV2_STATE_FAILED Or ($iState = $WV2_STATE_STARTING And TimerDiff($g_hWebStartTimer) > 10000) Then
+        _WebUiFallback()
+        Return $nMsg
+    EndIf
+
+    Local $sMsg = _WV2_NextMessage()
+    Local $iAge = @extended
+    If $sMsg <> "" Then
+        Switch _WebJsonGet($sMsg, "tip")
+            Case "hazir"
+                $g_bWebPageReady = True
+                $g_sWebLastJson = ""
+                _WV2_Post(_WebJsonObj("tip", "tema", "tema", _WebUiTheme()))
+            Case "tema"
+                Local $sTheme = (_WebJsonGet($sMsg, "tema") = "koyu") ? "koyu" : "acik"
+                IniWrite($iniPath, "Arayuz", "Tema", $sTheme)
+                _WebUiApplyCaption($sTheme)
+            Case "komut"
+                Local $sCmd = _WebJsonGet($sMsg, "ad")
+                $g_sWebLastJson = "" ; düğme yeniden etkinleşsin diye durum tekrar gönderilir
+                ; Uzun bir iş sürerken kuyrukta kalmış komutlar yok sayılır.
+                If $iAge > 2000 Then
+                    _LogInfo("Yeni arayüz: eskimiş komut yok sayıldı (" & $sCmd & ", " & $iAge & " ms)")
+                ElseIf ($sCmd = "baslat" And Not $isZapretRunning) Or ($sCmd = "durdur" And $isZapretRunning) Then
+                    If BitAND(GUICtrlGetState($btnRunZapret), $GUI_ENABLE) Then Return $btnRunZapret
+                EndIf
+        EndSwitch
+    EndIf
+
+    If $g_bWebPageReady And TimerDiff($g_hWebSyncTimer) > 250 Then
+        $g_hWebSyncTimer = TimerInit()
+        Local $sStatus = GUICtrlRead($lblStatusText)
+        ; Onarım durumu 5 sn'de bir veya durum değişince okunur (config.ini'yi her turda okumamak için).
+        If $g_hWebHealthTimer = 0 Or TimerDiff($g_hWebHealthTimer) > 5000 Or $sStatus <> $g_sWebLastStatus Then
+            $g_hWebHealthTimer = TimerInit()
+            $g_sWebLastStatus = $sStatus
+            $g_sWebHealth = _HealthStatusFormat(StringInStr($sStatus, "SERVİS") > 0, IniRead($iniPath, "Health", "Enabled", "1"), _
+                    IniRead($iniPath, "Health", "LastCheck", ""), IniRead($iniPath, "Health", "LastResult", ""), @YEAR & "/" & @MON & "/" & @MDAY)
+        EndIf
+        Local $sJson = _WebStateJson($sStatus, GUICtrlRead($btnRunZapret), BitAND(GUICtrlGetState($btnRunZapret), $GUI_ENABLE) <> 0, _
+                GUICtrlRead($cmbStrategy), GUICtrlRead($cmbEngine), GUICtrlRead($cmbFilter), $g_sWebHealth)
+        If $sJson <> $g_sWebLastJson Then
+            $g_sWebLastJson = $sJson
+            _WV2_Post($sJson)
+        EndIf
+    EndIf
+    Return $nMsg
+EndFunc
+
+; Önizleme (/arayuz-onizleme <klasör> /yeni-arayuz): yeni arayüzü örnek durumlarla açar,
+; görüntülerini alır, Başlat düğmesinin hangi olaya çevrildiğini kaydeder ve çıkar.
+; Hiçbir komut çalıştırılmaz (winws, servis, DNS değişmez).
+Func _WebUiPreviewAndExit($sDir)
+    Local $sLog = $sDir & "\yeni-arayuz.log"
+    FileDelete($sLog)
+    GUISetState(@SW_HIDE, $hGUI)
+    _WebUiStart()
+    FileWriteLine($sLog, "başlatıldı: " & $g_bWebUi & " " & _WV2_LastError())
+    Local $aStatus[3] = ["ÇALIŞMAYA HAZIR", "SERVİS MODU AKTİF", "DNS ZEHİRLENMESİ SAPTANDI!"]
+    Local $iShot = -1, $hT = TimerInit(), $hShot = 0, $bClicked = False
+    While TimerDiff($hT) < 20000 And $g_bWebUi
+        Local $nMsg = _WebUiTick(GUIGetMsg())
+        If $nMsg = $btnRunZapret Then FileWriteLine($sLog, "Başlat komutu -> btnRunZapret olayı (önizlemede çalıştırılmadı)")
+        If Not $g_bWebPageReady Then ContinueLoop
+        If $iShot = -1 Then
+            $iShot = 0
+            $hShot = TimerInit()
+        ElseIf TimerDiff($hShot) > 1200 Then
+            _ScreenCapture_CaptureWnd($sDir & "\yeni" & $iShot & ".png", $hWebGui)
+            FileWriteLine($sLog, "görüntü yeni" & $iShot & ".png: " & GUICtrlRead($lblStatusText))
+            If $iShot = 0 And Not $bClicked Then
+                _WV2_Exec("document.getElementById('guc').click()")
+                $bClicked = True
+            EndIf
+            $iShot += 1
+            If $iShot >= UBound($aStatus) Then ExitLoop
+            GUICtrlSetData($lblStatusText, $aStatus[$iShot])
+            $hShot = TimerInit()
+        EndIf
+    WEnd
+    FileWriteLine($sLog, "bitti: yeni arayüz=" & $g_bWebUi & " " & _WV2_LastError())
+    Exit
 EndFunc
