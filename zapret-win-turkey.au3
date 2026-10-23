@@ -1171,7 +1171,7 @@ EndFunc
 ; Tepsi: ayarlar penceresi.
 Func _OpenSettings()
     ShowGUI()
-    _SettingsUI_Show(@ScriptDir, $serviceName, $APP_NAME, _MainWindowHandle())
+    _SettingsUI_Show(@ScriptDir, $serviceName, $APP_NAME, _MainWindowHandle(), True)
     _RefreshFooter()
 EndFunc
 
