@@ -39,4 +39,13 @@ Func _TestConflicts()
     Local $aSvc = _ForeignServiceScan($sOur)
     _AssertTrue(IsArray($aSvc), "servis taraması dizi döndürür")
     If IsArray($aSvc) And UBound($aSvc) > 0 Then _AssertEq(UBound($aSvc, 2), 2, "servis satırı 2 sütunlu")
+
+    ; --- H18: başka klasördeki kopya, Program Files'taki asıl kurulumun servisini "eski" saymamalı ---
+    Local $sPf = @ProgramFilesDir & "\Zapret Windows Turkiye"
+    Local $sPfExe = $sPf & "\bin\zapret\zapret-winws\winws2.exe"
+    _AssertTrue(_ForeignServiceIsMain("C:\Users\x\zapret-fork", $sPfExe), "H18: kullanıcı klasöründeki kopya için Program Files servisi asıl kurulumdur")
+    _AssertFalse(_ForeignServiceIsMain($sPf, "C:\Users\x\zapret-fork\bin\zapret\zapret-winws\winws2.exe"), "Program Files'tan bakınca kullanıcı klasöründeki servis eskidir")
+    _AssertFalse(_ForeignServiceIsMain("C:\Users\x\yeni", "C:\Users\x\eski\bin\zapret\zapret-winws\winws.exe"), "iki korumasız klasör: eski davranış (kaldırma sorulur)")
+    _AssertEq(_ForeignServiceRoot($sPfExe), $sPf, "servis exe yolundan kurulum kökü")
+    _AssertEq(_ForeignServiceRoot("C:\Program Files\dnscrypt\dnscrypt-proxy.exe"), "", "bin klasörü yoksa kök bilinmez")
 EndFunc

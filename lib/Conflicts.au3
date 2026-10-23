@@ -2,6 +2,7 @@
 #include "Process.au3"
 #include "Log.au3"
 #include "Network.au3"
+#include "Install.au3"
 
 ; =========================================================================
 ; --- ÇAKIŞMA TESPİTİ ---
@@ -145,12 +146,46 @@ Func _ForeignServiceScan($sOurDir)
     Return $aOut
 EndFunc
 
+; Servis korumalı bir kurulumdaysa (Program Files) ve bu kopya değilse, servis eski değil
+; asıl kurulumdur; bu kopya (ör. eski yedek klasör) onu kaldırmamalıdır (H18).
+Func _ForeignServiceIsMain($sOurDir, $sSvcExe)
+    Return _InstallIsProtected($sSvcExe) And Not _InstallIsProtected($sOurDir)
+EndFunc
+
+; Servis exe yolundan kurulum kökünü çıkarır (...\bin\zapret\... öncesi). Bulunamazsa "".
+Func _ForeignServiceRoot($sSvcExe)
+    Local $iPos = StringInStr($sSvcExe, "\bin\zapret\")
+    If $iPos = 0 Then Return ""
+    Return StringLeft($sSvcExe, $iPos - 1)
+EndFunc
+
 ; Açılışta başka klasöre ait servisleri kullanıcıya sorup kaldırır.
 ; dnscrypt-proxy kaldırılırsa DNS 127.0.0.1'de kalıp internet kesilmesin diye DNS otomatiğe alınır.
 ; Kullanıcı reddederse program çalışmaya devam eder.
+; Servis Program Files'taki asıl kuruluma aitse hiçbir şey kaldırılmaz; kullanıcıya asıl kurulumu
+; açması önerilir. False dönerse çağıran program kapanmalıdır (asıl kurulum açıldı).
 Func _HandleForeignServices($sOurDir)
     Local $aSvcs = _ForeignServiceScan($sOurDir)
-    If UBound($aSvcs) = 0 Then Return
+    If UBound($aSvcs) = 0 Then Return True
+
+    For $i = 0 To UBound($aSvcs) - 1
+        If $aSvcs[$i][0] = "ZapretService" And _ForeignServiceIsMain($sOurDir, $aSvcs[$i][1]) Then
+            Local $sMain = _ForeignServiceRoot($aSvcs[$i][1])
+            _LogWarn("Asıl kurulumun servisi bulundu (" & $aSvcs[$i][1] & "); bu kopya (" & $sOurDir & ") servisi kaldırmayacak")
+            Local $sMainExe = $sMain & "\" & @ScriptName
+            Local $bCanOpen = $sMain <> "" And FileExists($sMainExe)
+            Local $iAns = MsgBox(($bCanOpen ? 36 : 48) + 8192, "Asıl Kurulum Başka Klasörde", _
+                    "Zapret servisi asıl kurulumunuzda çalışıyor:" & @CRLF & ($sMain = "" ? $aSvcs[$i][1] : $sMain) & @CRLF & @CRLF & _
+                    "Şu an açtığınız kopya ise başka bir klasörde (muhtemelen eski bir yedek):" & @CRLF & $sOurDir & @CRLF & @CRLF & _
+                    "Servise dokunulmayacak." & ($bCanOpen ? @CRLF & @CRLF & "Bu kopya kapatılıp asıl kurulum açılsın mı? (önerilir)" : ""))
+            If $bCanOpen And $iAns = 6 Then
+                _LogInfo("Kullanıcı asıl kurulumu açtı: " & $sMainExe)
+                ShellExecute($sMainExe, "", $sMain)
+                Return False
+            EndIf
+            Return True
+        EndIf
+    Next
 
     Local $sList = "", $bDnscrypt = False
     For $i = 0 To UBound($aSvcs) - 1
@@ -165,7 +200,7 @@ Func _HandleForeignServices($sOurDir)
             "Hayır derseniz program yine açılır, ancak Zapret düzgün çalışmayabilir.")
     If $iResponse <> 6 Then
         _LogInfo("Kullanıcı eski kurulum servislerini kaldırmayı reddetti")
-        Return
+        Return True
     EndIf
 
     For $i = 0 To UBound($aSvcs) - 1
@@ -174,6 +209,7 @@ Func _HandleForeignServices($sOurDir)
     RunWait(@ComSpec & " /c sc stop WinDivert & sc delete WinDivert & sc stop WinDivert14 & sc delete WinDivert14 & sc stop monkey & sc delete monkey", "", @SW_HIDE)
     If $bDnscrypt Then _ResetSystemDNS()
     _LogInfo("Eski kurulum servisleri kaldırıldı")
+    Return True
 EndFunc
 
 ; PID'yi kapatır; 5 sn içinde kapanmazsa taskkill /F dener. Kapandıysa True.

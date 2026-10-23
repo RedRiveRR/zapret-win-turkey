@@ -68,7 +68,7 @@ _LogInfo("=== " & $APP_NAME & " v" & $APP_VERSION & " başlatıldı | Windows " 
 RunWait('powershell -Command "Get-ChildItem -Path ''' & @ScriptDir & ''' -Recurse | Unblock-File"', "", @SW_HIDE)
 
 ; --- ESKİ KURULUM SERVİSLERİ (başka klasörü gösteren ZapretService / dnscrypt-proxy) ---
-If $g_sUiPreviewDir = "" Then _HandleForeignServices(@ScriptDir)
+If $g_sUiPreviewDir = "" And Not _HandleForeignServices(@ScriptDir) Then Exit
 
 ; --- ÇAKIŞMA KONTROLÜ (GoodbyeDPI, ByeDPI, başka klasörden çalışan Zapret) ---
 If $g_sUiPreviewDir = "" And Not _HandleStartupConflicts(@ScriptDir) Then Exit
