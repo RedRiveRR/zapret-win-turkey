@@ -61,6 +61,8 @@ Global $g_sWebSmartSummary = "", $g_aWebSmartRows[0][1]
 ; Servis ekranı: servis durumu 5 sn'de, onarım görevi 30 sn'de bir okunur (sc/schtasks süreç başlatır)
 Global $g_sWebLastSvcJson = "", $g_hWebSvcTimer = 0, $g_hWebTaskTimer = 0, $g_sWebSvcState = "", $g_bWebTaskExists = False
 Global $g_bWebHealthIni = True, $g_bWebRestartIni = False, $g_sWebSvcHealth = ""
+; DNS ekranı: etkin DNS sunucuları ("?" = okunmadı; PowerShell gerektirir, yalnızca sekme açılınca ve değişiklikten sonra okunur)
+Global $g_sWebDnsServers = "?", $g_bWebDnsReread = False, $g_sWebLastDnsJson = ""
 If $CmdLine[0] >= 2 And $CmdLine[1] = "/arayuz-onizleme" Then $g_sUiPreviewDir = $CmdLine[2]
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
@@ -1918,7 +1920,14 @@ Func _WebUiTick($nMsg)
                     _WebUiServiceRefreshSoon()
                     Local $idSvcBtn = ($sCmd = "servisKur") ? $btnInstallService : (($sCmd = "servisKaldir") ? $btnRemoveService : $btnSvcSettings)
                     If BitAND(GUICtrlGetState($idSvcBtn), $GUI_ENABLE) Then Return $idSvcBtn
+                ElseIf $sCmd = "dns" Then
+                    $g_bWebDnsReread = True
+                    $g_sWebLastDnsJson = ""
+                    Local $iDnsEvent = _WebUiDnsCommand(_WebJsonGet($sMsg, "mod"))
+                    If $iDnsEvent <> 0 Then Return $iDnsEvent
                 EndIf
+            Case "dnsYenile"
+                $g_bWebDnsReread = True
             Case "ayar"
                 _WebUiServiceRefreshSoon()
                 If $iAge <= 2000 Then _WebUiApplySetting(_WebJsonGet($sMsg, "ad"), _WebJsonGet($sMsg, "deger") = "true")
@@ -1949,6 +1958,7 @@ Func _WebUiTick($nMsg)
         EndIf
         _WebUiSyncStrategy()
         _WebUiSyncService()
+        _WebUiSyncDns()
     EndIf
     Return $nMsg
 EndFunc
@@ -1983,6 +1993,42 @@ Func _WebUiSyncService()
         $g_sWebLastSvcJson = $sJson
         _WV2_Post($sJson)
     EndIf
+EndFunc
+
+Func _WebUiSyncDns()
+    If $g_bWebDnsReread Then
+        $g_bWebDnsReread = False
+        $g_sWebDnsServers = _GetActiveAdapterDnsServers()
+    EndIf
+    Local $sJson = _WebDnsJson(GUICtrlRead($lblStatusText), $g_sWebDnsServers, _
+            BitAND(GUICtrlGetState($btnDnscrypt), $GUI_ENABLE) <> 0 And Not $bDnscryptBusy)
+    If $sJson <> $g_sWebLastDnsJson Then
+        $g_sWebLastDnsJson = $sJson
+        _WV2_Post($sJson)
+    EndIf
+EndFunc
+
+; DNS ekranındaki seçim. Şifreli DNS kurma/kaldırma eski DNSCrypt düğmesinin akışıyla (olay döner);
+; Cloudflare / sağlayıcı arasında geçiş burada yapılır. Dönüş: işlenecek olay ya da 0.
+Func _WebUiDnsCommand($sMode)
+    If $bDnscryptBusy Or Not BitAND(GUICtrlGetState($btnDnscrypt), $GUI_ENABLE) Then Return 0
+    If $sMode <> "sifreli" And $sMode <> "cloudflare" And $sMode <> "saglayici" Then Return 0
+    ; Eski düğmenin metni DNSCrypt'in durumunu taşır ("... servisi kur" = kurulu değil).
+    Local $bCryptOn = Not StringInStr(GUICtrlRead($btnDnscrypt), "servisi kur")
+    If $sMode = "sifreli" Then Return $bCryptOn ? 0 : $btnDnscrypt
+    If $bCryptOn Then Return $btnDnscrypt ; kaldırınca DNS otomatiğe döner
+    If $g_sUiPreviewDir <> "" Then
+        _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", "Önizleme: DNS " & $sMode & " uygulanmadı"))
+        Return 0
+    EndIf
+    $bDnscryptBusy = True
+    GUICtrlSetData($lblStatusText, "DNS AYARLANIYOR...")
+    Local $bOk = ($sMode = "cloudflare") ? _SetSystemDNS() : _ResetSystemDNS()
+    _LogInfo("Yeni arayüz: DNS seçimi " & $sMode & ($bOk ? "" : " (bağdaştırıcı bulunamadı)"))
+    If Not $bOk Then _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", "Etkin ağ bağdaştırıcısı bulunamadı; DNS değiştirilemedi. VPN kullanıyorsan kapatıp tekrar dene."))
+    _DnsRecheckAfterChange()
+    $bDnscryptBusy = False
+    Return 0
 EndFunc
 
 ; Servis ekranındaki anahtarı Ayarlar penceresiyle aynı kodla uygular; not varsa sayfada gösterilir.
@@ -2073,6 +2119,8 @@ Func __WebUiPreviewPump($iMs, $sLog)
                 FileWriteLine($sLog, "Analiz komutu -> btnAnalyze olayı, seçim=" & $g_iWebAnalysisChoice & " (önizlemede çalıştırılmadı)")
             Case $cmbStrategy, $cmbEngine, $cmbFilter
                 FileWriteLine($sLog, "Seçim -> kutu olayı " & $nMsg & ": " & GUICtrlRead($nMsg))
+            Case $btnDnscrypt
+                FileWriteLine($sLog, "DNS komutu -> btnDnscrypt olayı (önizlemede çalıştırılmadı)")
             Case $btnInstallService, $btnRemoveService, $btnSvcSettings
                 FileWriteLine($sLog, "Servis komutu -> " & ($nMsg = $btnRemoveService ? "btnRemoveService" : ($nMsg = $btnInstallService ? "btnInstallService" : "btnSvcSettings")) & " olayı (önizlemede çalıştırılmadı)")
         EndSwitch
@@ -2137,6 +2185,14 @@ Func _WebUiPreviewAndExit($sDir)
         _ScreenCapture_CaptureWnd($sDir & "\servis-onay.png", $hWebGui)
         _WV2_Exec("document.getElementById('servis-kaldir').click()")
         __WebUiPreviewPump(800, $sLog)
+        ; DNS ekranı (DNS yalnızca okunur; değişiklik önizlemede uygulanmaz)
+        _WV2_Exec("document.querySelector('nav a[data-gorunum=dns]').click()")
+        __WebUiPreviewPump(3000, $sLog)
+        FileWriteLine($sLog, "DNS okundu: " & _WebDnsMode($g_sWebDnsServers) & " " & _WebDnsIPv4($g_sWebDnsServers))
+        _ScreenCapture_CaptureWnd($sDir & "\dns.png", $hWebGui)
+        _WV2_Exec("document.querySelector('input[name=dns][value=saglayici]').click(); document.getElementById('dns-uygula').click()")
+        __WebUiPreviewPump(4000, $sLog) ; DNS yeniden okunur (PowerShell)
+        _ScreenCapture_CaptureWnd($sDir & "\dns-secim.png", $hWebGui)
     EndIf
     ; Eski arayüze geçiş düğmesi
     If $g_bWebUi Then
