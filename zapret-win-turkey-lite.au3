@@ -31,6 +31,7 @@
 #include "lib\Health.au3"
 #include "lib\Schedule.au3"
 #include "ui\SettingsUI.au3"
+#include "lib\Install.au3"
 
 #include <ProgressConstants.au3>
 
@@ -399,6 +400,12 @@ Func _RefreshStrategyLabel()
 EndFunc
 
 Func _SaveConfigAndExit()
+    _SaveConfig()
+    ExitApp()
+EndFunc
+
+; Seçili motor, strateji, filtre ve DNSCrypt durumunu config.ini'ye yazar.
+Func _SaveConfig()
     Local $engineVal = ($currentEngine == "Zapret2") ? "0" : "1"
     Local $stratVal = GUICtrlRead($cmbStrategy)
 
@@ -420,7 +427,6 @@ Func _SaveConfigAndExit()
     IniWrite($iniPath, "Settings", "ActiveStrategy", $stratVal)
     IniWrite($iniPath, "Settings", "FilterMode", $filterModeVal)
 
-    ExitApp()
 EndFunc
 
 Func _UpdateEnginePaths($sEngineSelected)
@@ -650,6 +656,12 @@ EndFunc
 Func InstallServiceClean($chkID)
     Local $activeStrategy = _GetActiveStrategyString()
     If $activeStrategy = "" Then Return MsgBox(48 + 8192, "Hata", "Lütfen hazır stratejilerden birini seçin.")
+
+    ; Korumasız klasördeyse (ör. C:\Users\...) önce Program Files'a taşımayı öner (lib/Install.au3).
+    _SaveConfig()
+    Local $sLoc = _InstallCheckBeforeService(@ScriptName)
+    If $sLoc = "iptal" Then Return
+    If $sLoc = "taşındı" Then ExitApp()
 
     Local $binArgs = _BuildActiveWinwsArgs($activeStrategy)
 
