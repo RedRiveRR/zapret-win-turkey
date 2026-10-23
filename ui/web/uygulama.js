@@ -10,6 +10,9 @@
 // Sayfa -> program (postMessage):
 //   {tip:"hazir"}, {tip:"komut", ad:"baslat|durdur|eskiArayuz|sonuclar"}, {tip:"tema", tema}
 //   {tip:"komut", ad:"analiz", tur:"hizli|tam"}, {tip:"secim", alan:"strateji|motor|filtre", deger}
+//   {tip:"servis", durum:"aktif|hata|uyari|yok", baslik, aciklama, kurulu, onarim, yenidenBaslat, onarimNot,
+//    kurAcik, kaldirAcik, ayarAcik}   (program -> sayfa)
+//   {tip:"komut", ad:"servisKur|servisKaldir|servisAyarlar"}, {tip:"ayar", ad:"onarim|yenidenBaslat", deger:bool}
 'use strict';
 
 const wv = window.chrome && window.chrome.webview;
@@ -128,6 +131,53 @@ function stratejiUygula(m) {
   }));
 }
 
+// --- Servis ---
+document.querySelectorAll('.anahtar[data-ayar]').forEach((b) => b.addEventListener('click', () => {
+  const yeni = b.getAttribute('aria-checked') !== 'true';
+  b.setAttribute('aria-checked', String(yeni));
+  b.disabled = true; // program uygulayıp yeni durumu gönderince açılır
+  gonder({ tip: 'ayar', ad: b.dataset.ayar, deger: yeni });
+}));
+$('servis-kur').addEventListener('click', () => { $('servis-kur').disabled = true; gonder({ tip: 'komut', ad: 'servisKur' }); });
+$('servis-ayar').addEventListener('click', () => gonder({ tip: 'komut', ad: 'servisAyarlar' }));
+// Kaldırma iki adımlı: ilk tıklama onay ister, 4 sn içinde ikinci tıklama kaldırır.
+let kaldirZaman = 0;
+$('servis-kaldir').addEventListener('click', () => {
+  const b = $('servis-kaldir');
+  if (!b.classList.contains('onay')) {
+    b.classList.add('onay');
+    b.textContent = 'Kaldırmak için tekrar bas';
+    clearTimeout(kaldirZaman);
+    kaldirZaman = setTimeout(kaldirSifirla, 4000);
+    return;
+  }
+  kaldirSifirla();
+  b.disabled = true;
+  gonder({ tip: 'komut', ad: 'servisKaldir' });
+});
+function kaldirSifirla() {
+  clearTimeout(kaldirZaman);
+  $('servis-kaldir').classList.remove('onay');
+  $('servis-kaldir').textContent = 'Servisi kaldır';
+}
+
+function servisUygula(m) {
+  $('servis-durum').dataset.durum = m.durum || 'yok';
+  $('servis-baslik').textContent = m.baslik || '';
+  $('servis-aciklama').textContent = m.aciklama || '';
+  document.querySelectorAll('.anahtar[data-ayar]').forEach((b) => {
+    b.setAttribute('aria-checked', String(!!m[b.dataset.ayar]));
+    b.disabled = false;
+  });
+  $('onarim-not').textContent = m.onarimNot || '';
+  $('servis-kur').hidden = !!m.kurulu;
+  $('servis-kur').disabled = !m.kurAcik;
+  $('servis-kaldir').hidden = !m.kurulu;
+  $('kaldir-not').hidden = !m.kurulu;
+  $('servis-kaldir').disabled = !m.kaldirAcik;
+  $('servis-ayar').disabled = !m.ayarAcik;
+}
+
 if (wv) {
   wv.addEventListener('message', (e) => {
     const m = e.data || {};
@@ -135,6 +185,7 @@ if (wv) {
     else if (m.tip === 'bilgi') $('bilgi').textContent = m.metin || '';
     else if (m.tip === 'tema') temaUygula(m.tema);
     else if (m.tip === 'strateji') stratejiUygula(m);
+    else if (m.tip === 'servis') servisUygula(m);
   });
 }
 gonder({ tip: 'hazir' });

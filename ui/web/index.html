@@ -75,7 +75,29 @@
         <label class="satir"><span class="ad"><b>Site filtresi</b><span class="kucuk" id="filtre-not"></span></span><select id="sec-filtre" data-alan="filtre" disabled></select></label>
       </section>
     </section>
-    <section class="gorunum" id="g-servis"><div class="yakinda">Servis bölümü sonraki adımda bu arayüze taşınacak.<br>Şimdilik bu işlemler eski arayüzde.<br><button class="ikinci" data-komut="eskiArayuz">Eski arayüze geç</button></div></section>
+    <!-- Servis -->
+    <section class="gorunum" id="g-servis">
+      <div class="sayfabaslik">
+        <h1>Servis</h1>
+        <p>Program kapalıyken de Zapret çalışsın.</p>
+      </div>
+      <section class="kart servisdurum" id="servis-durum" data-durum="yok">
+        <span class="servisikon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v8"></path><path d="M6.3 6.8a8 8 0 1 0 11.4 0"></path></svg></span>
+        <span class="ad"><b id="servis-baslik">Servis durumu okunuyor</b><span class="kucuk" id="servis-aciklama"></span></span>
+      </section>
+      <section class="kart liste">
+        <div class="satir"><span class="ad"><b>Otomatik onarım</b><span class="kucuk">Discord açılmazsa DNS'i ve stratejiyi kendisi düzeltir.</span><span class="kucuk" id="onarim-not"></span></span>
+          <button class="anahtar" role="switch" aria-checked="false" aria-label="Otomatik onarım" data-ayar="onarim" disabled><span></span></button></div>
+        <div class="satir"><span class="ad"><b>Kapanırsa yeniden başlat</b><span class="kucuk">En fazla 2 kez. Hile korumalı oyun oynuyorsan kapalı tut.</span></span>
+          <button class="anahtar" role="switch" aria-checked="false" aria-label="Kapanırsa yeniden başlat" data-ayar="yenidenBaslat" disabled><span></span></button></div>
+      </section>
+      <div class="dugmeler">
+        <button class="birincil" id="servis-kur" data-servis="kur" hidden disabled>Servisi kur</button>
+        <button class="ikincil" id="servis-ayar" data-servis="ayarlar" disabled>Onarım ayarları</button>
+        <button class="tehlike" id="servis-kaldir" data-servis="kaldir" hidden disabled>Servisi kaldır</button>
+      </div>
+      <p class="kucuk" id="kaldir-not" hidden style="margin:0 4px">Kaldırınca WinDivert ve DNSCrypt kalıntıları da temizlenir, DNS otomatiğe döner.</p>
+    </section>
     <section class="gorunum" id="g-dns"><div class="yakinda">DNS bölümü sonraki adımda bu arayüze taşınacak.<br>Şimdilik bu işlemler eski arayüzde.<br><button class="ikinci" data-komut="eskiArayuz">Eski arayüze geç</button></div></section>
     <section class="gorunum" id="g-diger"><div class="yakinda">Diğer bölümü sonraki adımda bu arayüze taşınacak.<br>Şimdilik bu işlemler eski arayüzde.<br><button class="ikinci" data-komut="eskiArayuz">Eski arayüze geç</button></div></section>
   </main>
