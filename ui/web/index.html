@@ -94,7 +94,7 @@
       <div class="dugmeler">
         <button class="birincil" id="servis-kur" data-servis="kur" hidden disabled>Servisi kur</button>
         <button class="ikincil" id="servis-ayar" data-servis="ayarlar" disabled>Onarım ayarları</button>
-        <button class="tehlike" id="servis-kaldir" data-servis="kaldir" hidden disabled>Servisi kaldır</button>
+        <button class="tehlike" id="servis-kaldir" data-servis="kaldir" data-onay="Kaldırmak için tekrar bas" hidden disabled>Servisi kaldır</button>
       </div>
       <p class="kucuk" id="kaldir-not" hidden style="margin:0 4px">Kaldırınca WinDivert ve DNSCrypt kalıntıları da temizlenir, DNS otomatiğe döner.</p>
     </section>
@@ -116,7 +116,25 @@
       </fieldset>
       <button class="birincil" id="dns-uygula" disabled>Değişiklik yok</button>
     </section>
-    <section class="gorunum" id="g-diger"><div class="yakinda">Diğer bölümü sonraki adımda bu arayüze taşınacak.<br>Şimdilik bu işlemler eski arayüzde.<br><button class="ikinci" data-komut="eskiArayuz">Eski arayüze geç</button></div></section>
+    <!-- Diğer -->
+    <section class="gorunum" id="g-diger">
+      <div class="sayfabaslik"><h1>Diğer</h1></div>
+      <section class="kart liste">
+        <div class="satir"><span class="ad"><b>Ağ paylaşımı</b><span class="kucuk">Telefon ve konsol bu bilgisayar üzerinden bağlansın. Npcap gerekir.</span></span>
+          <button class="anahtar" role="switch" aria-checked="false" aria-label="Ağ paylaşımı" id="paylasim" disabled><span></span></button></div>
+        <div class="satir"><span class="ad"><b>Güncellemeleri kontrol et</b><span class="kucuk">Açılışta yeni sürüm var mı bakar.</span></span>
+          <button class="anahtar" role="switch" aria-checked="true" aria-label="Güncellemeleri kontrol et" id="guncelleme" disabled><span></span></button></div>
+      </section>
+      <section class="kart liste">
+        <button class="satir tik" data-komut="tanilama"><span class="ad"><b>Sorun bildirmek için paket oluştur</b><span class="kucuk">Ayarlar ve kayıtlar tek dosyada; ziyaret geçmişi, IP ve MAC adresleri eklenmez.</span></span><svg class="ok" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+        <button class="satir tik" data-komut="kayitlar"><span class="ad"><b>Kayıtları aç</b></span><svg class="ok" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+        <button class="satir tik" data-komut="ayarlar"><span class="ad"><b>Tüm ayarlar</b><span class="kucuk">Onarım ayrıntıları, şimdi kontrol et.</span></span><svg class="ok" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+        <button class="satir tik" data-komut="eskiArayuz"><span class="ad"><b>Eski arayüze geç</b><span class="kucuk">Bu oturum için; sonraki açılışta yine bu arayüz gelir.</span></span><svg class="ok" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+        <div class="satir"><span class="ad"><b>Hakkında</b><span class="kucuk" id="hakkinda"></span><span class="kucuk">Temel: alimali54/zapret-win-turkey, motor: bol-van/zapret</span></span></div>
+      </section>
+      <button class="tehlike" id="temizle" data-onay="Temizlemek için tekrar bas" disabled>Her şeyi temizle ve DNS'i sıfırla</button>
+      <p class="kucuk" style="margin:0 4px">Servis, WinDivert ve DNSCrypt kaldırılır, DNS otomatiğe döner.</p>
+    </section>
   </main>
   <div class="bildirim" id="bildirim" role="status" aria-live="polite"></div>
   <nav aria-label="Bölümler">

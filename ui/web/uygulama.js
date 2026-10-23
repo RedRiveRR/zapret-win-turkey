@@ -14,6 +14,8 @@
 //    kurAcik, kaldirAcik, ayarAcik}   (program -> sayfa)
 //   {tip:"dns", durum, baslik, aciklama, mod:"saglayici|cloudflare|sifreli|diger|", sunucular, degistirAcik}
 //   {tip:"dnsYenile"} (DNS sekmesi açılınca), {tip:"komut", ad:"dns", mod}
+//   {tip:"diger", paylasim, paylasimAcik, guncelleme, hakkinda, temizleAcik}
+//   {tip:"komut", ad:"tanilama|kayitlar|ayarlar|paylasim|temizle"}, {tip:"ayar", ad:"guncelleme", deger:bool}
 //   {tip:"bildirim", metin}   (program -> sayfa, birkaç saniye görünür)
 //   {tip:"komut", ad:"servisKur|servisKaldir|servisAyarlar"}, {tip:"ayar", ad:"onarim|yenidenBaslat", deger:bool}
 'use strict';
@@ -144,26 +146,24 @@ document.querySelectorAll('.anahtar[data-ayar]').forEach((b) => b.addEventListen
 }));
 $('servis-kur').addEventListener('click', () => { $('servis-kur').disabled = true; gonder({ tip: 'komut', ad: 'servisKur' }); });
 $('servis-ayar').addEventListener('click', () => gonder({ tip: 'komut', ad: 'servisAyarlar' }));
-// Kaldırma iki adımlı: ilk tıklama onay ister, 4 sn içinde ikinci tıklama kaldırır.
-let kaldirZaman = 0;
-$('servis-kaldir').addEventListener('click', () => {
-  const b = $('servis-kaldir');
-  if (!b.classList.contains('onay')) {
-    b.classList.add('onay');
-    b.textContent = 'Kaldırmak için tekrar bas';
-    clearTimeout(kaldirZaman);
-    kaldirZaman = setTimeout(kaldirSifirla, 4000);
-    return;
-  }
-  kaldirSifirla();
-  b.disabled = true;
-  gonder({ tip: 'komut', ad: 'servisKaldir' });
-});
-function kaldirSifirla() {
-  clearTimeout(kaldirZaman);
-  $('servis-kaldir').classList.remove('onay');
-  $('servis-kaldir').textContent = 'Servisi kaldır';
+// Geri alınamayan işlemler iki adımlı: ilk tıklama onay ister, 4 sn içinde ikinci tıklama uygular.
+function onayliDugme(b, komut) {
+  const metin = b.textContent;
+  let zaman = 0;
+  const sifirla = () => { clearTimeout(zaman); b.classList.remove('onay'); b.textContent = metin; };
+  b.addEventListener('click', () => {
+    if (!b.classList.contains('onay')) {
+      b.classList.add('onay');
+      b.textContent = b.dataset.onay;
+      zaman = setTimeout(sifirla, 4000);
+      return;
+    }
+    sifirla();
+    b.disabled = true;
+    gonder({ tip: 'komut', ad: komut });
+  });
 }
+onayliDugme($('servis-kaldir'), 'servisKaldir');
 
 function servisUygula(m) {
   $('servis-durum').dataset.durum = m.durum || 'yok';
@@ -224,6 +224,25 @@ function dnsUygula(m) {
   dnsDugmesi();
 }
 
+// --- Diğer ---
+$('paylasim').addEventListener('click', () => { $('paylasim').disabled = true; gonder({ tip: 'komut', ad: 'paylasim' }); });
+$('guncelleme').addEventListener('click', () => {
+  const b = $('guncelleme');
+  const yeni = b.getAttribute('aria-checked') !== 'true';
+  b.setAttribute('aria-checked', String(yeni));
+  gonder({ tip: 'ayar', ad: 'guncelleme', deger: yeni });
+});
+onayliDugme($('temizle'), 'temizle');
+
+function digerUygula(m) {
+  $('paylasim').setAttribute('aria-checked', String(!!m.paylasim));
+  $('paylasim').disabled = !m.paylasimAcik;
+  $('guncelleme').setAttribute('aria-checked', String(!!m.guncelleme));
+  $('guncelleme').disabled = false;
+  $('hakkinda').textContent = m.hakkinda || '';
+  $('temizle').disabled = !m.temizleAcik;
+}
+
 // --- Bildirim ---
 let bildirimZaman = 0;
 function bildirimGoster(metin) {
@@ -244,6 +263,7 @@ if (wv) {
     else if (m.tip === 'servis') servisUygula(m);
     else if (m.tip === 'bildirim') bildirimGoster(m.metin);
     else if (m.tip === 'dns') dnsUygula(m);
+    else if (m.tip === 'diger') digerUygula(m);
   });
 }
 gonder({ tip: 'hazir' });
