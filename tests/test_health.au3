@@ -64,6 +64,17 @@ Func _TestHealth()
     _AssertTrue(StringInStr($sXml, "<RunLevel>HighestAvailable</RunLevel>") > 0, "en yüksek ayrıcalık")
     _AssertTrue(StringInStr($sXml, "<MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>") > 0, "tek örnek")
     _AssertFalse(_ScheduleExists("zwt-olmayan-gorev-123"), "olmayan görev yok sayılır")
+
+    ; --- _HealthGuiIsOpen: görünür pencere sayılır, gizli (tepsideki) sayılmaz ---
+    Local $sApp = "ZWT Test Uygulamasi"
+    Local $hW = GUICreate($sApp & " v9.9", 100, 50)
+    _AssertFalse(_HealthGuiIsOpen($sApp), "gizli pencere (tepsi) açık sayılmaz")
+    GUISetState(@SW_SHOW, $hW)
+    _AssertTrue(_HealthGuiIsOpen($sApp), "görünür pencere açık sayılır")
+    GUISetState(@SW_HIDE, $hW)
+    _AssertFalse(_HealthGuiIsOpen($sApp), "tepsiye gizlenince yine açık sayılmaz")
+    GUIDelete($hW)
+    _AssertFalse(_HealthGuiIsOpen($sApp), "pencere yoksa açık sayılmaz")
 EndFunc
 
 Func __TestHealthRow(ByRef $a, $i, $s, $fScore)

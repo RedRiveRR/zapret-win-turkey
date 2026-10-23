@@ -164,9 +164,12 @@ Func _HealthInternetUp($sCurl, $sNull)
     Return False
 EndFunc
 
-; Program penceresi açıksa (arayüz kendi işini yapıyor olabilir) True.
+; Program penceresi ekranda görünüyorsa (kullanıcı arayüzde analiz vb. yapıyor olabilir) True.
+; Tepsiye küçültülmüş (gizli) pencere sayılmaz: aksi halde program tepside açıkken onarım hiç çalışmazdı.
 Func _HealthGuiIsOpen($sAppName)
-    Return WinExists("[REGEXPTITLE:^\Q" & $sAppName & " v\E]") = 1
+    Local $sTitle = "[REGEXPTITLE:^\Q" & $sAppName & " v\E]"
+    If Not WinExists($sTitle) Then Return False
+    Return BitAND(WinGetState($sTitle), 2) = 2 ; 2 = görünür
 EndFunc
 
 ; Servis stratejisini değiştirip bağlantıyı yeniden dener. Çalıştıysa True.
