@@ -60,6 +60,24 @@ Func _WebJsonAdd($sObj, $sKey, $vValue)
     Return $sBody & _WebJsonStr($sKey) & ":" & __WebJsonValue($vValue) & "}"
 EndFunc
 
+; Hazır JSON değerini (dizi/nesne) olduğu gibi ekler: _WebJsonAddRaw($s, "liste", '["a"]')
+Func _WebJsonAddRaw($sObj, $sKey, $sRawJson)
+    Local $sBody = StringTrimRight(StringStripWS($sObj, 3), 1)
+    If StringRight($sBody, 1) <> "{" Then $sBody &= ","
+    Return $sBody & _WebJsonStr($sKey) & ":" & $sRawJson & "}"
+EndFunc
+
+; "|" ile ayrılmış metinleri JSON metin dizisine çevirir: "a|b" -> ["a","b"]; "" -> []
+Func _WebJsonList($sPipeList)
+    If $sPipeList = "" Then Return "[]"
+    Local $a = StringSplit($sPipeList, "|", 2), $s = ""
+    For $i = 0 To UBound($a) - 1
+        If $i > 0 Then $s &= ","
+        $s &= _WebJsonStr($a[$i])
+    Next
+    Return "[" & $s & "]"
+EndFunc
+
 ; Yerel dosya yolunu WebView2'nin açabileceği file:/// adresine çevirir
 ; (boşluk, # , % ve ASCII dışı karakterler yüzde kodlanır).
 Func _WebFileUrl($sPath)

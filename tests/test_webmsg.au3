@@ -36,6 +36,13 @@ Func _TestWebMsg()
     _AssertEq($sObj, '{"tip":"durum","calisiyor":true,"baslik":"Discord' & "'" & 'a yol açık"}', "zincirleme alanlar virgülle eklenir")
     _AssertEq(_WebJsonGet($sObj, "baslik"), "Discord'a yol açık", "zincirleme nesne okunabilir")
 
+    ; --- _WebJsonList / _WebJsonAddRaw ---
+    _AssertEq(_WebJsonList("Analiz Sonucu|Türk Telekom"), '["Analiz Sonucu","Türk Telekom"]', "liste diziye çevrilir")
+    _AssertEq(_WebJsonList(""), "[]", "boş liste boş dizi")
+    _AssertEq(_WebJsonList('a"b'), '["a\"b"]', "liste öğeleri kaçışlanır")
+    _AssertEq(_WebJsonAddRaw('{"tip":"strateji"}', "liste", '["x"]'), '{"tip":"strateji","liste":["x"]}', "hazır dizi eklenir")
+    _AssertEq(_WebJsonAddRaw("{}", "n", "[]"), '{"n":[]}', "boş nesneye hazır değer eklenir")
+
     ; --- _WebFileUrl ---
     _AssertEq(_WebFileUrl("C:\Program Files\Zapret Windows Turkiye\ui\web\index.html"), _
             "file:///C:/Program%20Files/Zapret%20Windows%20Turkiye/ui/web/index.html", "boşluklar kodlanır")
