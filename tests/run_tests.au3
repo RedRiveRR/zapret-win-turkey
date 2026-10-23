@@ -19,6 +19,7 @@
 #include "test_install.au3"
 #include "test_webmsg.au3"
 #include "test_webstate.au3"
+#include "test_appstate.au3"
 
 _TestProcess()
 _TestBlockcheck()
@@ -35,5 +36,6 @@ _TestHealth()
 _TestInstall()
 _TestWebMsg()
 _TestWebState()
+_TestAppState()
 
 Exit _AssertSummary()
