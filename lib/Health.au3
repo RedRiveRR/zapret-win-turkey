@@ -29,6 +29,10 @@ Global Const $HEALTH_INTERVAL_MIN = 30
 Global Const $HEALTH_MAX_ANALYZE_PER_DAY = 2
 Global Const $HEALTH_MAX_FALLBACK = 3
 Global Const $HEALTH_PROBE_HOSTS = "gateway.discord.gg,discord.com"
+; Engellenmeyen kontrol hedefleri: hiçbirine ulaşılamıyorsa sorun engelleme değil internet kesintisidir.
+Global Const $HEALTH_INTERNET_HOSTS = "www.google.com,www.microsoft.com,1.1.1.1"
+; Kısa kopmalarda (modem yeniden başlıyor, Wi-Fi geç bağlanıyor) onarımdan önce bekleme
+Global Const $HEALTH_RETRY_DELAY_MS = 15000
 
 ; Sonuç kodları
 Global Const $HEALTH_OK = 0              ; zaten sağlıklı
@@ -36,6 +40,7 @@ Global Const $HEALTH_FIXED = 1           ; sorun vardı, onarıldı
 Global Const $HEALTH_FAILED = 2          ; onarılamadı
 Global Const $HEALTH_SKIPPED = 3         ; çalışmadı (servis yok, pencere açık, kapalı...)
 Global Const $HEALTH_SERVICE_STOPPED = 4 ; servis durmuş, yeniden başlatma izni yok
+Global Const $HEALTH_NO_INTERNET = 5     ; internet yok; hiçbir şey değiştirilmedi
 
 ; ------------------------------------------------------------------------
 ; Saf yardımcılar (birim testli)
@@ -100,24 +105,33 @@ EndFunc
 ; Çalışma anı
 ; ------------------------------------------------------------------------
 
-; Hedeflere TCP + TLS1.3 ile bağlanmayı dener (her hedef 2 deneme). Hepsi en az bir kez açıldıysa True.
+; Tek hedefe TCP + TLS1.3 bağlantısı (en fazla $iTries deneme). Açıldıysa True.
+Func __HealthProbeHost($sCurl, $sNull, $sHost, $iTries)
+    For $i = 1 To $iTries
+        Local $iPid = Run(_SmartProbeCommand($sCurl, $sNull, $sHost, $SMART_TLS13, 5), "", @SW_HIDE, $STDOUT_CHILD)
+        If $iPid = 0 Then ContinueLoop
+        ProcessWaitClose($iPid, 8)
+        If ProcessExists($iPid) Then ProcessClose($iPid)
+        Local $fMs
+        If _SmartParseCurlOutput(StdoutRead($iPid), $fMs) Then Return True
+    Next
+    Return False
+EndFunc
+
+; Discord hedeflerinin hepsi açılıyorsa True (her biri 2 deneme).
 Func _HealthProbe($sCurl, $sNull)
     For $sHost In StringSplit($HEALTH_PROBE_HOSTS, ",", 2)
-        Local $bOk = False
-        For $i = 1 To 2
-            Local $iPid = Run(_SmartProbeCommand($sCurl, $sNull, $sHost, $SMART_TLS13, 5), "", @SW_HIDE, $STDOUT_CHILD)
-            If $iPid = 0 Then ContinueLoop
-            ProcessWaitClose($iPid, 8)
-            If ProcessExists($iPid) Then ProcessClose($iPid)
-            Local $fMs
-            If _SmartParseCurlOutput(StdoutRead($iPid), $fMs) Then
-                $bOk = True
-                ExitLoop
-            EndIf
-        Next
-        If Not $bOk Then Return False
+        If Not __HealthProbeHost($sCurl, $sNull, $sHost, 2) Then Return False
     Next
     Return True
+EndFunc
+
+; Engellenmeyen kontrol hedeflerinden en az birine ulaşılıyorsa internet var demektir.
+Func _HealthInternetUp($sCurl, $sNull)
+    For $sHost In StringSplit($HEALTH_INTERNET_HOSTS, ",", 2)
+        If __HealthProbeHost($sCurl, $sNull, $sHost, 1) Then Return True
+    Next
+    Return False
 EndFunc
 
 ; Program penceresi açıksa (arayüz kendi işini yapıyor olabilir) True.
@@ -176,7 +190,19 @@ Func _HealthRun($sRoot, $sName, $sAppName)
         IniWrite($sIni, "Health", "LastResult", "sağlıklı")
         Return $HEALTH_OK
     EndIf
-    _LogWarn("Sağlık kontrolü: Discord'a bağlanılamıyor, onarım deneniyor")
+    ; Kesinti mi engelleme mi? İnternet yoksa hiçbir şeyi değiştirme.
+    If Not _HealthInternetUp($sCurl, $sNull) Then
+        If IniRead($sIni, "Health", "LastResult", "") <> "internet yok" Then _LogWarn("Sağlık kontrolü: internet bağlantısı yok; onarım yapılmadı")
+        IniWrite($sIni, "Health", "LastResult", "internet yok")
+        Return $HEALTH_NO_INTERNET
+    EndIf
+    ; Kısa kopma olabilir: bekleyip bir kez daha dene.
+    Sleep($HEALTH_RETRY_DELAY_MS)
+    If _HealthProbe($sCurl, $sNull) Then
+        IniWrite($sIni, "Health", "LastResult", "sağlıklı")
+        Return $HEALTH_OK
+    EndIf
+    _LogWarn("Sağlık kontrolü: internet var ama Discord'a bağlanılamıyor, onarım deneniyor")
 
     ; 3) DNS
     If CheckDnsPoisoningSilent() Then
@@ -223,10 +249,16 @@ Func _HealthRun($sRoot, $sName, $sAppName)
                 Return __HealthDone($sIni, "Otomatik analizle yeni strateji bulundu (puan " & $aRows[0][$SMART_COL_SCORE] & ").")
             EndIf
         EndIf
-        _ServiceStart($sName) ; en azından eski haliyle çalışsın
     EndIf
 
-    Return __HealthFail($sIni, "Otomatik onarım başarısız. Programı açıp 'ISS Analizi' ile tam analiz yapabilirsiniz.")
+    ; Hiçbiri işe yaramadı: servisi onarım öncesi stratejisine geri döndür (son denenen yedekte kalmasın).
+    If _ServiceParseBinPath(_ServiceGetConfig($sName)) <> $sBin Then
+        Local $bRestored = _ServiceRestoreBinPath($sName, $sBin)
+        _LogInfo("Sağlık kontrolü: onarım başarısız, servis orijinal stratejiye " & ($bRestored ? "geri döndürüldü" : "GERİ DÖNDÜRÜLEMEDİ"))
+    ElseIf _ServiceGetState($sName) <> "RUNNING" Then
+        _ServiceStart($sName)
+    EndIf
+    Return __HealthFail($sIni, "Otomatik onarım başarısız; servis eski stratejisinde bırakıldı. Programı açıp 'ISS Analizi' ile tam analiz yapabilirsiniz.")
 EndFunc
 
 ; Servis kurulduktan sonra sorulur: otomatik onarım (sağlık kontrolü görevi) kurulsun mu?

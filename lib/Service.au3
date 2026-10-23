@@ -125,6 +125,21 @@ Func _ServiceUpdateArgs($sName, $sExePath, $sArgs)
     Return _ServiceWaitState($sName, "RUNNING", 10000)
 EndFunc
 
+; Servisin binPath'ini "sc qc"den okunan ham değere geri yükler (ör. başarısız onarım sonrası).
+Func _ServiceRestoreBinPath($sName, $sRawBinPath)
+    If $sRawBinPath = "" Then Return False
+    RunWait(@ComSpec & " /c sc stop " & $sName, "", @SW_HIDE)
+    _ServiceWaitState($sName, "STOPPED", 10000)
+    Local $iCfg = RunWait(@ComSpec & " /c sc config " & $sName & ' binPath= "' & StringReplace($sRawBinPath, '"', '\"') & '"', "", @SW_HIDE)
+    RunWait(@ComSpec & " /c sc start " & $sName, "", @SW_HIDE)
+    Return $iCfg = 0 And _ServiceWaitState($sName, "RUNNING", 10000)
+EndFunc
+
+; Servisi durdurup siler (WinDivert sürücü kalıntılarına dokunmaz).
+Func _ServiceRemove($sName)
+    RunWait(@ComSpec & " /c sc stop " & $sName & " & sc delete " & $sName, "", @SW_HIDE)
+EndFunc
+
 ; Servisi durdurur (strateji testleri için). Durduysa True.
 Func _ServiceStop($sName, $iTimeoutMs = 10000)
     RunWait(@ComSpec & " /c sc stop " & $sName, "", @SW_HIDE)
