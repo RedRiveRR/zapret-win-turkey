@@ -41,6 +41,19 @@ Func _TestHealth()
     _AssertFalse(_HealthCanAnalyze("2026/10/23 01:00:00,2026/10/23 09:00:00", $sNow, 2), "2 analizden sonra yasak")
     _AssertTrue(_HealthCanAnalyze("2026/10/22 01:00:00,2026/10/23 09:00:00", $sNow, 2), "eskiyen kayıt sayılmaz")
 
+    ; --- _HealthStatusFormat (ana pencere alt satırı) ---
+    _AssertEq(_HealthStatusFormat(False, "1", "2026/10/23 10:30:00", "sağlıklı", "2026/10/23"), "", "servis yoksa gösterge yok")
+    _AssertEq(_HealthStatusFormat(True, "0", "", "", "2026/10/23"), "Onarım: kapalı", "kapalı")
+    _AssertEq(_HealthStatusFormat(True, "1", "", "", "2026/10/23"), "Onarım: açık, henüz kontrol yok", "henüz kontrol yok")
+    _AssertEq(_HealthStatusFormat(True, "1", "2026/10/23 10:30:05", "sağlıklı", "2026/10/23"), "Onarım: 10:30 sağlıklı", "bugün: yalnız saat")
+    _AssertEq(_HealthStatusFormat(True, "1", "2026/10/22 23:05:00", "onarıldı", "2026/10/23"), "Onarım: 22.10 23:05 onarıldı", "dün: gün.ay saat")
+    _AssertEq(_HealthStatusFormat(True, "1", "2026/10/23 10:30:05", "", "2026/10/23"), "Onarım: 10:30", "sonuç boşsa yalnız saat")
+
+    ; --- _HealthResultText ---
+    _AssertTrue(StringInStr(_HealthResultText($HEALTH_NO_INTERNET), "İnternet") > 0, "internet yok metni")
+    _AssertTrue(StringInStr(_HealthResultText($HEALTH_SERVICE_STOPPED), "yeniden başlatma kapalı") > 0, "servis durmuş metni")
+    _AssertTrue(StringInStr(_HealthResultText(99), "Bilinmeyen") > 0, "bilinmeyen kod")
+
     ; --- Görev XML'i: Windows XML ayrıştırıcısıyla geçerli mi? ---
     Local $sXml = _ScheduleBuildXml("C:\A & B\zapret-win-turkey.exe", "/saglik", "C:\A & B", "PC\Ali", 30, "Açıklama <test>")
     Local $oDoc = ObjCreate("Msxml2.DOMDocument.6.0")

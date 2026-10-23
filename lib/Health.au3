@@ -101,6 +101,36 @@ Func _HealthCanAnalyze($sTimes, $sNow, $iMax)
     Return (@extended + 1) < $iMax
 EndFunc
 
+; Ana pencere alt satırı için kısa durum metni. Servis yoksa "".
+;   $sLastCheck: "YYYY/MM/DD HH:MM:SS", $sToday: "YYYY/MM/DD"
+Func _HealthStatusFormat($bService, $sEnabled, $sLastCheck, $sLastResult, $sToday)
+    If Not $bService Then Return ""
+    If $sEnabled = "0" Then Return "Onarım: kapalı"
+    If StringLen($sLastCheck) < 16 Then Return "Onarım: açık, henüz kontrol yok"
+    Local $sWhen = StringMid($sLastCheck, 12, 5)
+    If StringLeft($sLastCheck, 10) <> $sToday Then $sWhen = StringMid($sLastCheck, 9, 2) & "." & StringMid($sLastCheck, 6, 2) & " " & $sWhen
+    Return "Onarım: " & $sWhen & ($sLastResult = "" ? "" : " " & $sLastResult)
+EndFunc
+
+; Sonuç kodunun kullanıcıya gösterilecek açıklaması.
+Func _HealthResultText($iCode)
+    Switch $iCode
+        Case $HEALTH_OK
+            Return "Discord bağlantısı sağlıklı; bir şey yapılmadı."
+        Case $HEALTH_FIXED
+            Return "Sorun bulundu ve onarıldı."
+        Case $HEALTH_FAILED
+            Return "Sorun onarılamadı; servis eski stratejisinde. 'ISS Analizi' ile tam analiz yapabilirsiniz."
+        Case $HEALTH_SKIPPED
+            Return "Kontrol yapılmadı (servis kurulu değil, otomatik onarım kapalı ya da Zapret2 servisi değil)."
+        Case $HEALTH_SERVICE_STOPPED
+            Return "Servis durmuş; otomatik yeniden başlatma kapalı olduğu için başlatılmadı."
+        Case $HEALTH_NO_INTERNET
+            Return "İnternet bağlantısı yok; hiçbir şey değiştirilmedi."
+    EndSwitch
+    Return "Bilinmeyen sonuç (" & $iCode & ")."
+EndFunc
+
 ; ------------------------------------------------------------------------
 ; Çalışma anı
 ; ------------------------------------------------------------------------
@@ -155,11 +185,12 @@ Func __HealthNotify($sTitle, $sText)
 EndFunc
 
 ; Tam sağlık kontrolü. Dönüş: $HEALTH_* sonuç kodu.
-Func _HealthRun($sRoot, $sName, $sAppName)
+;   $bFromGui: ayarlar penceresindeki "Şimdi kontrol et" (pencere açık kontrolü ve Enabled atlanır)
+Func _HealthRun($sRoot, $sName, $sAppName, $bFromGui = False)
     Local $sIni = $sRoot & "\config\config.ini"
-    If IniRead($sIni, "Health", "Enabled", "1") <> "1" Then Return $HEALTH_SKIPPED
+    If Not $bFromGui And IniRead($sIni, "Health", "Enabled", "1") <> "1" Then Return $HEALTH_SKIPPED
     If Not _ServiceIsInstalled($sName) Then Return $HEALTH_SKIPPED
-    If _HealthGuiIsOpen($sAppName) Then Return $HEALTH_SKIPPED
+    If Not $bFromGui And _HealthGuiIsOpen($sAppName) Then Return $HEALTH_SKIPPED
 
     Local $sBin = _ServiceParseBinPath(_ServiceGetConfig($sName))
     If Not StringInStr($sBin, "winws2.exe") Then Return $HEALTH_SKIPPED ; yalnız Zapret2 servisi onarılır
@@ -276,16 +307,22 @@ Func _HealthOfferSetup($sIni)
         Return False
     EndIf
     IniWrite($sIni, "Health", "Enabled", "1")
-    Local $sCmd, $sArgs
-    _ScheduleSelfCommand($sCmd, $sArgs, $HEALTH_ARG)
-    Local $iRc = _ScheduleInstall($HEALTH_TASK_NAME, $sCmd, $sArgs, @ScriptDir, $HEALTH_INTERVAL_MIN, _
-            "Zapret Windows Türkiye: Discord bağlantısını kontrol eder, gerekirse servisi onarır.")
-    _LogInfo("Otomatik onarım görevi kuruldu (schtasks çıkış kodu " & $iRc & "): " & $sCmd & " " & $sArgs)
+    Local $iRc = _HealthInstallTask()
     If $iRc <> 0 Then
         MsgBox(48 + 8192, "Otomatik Onarım", "Zamanlanmış görev oluşturulamadı (hata kodu " & $iRc & "). Servis yine de çalışır.")
         Return False
     EndIf
     Return True
+EndFunc
+
+; Sağlık kontrolü görevini kurar. Dönüş: schtasks çıkış kodu (0 = başarılı).
+Func _HealthInstallTask()
+    Local $sCmd, $sArgs
+    _ScheduleSelfCommand($sCmd, $sArgs, $HEALTH_ARG)
+    Local $iRc = _ScheduleInstall($HEALTH_TASK_NAME, $sCmd, $sArgs, @ScriptDir, $HEALTH_INTERVAL_MIN, _
+            "Zapret Windows Türkiye: Discord bağlantısını kontrol eder, gerekirse servisi onarır.")
+    _LogInfo("Otomatik onarım görevi kuruldu (schtasks çıkış kodu " & $iRc & "): " & $sCmd & " " & $sArgs)
+    Return $iRc
 EndFunc
 
 ; Servis kaldırılınca sağlık kontrolü görevi de kaldırılır.

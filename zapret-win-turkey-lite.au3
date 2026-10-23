@@ -30,6 +30,7 @@
 #include "ui\SmartAnalysisUI.au3"
 #include "lib\Health.au3"
 #include "lib\Schedule.au3"
+#include "ui\SettingsUI.au3"
 
 #include <ProgressConstants.au3>
 
@@ -89,6 +90,8 @@ Global $isZapretRunning = False
 Global $zapretPID = 0
 Global $bServiceStoppedWarned = False
 Global $bDnsReset = True
+Global $g_sEngineFooter = ""
+Global $g_iFooterTicks = 0
 
 ; Servis kurulum butonuna art arda tıklamayı engelleyen kilit.
 Global $bInstallServiceBusy = False
@@ -104,6 +107,8 @@ Local $trayShow = TrayCreateItem("Göster")
 TrayItemSetOnEvent(-1, "ShowGUI")
 TrayCreateItem("Hazır profilleri akıllı test et")
 TrayItemSetOnEvent(-1, "_LiteSmartFromTray")
+TrayCreateItem("Ayarlar...")
+TrayItemSetOnEvent(-1, "_OpenSettings")
 TrayCreateItem("Tanılama paketi oluştur")
 TrayItemSetOnEvent(-1, "_DiagCreateFromTray")
 TrayCreateItem("")
@@ -283,6 +288,12 @@ While 1
             _RefreshIfServiceRecovered()
         EndIf
         _UpdatePollAndNotify($APP_VERSION, $APP_RELEASES_URL)
+        ; Alt satırdaki onarım durumunu 30 sn'de bir tazele (sağlık kontrolü arka planda yazar).
+        $g_iFooterTicks += 1
+        If $g_iFooterTicks >= 30 Then
+            $g_iFooterTicks = 0
+            _RefreshFooter()
+        EndIf
         $hProcessTimer = TimerInit()
     EndIf
 
@@ -416,11 +427,13 @@ Func _UpdateEnginePaths($sEngineSelected)
     If StringInStr($sEngineSelected, "Zapret2") Then
         $currentEngine = "Zapret2"
         $winwsPath = @ScriptDir & "\bin\zapret\zapret-winws\winws2.exe"
-        GUICtrlSetData($lblFooter, "Zapret2 v" & $ENGINE_ZAPRET2_VERSION)
+        $g_sEngineFooter = "Zapret2 v" & $ENGINE_ZAPRET2_VERSION
+        _RefreshFooter()
     Else
         $currentEngine = "Zapret1"
         $winwsPath = @ScriptDir & "\bin\zapret\zapret-winws\winws.exe"
-        GUICtrlSetData($lblFooter, "Zapret v" & $ENGINE_ZAPRET1_VERSION)
+        $g_sEngineFooter = "Zapret v" & $ENGINE_ZAPRET1_VERSION
+        _RefreshFooter()
     EndIf
 EndFunc
 
@@ -601,6 +614,21 @@ Func _LiteSmartFromTray()
         $bServiceStoppedWarned = False
         CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
     EndIf
+EndFunc
+
+; Alt satır: motor sürümü + (servis modunda) otomatik onarımın son durumu.
+Func _RefreshFooter()
+    Local $bService = StringInStr(GUICtrlRead($lblStatusText), "SERVİS") > 0
+    Local $sHealth = _HealthStatusFormat($bService, IniRead($iniPath, "Health", "Enabled", "1"), _
+            IniRead($iniPath, "Health", "LastCheck", ""), IniRead($iniPath, "Health", "LastResult", ""), @YEAR & "/" & @MON & "/" & @MDAY)
+    GUICtrlSetData($lblFooter, $g_sEngineFooter & ($sHealth = "" ? "" : "  ·  " & $sHealth))
+EndFunc
+
+; Tepsi: ayarlar penceresi.
+Func _OpenSettings()
+    ShowGUI()
+    _SettingsUI_Show(@ScriptDir, $serviceName, $APP_NAME, $hGUI)
+    _RefreshFooter()
 EndFunc
 
 Func StopWinws($ctrlID, $statusID, $aBtns)

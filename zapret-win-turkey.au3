@@ -33,6 +33,7 @@
 #include "ui\SmartAnalysisUI.au3"
 #include "lib\Health.au3"
 #include "lib\Schedule.au3"
+#include "ui\SettingsUI.au3"
 
 ; --- BAŞSIZ SAĞLIK KONTROLÜ (Görev Zamanlayıcı: /saglik) ---
 ; Pencere açılmaz; servis modunda Discord bağlantısını kontrol edip gerekirse onarır (lib/Health.au3).
@@ -95,6 +96,8 @@ Global $zapretPID = 0
 Global $pcapPID = 0
 Global $bServiceStoppedWarned = False
 Global $bDnsReset = True
+Global $g_sEngineFooter = ""
+Global $g_iFooterTicks = 0
 Global $strategyTestPID = 0
 
 ; Blockcheck butonuna art arda tıklanmasını engelleyen kilit.
@@ -118,6 +121,8 @@ GUISetBkColor(0xFFFFFF)
 ; --- Tepsi Menüsü ---
 Local $trayShow = TrayCreateItem("Göster")
 TrayItemSetOnEvent(-1, "ShowGUI")
+TrayCreateItem("Ayarlar...")
+TrayItemSetOnEvent(-1, "_OpenSettings")
 TrayCreateItem("Tanılama paketi oluştur")
 TrayItemSetOnEvent(-1, "_DiagCreateFromTray")
 TrayCreateItem("")
@@ -372,6 +377,12 @@ While 1
 
 		EndIf
 		_UpdatePollAndNotify($APP_VERSION, $APP_RELEASES_URL)
+		; Alt satırdaki onarım durumunu 30 sn'de bir tazele (sağlık kontrolü arka planda yazar).
+		$g_iFooterTicks += 1
+		If $g_iFooterTicks >= 30 Then
+		    $g_iFooterTicks = 0
+		    _RefreshFooter()
+		EndIf
 	$hProcessTimer = TimerInit()
 	EndIf
 
@@ -744,14 +755,16 @@ Func _UpdateEnginePaths($sEngineSelected)
         $winwsPath = @ScriptDir & "\bin\zapret\zapret-winws\winws2.exe"
         $blockcheckPath = @ScriptDir & "\bin\zapret\blockcheck\blockcheck2.cmd"
         $logPath = @ScriptDir & "\bin\zapret\blockcheck\blockcheck2.log"
-        GUICtrlSetData($lblFooter, "Zapret2 v" & $ENGINE_ZAPRET2_VERSION)
+        $g_sEngineFooter = "Zapret2 v" & $ENGINE_ZAPRET2_VERSION
+        _RefreshFooter()
     Else
         $currentEngine = "Zapret1"
         $strategyFile = @ScriptDir & "\config\strategy.txt"
         $winwsPath = @ScriptDir & "\bin\zapret\zapret-winws\winws.exe"
         $blockcheckPath = @ScriptDir & "\bin\zapret\blockcheck\blockcheck.cmd"
         $logPath = @ScriptDir & "\bin\zapret\blockcheck\blockcheck.log"
-        GUICtrlSetData($lblFooter, "Zapret v" & $ENGINE_ZAPRET1_VERSION)
+        $g_sEngineFooter = "Zapret v" & $ENGINE_ZAPRET1_VERSION
+        _RefreshFooter()
     EndIf
 EndFunc
 
@@ -887,6 +900,21 @@ Func _BuildActiveWinwsArgs($sStrategy)
     Local $sFilterMode = _WinwsFilterModeFromText(GUICtrlRead($cmbFilter))
     _EnsureHostlistFile($sFilterMode, $sStrategy, $hostlistPath, $normalHostlistPath)
     Return _BuildWinwsArgs($currentEngine, $winwsPath, $sStrategy, $sFilterMode, $exludelistPath, $hostlistPath, $normalHostlistPath)
+EndFunc
+
+; Alt satır: motor sürümü + (servis modunda) otomatik onarımın son durumu.
+Func _RefreshFooter()
+    Local $bService = StringInStr(GUICtrlRead($lblStatusText), "SERVİS") > 0
+    Local $sHealth = _HealthStatusFormat($bService, IniRead($iniPath, "Health", "Enabled", "1"), _
+            IniRead($iniPath, "Health", "LastCheck", ""), IniRead($iniPath, "Health", "LastResult", ""), @YEAR & "/" & @MON & "/" & @MDAY)
+    GUICtrlSetData($lblFooter, $g_sEngineFooter & ($sHealth = "" ? "" : "  ·  " & $sHealth))
+EndFunc
+
+; Tepsi: ayarlar penceresi.
+Func _OpenSettings()
+    ShowGUI()
+    _SettingsUI_Show(@ScriptDir, $serviceName, $APP_NAME, $hGUI)
+    _RefreshFooter()
 EndFunc
 
 Func StopWinws($ctrlID, $statusID, $aBtns)
