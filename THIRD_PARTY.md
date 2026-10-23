@@ -21,6 +21,14 @@ Bu araç yönetici yetkisiyle çalışır ve aşağıdaki programları kullanır
 | WinDivert sürücüsü | [basil00/WinDivert](https://github.com/basil00/WinDivert) | LGPLv3 / GPLv2 |
 | cygwin (blockcheck için bash) | [cygwin.com](https://cygwin.com) | GPL / LGPL |
 
+## Derleme sırasında pakete eklenenler
+
+| Bileşen | Sürüm | Kaynak | Lisans | Pakette | SHA256 |
+|---|---|---|---|---|---|
+| WebView2Loader.dll (x64) | 1.0.2903.40 | [Microsoft.Web.WebView2 NuGet](https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.2903.40) | BSD 3 maddeli (`bin/webview2/LICENSE.txt`) | `bin/webview2/WebView2Loader.dll` | `462b36fd1be6ca9f7563466a89e57c41ef4a4def3e0a84fa885d203aea4a3aaf` |
+
+Yeni arayüz Windows'un WebView2 çalışma zamanını kullanır (Windows 11'de yüklü gelir). Yoksa program eski arayüzle açılır.
+
 ## Harici gereksinimler
 
 | Bileşen | Neden | Kaynak |

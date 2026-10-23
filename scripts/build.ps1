@@ -29,6 +29,9 @@ if (-not $OutDir) { $OutDir = Join-Path $repo 'dist' }
 
 $BaseUrl = 'https://github.com/alimali54/zapret-win-turkey/releases/download/v4.5/zapret-win-turkey.zip'
 $BaseSha256 = '7aee242c47a00c62156461ad9beff6096f5df3283185ccd70c0bf144edf345b3'
+# Yeni arayüz (WebView2) yükleyicisi: Microsoft'un resmi NuGet paketi, sürüm ve özet sabit.
+$Wv2Url = 'https://api.nuget.org/v3-flatcontainer/microsoft.web.webview2/1.0.2903.40/microsoft.web.webview2.1.0.2903.40.nupkg'
+$Wv2Sha256 = 'ef128016dd1e51c59178c827ed5b8aa3322c57afa8675d930f8109505542ad74'
 
 if (-not $AutoItDir) {
     $AutoItDir = @((Join-Path $env:USERPROFILE 'tools\autoit-portable'), (Join-Path ${env:ProgramFiles(x86)} 'AutoIt3')) |
@@ -59,6 +62,15 @@ try {
     if ($hash -ne $BaseSha256) { throw "Temel paketin SHA256 özeti uyuşmuyor: $hash (beklenen $BaseSha256)" }
     $base = Join-Path $work 'base'
     Expand-Archive $BaseZip -DestinationPath $base
+
+    # --- WebView2 yükleyicisi (yeni arayüz) ---
+    $wv2Zip = Join-Path $work 'webview2.zip'
+    Write-Host "WebView2 yükleyicisi indiriliyor: $Wv2Url"
+    Invoke-WebRequest -Uri $Wv2Url -OutFile $wv2Zip
+    $hash = (Get-FileHash $wv2Zip -Algorithm SHA256).Hash.ToLower()
+    if ($hash -ne $Wv2Sha256) { throw "WebView2 paketinin SHA256 özeti uyuşmuyor: $hash (beklenen $Wv2Sha256)" }
+    $wv2 = Join-Path $work 'webview2'
+    Expand-Archive $wv2Zip -DestinationPath $wv2
 
     # --- Kaynakları ASCII klasöre kopyala ve derle ---
     $src = Join-Path $work 'src'
@@ -101,6 +113,10 @@ try {
     Get-ChildItem (Join-Path $mainDir 'bin\zapret\blockcheck') -Filter '*.log' | Remove-Item
     Copy-Common $mainDir 'zapret-win-turkey'
     Copy-Item $mainExe $mainDir
+    $wv2Dir = Join-Path $mainDir 'bin\webview2'
+    New-Item -ItemType Directory -Force -Path $wv2Dir | Out-Null
+    Copy-Item (Join-Path $wv2 'build\native\x64\WebView2Loader.dll') $wv2Dir
+    Copy-Item (Join-Path $wv2 'LICENSE.txt') $wv2Dir
 
     # --- Lite paket: yalnızca motor klasörü ---
     $liteDir = Join-Path $work 'pkg\zapret-win-turkey-lite'
