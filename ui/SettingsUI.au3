@@ -81,23 +81,12 @@ Func _SettingsUI_Show($sRoot, $sServiceName, $sAppName, $hParent)
             Case $btnSave
                 Local $bHealth = _UiToggleGet($tglHealth)
                 Local $bRestart = _UiToggleGet($tglRestart)
-                Local $bPrevRestart = (IniRead($sIni, "Service", "AutoRestart", "0") = "1")
-                IniWrite($sIni, "Health", "Enabled", $bHealth ? "1" : "0")
                 IniWrite($sIni, "Health", "AutoFixDns", _UiToggleGet($tglDns) ? "1" : "0")
                 IniWrite($sIni, "Health", "AutoAnalyze", _UiToggleGet($tglAnalyze) ? "1" : "0")
-                IniWrite($sIni, "Service", "AutoRestart", $bRestart ? "1" : "0")
                 IniWrite($sIni, "Settings", "UpdateCheck", _UiToggleGet($tglUpdate) ? "1" : "0")
-                Local $sNote = ""
-                If $bService Then
-                    If $bHealth And Not _ScheduleExists($HEALTH_TASK_NAME) Then
-                        If _HealthInstallTask() <> 0 Then $sNote &= @CRLF & "Uyarı: onarım görevi oluşturulamadı."
-                    ElseIf Not $bHealth Then
-                        _HealthRemoveTask()
-                    EndIf
-                    If $bRestart <> $bPrevRestart Then _ServiceSetRecovery($sServiceName, $bRestart)
-                ElseIf $bHealth Then
-                    $sNote &= @CRLF & "Otomatik onarım, servis kurulunca etkinleşir."
-                EndIf
+                _SettingsApplyRestart($sIni, $sServiceName, $bService, $bRestart)
+                Local $sNote = _SettingsApplyHealth($sIni, $bService, $bHealth)
+                If $sNote <> "" Then $sNote = @CRLF & $sNote
                 _LogInfo("Ayarlar kaydedildi: onarım=" & $bHealth & " dns=" & _UiToggleGet($tglDns) & " analiz=" & _UiToggleGet($tglAnalyze) & _
                         " yenidenbaşlat=" & $bRestart & " güncelleme=" & _UiToggleGet($tglUpdate))
                 MsgBox(64 + 8192, "Ayarlar", "Ayarlar kaydedildi." & $sNote, 0, $h)
@@ -109,4 +98,27 @@ Func _SettingsUI_Show($sRoot, $sServiceName, $sAppName, $hParent)
     _UiRelease($aMark)
     GUISetState(@SW_ENABLE, $hParent)
     Return $bSaved
+EndFunc
+
+; Otomatik onarımı açar/kapatır; servis kuruluysa onarım görevini hemen kurar/kaldırır.
+; Dönüş: kullanıcıya gösterilecek not ("" = not yok). Yeni arayüzün Servis ekranı da kullanır.
+Func _SettingsApplyHealth($sIni, $bService, $bHealth)
+    IniWrite($sIni, "Health", "Enabled", $bHealth ? "1" : "0")
+    If $bService Then
+        If $bHealth And Not _ScheduleExists($HEALTH_TASK_NAME) Then
+            If _HealthInstallTask() <> 0 Then Return "Uyarı: onarım görevi oluşturulamadı."
+        ElseIf Not $bHealth Then
+            _HealthRemoveTask()
+        EndIf
+    ElseIf $bHealth Then
+        Return "Otomatik onarım, servis kurulunca etkinleşir."
+    EndIf
+    Return ""
+EndFunc
+
+; "Servis kapanırsa yeniden başlat" ayarını yazar; servis kuruluysa ve değiştiyse servise uygular.
+Func _SettingsApplyRestart($sIni, $sServiceName, $bService, $bRestart)
+    Local $bPrev = (IniRead($sIni, "Service", "AutoRestart", "0") = "1")
+    IniWrite($sIni, "Service", "AutoRestart", $bRestart ? "1" : "0")
+    If $bService And $bRestart <> $bPrev Then _ServiceSetRecovery($sServiceName, $bRestart)
 EndFunc
