@@ -1,5 +1,6 @@
 ﻿#include-once
 #include "WebMsg.au3"
+#include "SmartAnalysis.au3"
 
 ; =========================================================================
 ; Eski arayüzün durum metinlerini yeni arayüzün "durum" mesajına çevirir.
@@ -45,6 +46,71 @@ Func _WebStateJson($sStatus, $sRunText, $bRunEnabled, $sStrategy, $sEngine, $sFi
     $s = _WebJsonAdd($s, "stratejiDetay", $sDetail)
     $s = _WebJsonAdd($s, "onarim", $sHealth = "" ? "Servis kurulunca etkinleşir" : $sHealth)
     Return $s
+EndFunc
+
+; Strateji ekranı mesajı.
+;   $sOptions/$sFilterOptions: "|" ile ayrılmış seçenekler, $sSelected/$sEngine/$sFilter: seçili olanlar
+;   $bChoiceOn: strateji/motor kutuları kullanılabilir mi, $bFilterOn: filtre kutusu, $bAnalyzeOn: analiz düğmesi
+;   $sSummary + $aRows: _SmartLoadResults çıktısı (sıralı), ilk $iMax satır gönderilir
+Func _WebStrategyJson($sOptions, $sSelected, $sEngine, $sFilterOptions, $sFilter, $bChoiceOn, $bFilterOn, $bAnalyzeOn, _
+        $sSummary, ByRef $aRows, $iMax = 3)
+    Local $s = _WebJsonObj("tip", "strateji", "secili", $sSelected, "motor", $sEngine, "filtre", $sFilter)
+    $s = _WebJsonAddRaw($s, "secenekler", _WebJsonList($sOptions))
+    $s = _WebJsonAddRaw($s, "motorlar", _WebJsonList("Zapret2 (yeni motor)|Zapret (klasik motor)"))
+    $s = _WebJsonAddRaw($s, "filtreler", _WebJsonList($sFilterOptions))
+    $s = _WebJsonAdd($s, "secimAcik", $bChoiceOn = True)
+    $s = _WebJsonAdd($s, "filtreAcik", $bFilterOn = True)
+    $s = _WebJsonAdd($s, "analizAcik", $bAnalyzeOn = True)
+    $s = _WebJsonAdd($s, "zaman", _WebSmartTime($sSummary))
+    Local $sList = "", $n = UBound($aRows)
+    If $n > $iMax Then $n = $iMax
+    For $i = 0 To $n - 1
+        If $i > 0 Then $sList &= ","
+        Local $sRow = _WebJsonObj("puan", _WebScoreText($aRows[$i][$SMART_COL_SCORE]), "ad", _WebStrategyShort($aRows[$i][$SMART_COL_STRATEGY]), _
+                "durum", _WebSmartStatus($aRows[$i][$SMART_COL_SCORE], $aRows[$i][$SMART_COL_PHASE], $aRows[$i][$SMART_COL_STABLE]), _
+                "tam", $aRows[$i][$SMART_COL_STRATEGY])
+        $sRow = _WebJsonAdd($sRow, "calisti", $aRows[$i][$SMART_COL_SCORE] > 0)
+        $sList &= $sRow
+    Next
+    Return _WebJsonAddRaw($s, "sonuclar", "[" & $sList & "]")
+EndFunc
+
+; Strateji satırından kısa ad: kullanılan yöntemler "fake + multisplit"; bulunamazsa ilk 40 karakter.
+Func _WebStrategyShort($sStrategy)
+    Local $a = StringRegExp($sStrategy, "--(?:lua|dpi)-desync=([A-Za-z0-9_,]+)", 3)
+    Local $sOut = ""
+    If Not @error Then
+        For $sPart In $a
+            For $sName In StringSplit($sPart, ",", 2)
+                If $sName = "" Or StringInStr(" + " & $sOut & " + ", " + " & $sName & " + ", 1) Then ContinueLoop
+                $sOut &= ($sOut = "" ? "" : " + ") & $sName
+            Next
+        Next
+    EndIf
+    If $sOut <> "" Then Return $sOut
+    $sOut = StringStripWS($sStrategy, 7)
+    If StringLen($sOut) > 40 Then $sOut = StringLeft($sOut, 39) & "…"
+    Return $sOut
+EndFunc
+
+; Akıllı analiz satırının durumu (sonuç penceresindekiyle aynı ifadeler).
+Func _WebSmartStatus($fScore, $iPhase, $bStable)
+    If $fScore <= 0 Then Return "çalışmadı"
+    If $iPhase < 2 Then Return "yalnız eleme"
+    If $bStable Then Return "kararlı"
+    Return "dalgalı"
+EndFunc
+
+; Puan: tek ondalık, Türkçe virgül: 99.64 -> "99,6"
+Func _WebScoreText($f)
+    Return StringReplace(StringFormat("%.1f", Number($f)), ".", ",")
+EndFunc
+
+; Sonuç özetinin başındaki zaman: "2026-10-23 11:20:05 | ..." -> "23.10.2026 11:20"; yoksa "".
+Func _WebSmartTime($sSummary)
+    Local $a = StringRegExp($sSummary, "^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})", 1)
+    If @error Then Return ""
+    Return $a[2] & "." & $a[1] & "." & $a[0] & " " & $a[3] & ":" & $a[4]
 EndFunc
 
 ; Filtre seçimi metnini kullanıcı diline çevirir.
