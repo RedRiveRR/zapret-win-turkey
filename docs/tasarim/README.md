@@ -17,6 +17,7 @@ kanvas çalışma zamanı olmadan tarayıcıda tam görünmezler).
 | `ekranlar/DNS.dc.html` | DNS durumu ve seçimi |
 | `ekranlar/Diger.dc.html` | Ağ paylaşımı, güncelleme, tanılama, temizlik |
 | `logo/Logo.dc.html` | Logo seçenekleri ve küçük boyut denemeleri |
+| `logo/kilit.svg`, `logo/kilit-kucuk.svg` | Seçilen logo (normal ve 16-20 px için kalın) |
 | `canvas.json` | Kanvas düzeni |
 
 ## Kararlar
