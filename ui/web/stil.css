@@ -112,3 +112,11 @@ select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .bildirim{position:absolute;left:24px;right:24px;bottom:86px;padding:12px 14px;border-radius:14px;background:var(--text);color:var(--bg);font-size:13px;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none}
 .bildirim.gorunur{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){.bildirim{transition:none}}
+/* DNS */
+.servisdurum[data-durum="bekliyor"]{--t:var(--surface2);--tt:var(--muted)}
+.dnssecim{margin:0;border:0;padding:4px 16px;min-width:0}
+.dnssecim legend{padding:12px 0 0;font-size:13px;font-weight:600;color:var(--muted);float:left;width:100%}
+.dnssecim .satir{cursor:pointer;align-items:flex-start}
+.dnssecim input{margin:3px 0 0;width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;cursor:pointer}
+.dnssecim input:disabled,.dnssecim input:disabled+.ad{opacity:.5;cursor:default}
+.dnssecim:disabled{opacity:.6}

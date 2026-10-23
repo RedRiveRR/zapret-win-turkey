@@ -12,6 +12,8 @@
 //   {tip:"komut", ad:"analiz", tur:"hizli|tam"}, {tip:"secim", alan:"strateji|motor|filtre", deger}
 //   {tip:"servis", durum:"aktif|hata|uyari|yok", baslik, aciklama, kurulu, onarim, yenidenBaslat, onarimNot,
 //    kurAcik, kaldirAcik, ayarAcik}   (program -> sayfa)
+//   {tip:"dns", durum, baslik, aciklama, mod:"saglayici|cloudflare|sifreli|diger|", sunucular, degistirAcik}
+//   {tip:"dnsYenile"} (DNS sekmesi açılınca), {tip:"komut", ad:"dns", mod}
 //   {tip:"bildirim", metin}   (program -> sayfa, birkaç saniye görünür)
 //   {tip:"komut", ad:"servisKur|servisKaldir|servisAyarlar"}, {tip:"ayar", ad:"onarim|yenidenBaslat", deger:bool}
 'use strict';
@@ -23,6 +25,7 @@ function gonder(m) { if (wv) wv.postMessage(m); }
 
 // --- Sekmeler ---
 function gorunumAc(ad) {
+  if (ad === 'dns') gonder({ tip: 'dnsYenile' });
   document.querySelectorAll('.gorunum').forEach((g) => g.classList.toggle('acik', g.id === 'g-' + ad));
   document.querySelectorAll('nav a').forEach((a) => {
     const secili = a.dataset.gorunum === ad;
@@ -179,6 +182,45 @@ function servisUygula(m) {
   $('servis-ayar').disabled = !m.ayarAcik;
 }
 
+// --- DNS ---
+let dnsMod = '';
+function dnsSecili() {
+  const r = document.querySelector('input[name=dns]:checked');
+  return r ? r.value : '';
+}
+function dnsDugmesi() {
+  const sec = dnsSecili();
+  const ad = { saglayici: "sağlayıcının DNS'ine", cloudflare: "Cloudflare'e", sifreli: "şifreli DNS'e" }[sec];
+  const degisti = sec !== '' && sec !== dnsMod;
+  $('dns-uygula').textContent = degisti ? ad.charAt(0).toUpperCase() + ad.slice(1) + ' geç' : 'Değişiklik yok';
+  $('dns-uygula').disabled = !degisti || $('dns-secim').disabled;
+}
+document.querySelectorAll('input[name=dns]').forEach((r) => r.addEventListener('change', dnsDugmesi));
+$('dns-uygula').addEventListener('click', () => {
+  $('dns-uygula').disabled = true;
+  $('dns-secim').disabled = true;
+  gonder({ tip: 'komut', ad: 'dns', mod: dnsSecili() });
+});
+
+function dnsUygula(m) {
+  $('dns-durum').dataset.durum = m.durum || 'bekliyor';
+  $('dns-baslik').textContent = m.baslik || '';
+  $('dns-aciklama').textContent = m.aciklama || '';
+  $('dns-sunucu').textContent = m.sunucular ? 'Şu an: ' + m.sunucular : (m.mod === 'saglayici' ? 'Şu an: otomatik' : '');
+  const modDegisti = dnsMod !== (m.mod || '');
+  dnsMod = m.mod || '';
+  $('dns-secim').disabled = !m.degistirAcik;
+  // Şifreli DNS açıkken doğrudan Cloudflare'e geçilmez: önce kaldırılır (sağlayıcı DNS'ine döner).
+  const cf = document.querySelector('input[name=dns][value=cloudflare]');
+  cf.disabled = dnsMod === 'sifreli';
+  document.querySelector('[data-not=cloudflare]').textContent = dnsMod === 'sifreli'
+    ? "Önce şifreli DNS'i kaldır; DNS sağlayıcınınkine döner, sonra buradan seçebilirsin." : 'Çoğu bağlantıda yeterli.';
+  if (modDegisti || !dnsSecili()) {
+    document.querySelectorAll('input[name=dns]').forEach((r) => { r.checked = r.value === dnsMod; });
+  }
+  dnsDugmesi();
+}
+
 // --- Bildirim ---
 let bildirimZaman = 0;
 function bildirimGoster(metin) {
@@ -198,6 +240,7 @@ if (wv) {
     else if (m.tip === 'strateji') stratejiUygula(m);
     else if (m.tip === 'servis') servisUygula(m);
     else if (m.tip === 'bildirim') bildirimGoster(m.metin);
+    else if (m.tip === 'dns') dnsUygula(m);
   });
 }
 gonder({ tip: 'hazir' });

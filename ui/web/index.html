@@ -98,7 +98,24 @@
       </div>
       <p class="kucuk" id="kaldir-not" hidden style="margin:0 4px">Kaldırınca WinDivert ve DNSCrypt kalıntıları da temizlenir, DNS otomatiğe döner.</p>
     </section>
-    <section class="gorunum" id="g-dns"><div class="yakinda">DNS bölümü sonraki adımda bu arayüze taşınacak.<br>Şimdilik bu işlemler eski arayüzde.<br><button class="ikinci" data-komut="eskiArayuz">Eski arayüze geç</button></div></section>
+    <!-- DNS -->
+    <section class="gorunum" id="g-dns">
+      <div class="sayfabaslik">
+        <h1>DNS</h1>
+        <p>Sağlayıcın site adreslerini yanlış gösteriyorsa buradan düzelt.</p>
+      </div>
+      <section class="kart servisdurum" id="dns-durum" data-durum="bekliyor">
+        <span class="servisikon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"></path></svg></span>
+        <span class="ad"><b id="dns-baslik">DNS kontrol ediliyor</b><span class="kucuk" id="dns-aciklama"></span><span class="kucuk" id="dns-sunucu"></span></span>
+      </section>
+      <fieldset class="kart dnssecim" id="dns-secim" disabled>
+        <legend>DNS seçimi</legend>
+        <label class="satir"><input type="radio" name="dns" value="saglayici"><span class="ad"><b>Sağlayıcının DNS'i</b><span class="kucuk">Otomatik ayar. Bazı sağlayıcılar Discord'u yanlış adrese yönlendirir.</span></span></label>
+        <label class="satir"><input type="radio" name="dns" value="cloudflare"><span class="ad"><b>Cloudflare (1.1.1.1)</b><span class="kucuk" data-not="cloudflare">Çoğu bağlantıda yeterli.</span></span></label>
+        <label class="satir"><input type="radio" name="dns" value="sifreli"><span class="ad"><b>Şifreli DNS</b><span class="kucuk">Sağlayıcı DNS sorgularına müdahale ediyorsa. Arka planda küçük bir servis (DNSCrypt) kurar.</span></span></label>
+      </fieldset>
+      <button class="birincil" id="dns-uygula" disabled>Değişiklik yok</button>
+    </section>
     <section class="gorunum" id="g-diger"><div class="yakinda">Diğer bölümü sonraki adımda bu arayüze taşınacak.<br>Şimdilik bu işlemler eski arayüzde.<br><button class="ikinci" data-komut="eskiArayuz">Eski arayüze geç</button></div></section>
   </main>
   <div class="bildirim" id="bildirim" role="status" aria-live="polite"></div>
