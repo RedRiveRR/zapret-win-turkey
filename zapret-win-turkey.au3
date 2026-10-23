@@ -1826,6 +1826,17 @@ Func _WebUiFallback()
     GUISetState(@SW_SHOW, $hGUI)
 EndFunc
 
+; Bu oturum için eski arayüze geçer (yeni arayüzde henüz olmayan işlemler için).
+Func _WebUiSwitchToOld()
+    _WV2_Close()
+    If $hWebGui <> 0 Then GUIDelete($hWebGui)
+    $hWebGui = 0
+    $g_bWebUi = False
+    $g_bWebPageReady = False
+    GUISwitch($hGUI)
+    _MainWindowShow(True)
+EndFunc
+
 Func _WebUiOnSize($hWnd, $iMsg, $wParam, $lParam)
     #forceref $iMsg, $wParam, $lParam
     If $hWnd = $hWebGui Then _WV2_Resize()
@@ -1858,6 +1869,10 @@ Func _WebUiTick($nMsg)
                 ; Uzun bir iş sürerken kuyrukta kalmış komutlar yok sayılır.
                 If $iAge > 2000 Then
                     _LogInfo("Yeni arayüz: eskimiş komut yok sayıldı (" & $sCmd & ", " & $iAge & " ms)")
+                ElseIf $sCmd = "eskiArayuz" Then
+                    _LogInfo("Yeni arayüz: kullanıcı eski arayüze geçti")
+                    _WebUiSwitchToOld()
+                    Return $nMsg
                 ElseIf ($sCmd = "baslat" And Not $isZapretRunning) Or ($sCmd = "durdur" And $isZapretRunning) Then
                     If BitAND(GUICtrlGetState($btnRunZapret), $GUI_ENABLE) Then Return $btnRunZapret
                 EndIf
@@ -1915,6 +1930,17 @@ Func _WebUiPreviewAndExit($sDir)
             $hShot = TimerInit()
         EndIf
     WEnd
+    ; Eski arayüze geçiş düğmesi
+    If $g_bWebUi Then
+        _WV2_Exec("document.querySelector('[data-komut=eskiArayuz]').click()")
+        Local $hSw = TimerInit()
+        While $g_bWebUi And TimerDiff($hSw) < 5000
+            _WebUiTick(GUIGetMsg())
+        WEnd
+        Sleep(500)
+        FileWriteLine($sLog, "eski arayüze geçiş: yeni arayüz=" & $g_bWebUi & ", eski pencere görünür=" & (BitAND(WinGetState($hGUI), 2) = 2))
+        _ScreenCapture_CaptureWnd($sDir & "\eski-gecis.png", $hGUI)
+    EndIf
     FileWriteLine($sLog, "bitti: yeni arayüz=" & $g_bWebUi & " " & _WV2_LastError())
     Exit
 EndFunc
