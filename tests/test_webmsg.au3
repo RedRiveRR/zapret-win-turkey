@@ -28,6 +28,14 @@ Func _TestWebMsg()
     Local $sRound = _WebJsonObj("metin", 'Yol "açık"' & @LF & "C:\x")
     _AssertEq(_WebJsonGet($sRound, "metin"), 'Yol "açık"' & @LF & "C:\x", "kur-oku gidiş dönüşü aynı metni verir")
 
+    ; --- _WebJsonAdd ---
+    Local $sObj = _WebJsonAdd("{}", "tip", "durum")
+    _AssertEq($sObj, '{"tip":"durum"}', "boş nesneye ilk alan eklenir")
+    $sObj = _WebJsonAdd($sObj, "calisiyor", True)
+    $sObj = _WebJsonAdd($sObj, "baslik", "Discord'a yol açık")
+    _AssertEq($sObj, '{"tip":"durum","calisiyor":true,"baslik":"Discord' & "'" & 'a yol açık"}', "zincirleme alanlar virgülle eklenir")
+    _AssertEq(_WebJsonGet($sObj, "baslik"), "Discord'a yol açık", "zincirleme nesne okunabilir")
+
     ; --- _WebFileUrl ---
     _AssertEq(_WebFileUrl("C:\Program Files\Zapret Windows Turkiye\ui\web\index.html"), _
             "file:///C:/Program%20Files/Zapret%20Windows%20Turkiye/ui/web/index.html", "boşluklar kodlanır")

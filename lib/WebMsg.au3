@@ -52,6 +52,14 @@ Func _WebJsonObj($k1, $v1, $k2 = Default, $v2 = Default, $k3 = Default, $v3 = De
     Return "{" & $s & "}"
 EndFunc
 
+; Var olan JSON nesnesine alan ekler: $s = _WebJsonAdd("{}", "tip", "durum")
+; Çok alanlı mesajlar için _WebJsonObj yerine zincirleme kullanılır.
+Func _WebJsonAdd($sObj, $sKey, $vValue)
+    Local $sBody = StringTrimRight(StringStripWS($sObj, 3), 1)
+    If StringRight($sBody, 1) <> "{" Then $sBody &= ","
+    Return $sBody & _WebJsonStr($sKey) & ":" & __WebJsonValue($vValue) & "}"
+EndFunc
+
 ; Yerel dosya yolunu WebView2'nin açabileceği file:/// adresine çevirir
 ; (boşluk, # , % ve ASCII dışı karakterler yüzde kodlanır).
 Func _WebFileUrl($sPath)
