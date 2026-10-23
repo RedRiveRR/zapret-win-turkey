@@ -390,7 +390,7 @@ While 1
         If TimerDiff($hInstallServiceUnlockTimer) >= 1500 Then
             $bInstallServiceBusy = False
             $hInstallServiceUnlockTimer = 0
-            If $bInstallServiceEnableAfterLock And GUICtrlRead($lblStatusText) = "ÇALIŞMAYA HAZIR" Then
+            If $bInstallServiceEnableAfterLock And _StateStatus() = "ÇALIŞMAYA HAZIR" Then
                 GUICtrlSetState($btnInstallService, $GUI_ENABLE)
             EndIf
         EndIf
@@ -453,7 +453,7 @@ While 1
 			EndIf
 
 			; 4. YENİ: Zapret ölmüşse VE arayüz hala "SERVİS MODU AKTİF" diyorsa (Servis Modu Çökme durumu)
-			If GUICtrlRead($lblStatusText) = "SERVİS MODU AKTİF" Then
+			If _StateStatus() = "SERVİS MODU AKTİF" Then
 				; Sistemi kontrol fonksiyonuna yolla, o zaten "DURDU" yazdırıp ortak uyarıyı verecek!
 				CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
 			EndIf
@@ -549,7 +549,7 @@ While 1
             _MainWindowShow(True)
 
             ; Analiz akışı içindeki genel buton açma işlemleri kilidi kaldıramasın.
-            If GUICtrlRead($lblStatusText) = "DNS ZEHİRLENMESİ SAPTANDI!" Then $bBlockcheckEnableAfterLock = False
+            If _StateStatus() = "DNS ZEHİRLENMESİ SAPTANDI!" Then $bBlockcheckEnableAfterLock = False
             GUICtrlSetState($btnAnalyze, $GUI_DISABLE)
             $hBlockcheckUnlockTimer = TimerInit()
             EndIf ; $bBlockcheckBusy kilit bloğu
@@ -955,7 +955,7 @@ EndFunc
 ; Servis durmuş görünürken winws yeniden çalışıyorsa (Windows/elle yeniden başlatma) durumu
 ; tazeler ve "servis durdu" uyarısını yeniden silahlandırır; böylece sonraki durmada da uyarılır.
 Func _RefreshIfServiceRecovered()
-    If GUICtrlRead($lblStatusText) <> "SERVİS YÜKLÜ - DURDU" Then Return
+    If _StateStatus() <> "SERVİS YÜKLÜ - DURDU" Then Return
     _LogInfo("Servis yeniden çalışıyor")
     $bServiceStoppedWarned = False
     CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
@@ -1079,7 +1079,7 @@ EndFunc
 
 ; Durum yazısına göre nokta rengi, ipucu satırı ve Başlat/Durdur rengi. Her döngüde çağrılır; yalnız değişince çizer.
 Func _MainUiSync()
-    Local $s = GUICtrlRead($lblStatusText)
+    Local $s = _StateStatus()
     If $s <> $g_sUiLastStatus Then
         $g_sUiLastStatus = $s
         GUICtrlSetColor($lblStatusText, $UI_TEXT)
@@ -1115,7 +1115,7 @@ Func _MainUiSync()
 EndFunc
 
 Func _MainRefreshServicePage()
-    Local $s = GUICtrlRead($lblStatusText), $iDot = $UI_MUTED, $sTitle = "Servis kurulu değil"
+    Local $s = _StateStatus(), $iDot = $UI_MUTED, $sTitle = "Servis kurulu değil"
     If $s = "SERVİS MODU AKTİF" Then
         $iDot = $UI_GREEN
         $sTitle = "Servis çalışıyor"
@@ -1170,7 +1170,7 @@ EndFunc
 
 ; Alt satır: motor sürümü + (servis modunda) otomatik onarımın son durumu.
 Func _RefreshFooter()
-    Local $bService = StringInStr(GUICtrlRead($lblStatusText), "SERVİS") > 0
+    Local $bService = StringInStr(_StateStatus(), "SERVİS") > 0
     Local $sHealth = _HealthStatusFormat($bService, IniRead($iniPath, "Health", "Enabled", "1"), _
             IniRead($iniPath, "Health", "LastCheck", ""), IniRead($iniPath, "Health", "LastResult", ""), @YEAR & "/" & @MON & "/" & @MDAY)
     GUICtrlSetData($lblFooter, $g_sEngineFooter & "  ·  v" & $APP_VERSION & @CRLF & ($sHealth = "" ? "Servis kurulu değil" : $sHealth))
@@ -1580,7 +1580,7 @@ EndFunc
 ; Akıllı analizi çalıştırır; seçilen strateji "Analiz Sonucu" olarak kaydedilir ve seçilir.
 Func _RunSmartAnalysisFlow(ByRef $aCand, $bMainAlreadyDisabled)
     _LogInfo("Akıllı analiz başlıyor: " & UBound($aCand) & " aday")
-    Local $sPrevStatus = GUICtrlRead($lblStatusText)
+    Local $sPrevStatus = _StateStatus()
     _SetStatus("AKILLI ANALİZ YAPILIYOR...")
     If Not $bMainAlreadyDisabled Then GUISetState(@SW_DISABLE, _MainWindowHandle())
     Local $sTargets = IniRead($iniPath, "SmartAnalysis", "Targets", $SMART_DEFAULT_TARGETS)
@@ -1968,7 +1968,7 @@ Func _WebUiTick($nMsg)
 
     If $g_bWebPageReady And TimerDiff($g_hWebSyncTimer) > 250 Then
         $g_hWebSyncTimer = TimerInit()
-        Local $sStatus = GUICtrlRead($lblStatusText)
+        Local $sStatus = _StateStatus()
         ; Onarım durumu 5 sn'de bir veya durum değişince okunur (config.ini'yi her turda okumamak için).
         If $g_hWebHealthTimer = 0 Or TimerDiff($g_hWebHealthTimer) > 5000 Or $sStatus <> $g_sWebLastStatus Then
             $g_hWebHealthTimer = TimerInit()
@@ -2019,7 +2019,7 @@ Func _WebUiSyncService()
         $g_sWebSvcHealth = _HealthStatusFormat($bService, $sEnabled, IniRead($iniPath, "Health", "LastCheck", ""), _
                 IniRead($iniPath, "Health", "LastResult", ""), @YEAR & "/" & @MON & "/" & @MDAY)
     EndIf
-    Local $sJson = _WebServiceJson($g_sWebSvcState, GUICtrlRead($lblStatusText), $g_bWebHealthIni, $g_bWebRestartIni, $g_sWebSvcHealth, _
+    Local $sJson = _WebServiceJson($g_sWebSvcState, _StateStatus(), $g_bWebHealthIni, $g_bWebRestartIni, $g_sWebSvcHealth, _
             BitAND(GUICtrlGetState($btnInstallService), $GUI_ENABLE) <> 0 And Not $bInstallServiceBusy, _
             BitAND(GUICtrlGetState($btnRemoveService), $GUI_ENABLE) <> 0, BitAND(GUICtrlGetState($btnSvcSettings), $GUI_ENABLE) <> 0)
     If $sJson <> $g_sWebLastSvcJson Then
@@ -2033,7 +2033,7 @@ Func _WebUiSyncDns()
         $g_bWebDnsReread = False
         $g_sWebDnsServers = _GetActiveAdapterDnsServers()
     EndIf
-    Local $sJson = _WebDnsJson(GUICtrlRead($lblStatusText), $g_sWebDnsServers, _
+    Local $sJson = _WebDnsJson(_StateStatus(), $g_sWebDnsServers, _
             BitAND(GUICtrlGetState($btnDnscrypt), $GUI_ENABLE) <> 0 And Not $bDnscryptBusy)
     If $sJson <> $g_sWebLastDnsJson Then
         $g_sWebLastDnsJson = $sJson
@@ -2214,7 +2214,7 @@ Func _WebUiPreviewAndExit($sDir)
             $hShot = TimerInit()
         ElseIf TimerDiff($hShot) > 1200 Then
             _ScreenCapture_CaptureWnd($sDir & "\yeni" & $iShot & ".png", $hWebGui)
-            FileWriteLine($sLog, "görüntü yeni" & $iShot & ".png: " & GUICtrlRead($lblStatusText))
+            FileWriteLine($sLog, "görüntü yeni" & $iShot & ".png: " & _StateStatus())
             If $iShot = 0 And Not $bClicked Then
                 _WV2_Exec("document.getElementById('guc').click()")
                 $bClicked = True
