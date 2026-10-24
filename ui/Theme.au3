@@ -247,7 +247,12 @@ Func __UiPaint($i, $iLook)
 EndFunc
 
 ; Üzerine gelme ve devre dışı görünümünü günceller. Ana döngüde her turda çağrılır.
+; Uzun işlem/alt pencere döngülerinde çağrılacak işlev adı (ör. yeni arayüzü canlı tutmak için).
+; İşlev tek parametre alır: döngüdeki pencerenin tanıtıcısı.
+Global $g_sUiYieldHook = ""
+
 Func _UiTick($hWnd)
+    If $g_sUiYieldHook <> "" Then Call($g_sUiYieldHook, $hWnd)
     Local $iHover = 0
     Local $a = GUIGetCursorInfo($hWnd)
     If IsArray($a) Then $iHover = $a[4]

@@ -66,6 +66,9 @@ Global $g_bWebHealthIni = True, $g_bWebRestartIni = False, $g_sWebSvcHealth = ""
 Global $g_sWebDnsServers = "?", $g_bWebDnsReread = False, $g_sWebLastDnsJson = ""
 Global $g_sWebLastOtherJson = "", $g_sWebUpdateIni = "1"
 Global $g_sPrevTestShot = "" ; önizleme: deneme penceresi görüntüsünün yolu
+Global $g_hWebYieldTimer = 0
+Global $g_sPrevBusyLeft = "" ; önizleme: alt pencere kapanırken kuyrukta kalan mesaj
+$g_sUiYieldHook = "_UiYield"
 If $CmdLine[0] >= 2 And $CmdLine[1] = "/arayuz-onizleme" Then $g_sUiPreviewDir = $CmdLine[2]
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
@@ -1947,6 +1950,7 @@ Func _WebUiTick($nMsg)
                 ; Uzun bir iş sürerken kuyrukta kalmış komutlar yok sayılır.
                 If $iAge > 2000 Then
                     _LogInfo("Yeni arayüz: eskimiş komut yok sayıldı (" & $sCmd & ", " & $iAge & " ms)")
+                    _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", "Önceki işlem sürerken basıldığı için uygulanmadı; tekrar dene."))
                 ElseIf $sCmd = "eskiArayuz" Then
                     _LogInfo("Yeni arayüz: kullanıcı eski arayüze geçti")
                     _WebUiSwitchToOld()
@@ -2004,33 +2008,66 @@ Func _WebUiTick($nMsg)
         EndSwitch
     EndIf
 
-    If $g_bWebPageReady And TimerDiff($g_hWebSyncTimer) > 250 Then
-        $g_hWebSyncTimer = TimerInit()
-        Local $sStatus = _StateStatus()
-        ; Onarım durumu 5 sn'de bir veya durum değişince okunur (config.ini'yi her turda okumamak için).
-        If $g_hWebHealthTimer = 0 Or TimerDiff($g_hWebHealthTimer) > 5000 Or $sStatus <> $g_sWebLastStatus Then
-            $g_hWebHealthTimer = TimerInit()
-            $g_sWebLastStatus = $sStatus
-            $g_sWebHealth = _HealthStatusFormat(StringInStr($sStatus, "SERVİS") > 0, IniRead($iniPath, "Health", "Enabled", "1"), _
-                    IniRead($iniPath, "Health", "LastCheck", ""), IniRead($iniPath, "Health", "LastResult", ""), @YEAR & "/" & @MON & "/" & @MDAY)
-        EndIf
-        Local $sJson = _WebStateJson($sStatus, GUICtrlRead($btnRunZapret), BitAND(GUICtrlGetState($btnRunZapret), $GUI_ENABLE) <> 0, _
-                GUICtrlRead($cmbStrategy), GUICtrlRead($cmbEngine), GUICtrlRead($cmbFilter), $g_sWebHealth)
-        If $sJson <> $g_sWebLastJson Then
-            $g_sWebLastJson = $sJson
-            _WV2_Post($sJson)
-        EndIf
-        _WebUiSyncStrategy()
-        _WebUiSyncService()
-        _WebUiSyncDns()
-        Local $sOther = _WebOtherJson(GUICtrlRead($btnLanShare), BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) <> 0, $g_sWebUpdateIni, _
-                $APP_VERSION, $g_sEngineFooter, BitAND(GUICtrlGetState($btnRemoveService), $GUI_ENABLE) <> 0)
-        If $sOther <> $g_sWebLastOtherJson Then
-            $g_sWebLastOtherJson = $sOther
-            _WV2_Post($sOther)
-        EndIf
-    EndIf
+    If $g_bWebPageReady And TimerDiff($g_hWebSyncTimer) > 250 Then _WebUiSyncAll()
     Return $nMsg
+EndFunc
+
+; Yeni pencereye bütün ekranların durumunu gönderir (yalnızca değişen mesajlar gider).
+Func _WebUiSyncAll()
+    $g_hWebSyncTimer = TimerInit()
+    Local $sStatus = _StateStatus()
+    ; Onarım durumu 5 sn'de bir veya durum değişince okunur (config.ini'yi her turda okumamak için).
+    If $g_hWebHealthTimer = 0 Or TimerDiff($g_hWebHealthTimer) > 5000 Or $sStatus <> $g_sWebLastStatus Then
+        $g_hWebHealthTimer = TimerInit()
+        $g_sWebLastStatus = $sStatus
+        $g_sWebHealth = _HealthStatusFormat(StringInStr($sStatus, "SERVİS") > 0, IniRead($iniPath, "Health", "Enabled", "1"), _
+                IniRead($iniPath, "Health", "LastCheck", ""), IniRead($iniPath, "Health", "LastResult", ""), @YEAR & "/" & @MON & "/" & @MDAY)
+    EndIf
+    Local $sJson = _WebStateJson($sStatus, GUICtrlRead($btnRunZapret), BitAND(GUICtrlGetState($btnRunZapret), $GUI_ENABLE) <> 0, _
+            GUICtrlRead($cmbStrategy), GUICtrlRead($cmbEngine), GUICtrlRead($cmbFilter), $g_sWebHealth)
+    If $sJson <> $g_sWebLastJson Then
+        $g_sWebLastJson = $sJson
+        _WV2_Post($sJson)
+    EndIf
+    _WebUiSyncStrategy()
+    _WebUiSyncService()
+    _WebUiSyncDns()
+    Local $sOther = _WebOtherJson(GUICtrlRead($btnLanShare), BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) <> 0, $g_sWebUpdateIni, _
+            $APP_VERSION, $g_sEngineFooter, BitAND(GUICtrlGetState($btnRemoveService), $GUI_ENABLE) <> 0)
+    If $sOther <> $g_sWebLastOtherJson Then
+        $g_sWebLastOtherJson = $sOther
+        _WV2_Post($sOther)
+    EndIf
+EndFunc
+
+; Uzun işlem veya alt pencere açıkken (ana döngü beklerken) yeni pencereyi canlı tutar: durum
+; gönderilir, basılan komutlar "işlem sürüyor" bildirimiyle reddedilir (önceden kuyrukta bekleyip
+; sessizce yok sayılıyordu, 2026-10-24 12:34 "temizle"). _UiTick üzerinden çağrılır; ana pencere hariç.
+Func _UiYield($hWnd)
+    If Not $g_bWebUi Or Not $g_bWebPageReady Then Return
+    If $hWnd = $hGUI Or $hWnd = $hWebGui Then Return
+    If TimerDiff($g_hWebYieldTimer) < 200 Then Return
+    $g_hWebYieldTimer = TimerInit()
+    While 1
+        Local $sMsg = _WV2_NextMessage()
+        If $sMsg = "" Then ExitLoop
+        Switch _WebJsonGet($sMsg, "tip")
+            Case "komut", "secim", "ayar"
+                $g_sWebLastJson = "" ; kapatılan düğmeler yeniden açılsın
+                $g_sWebLastStratJson = ""
+                $g_sWebLastSvcJson = ""
+                $g_sWebLastDnsJson = ""
+                $g_sWebLastOtherJson = ""
+                _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", "Bir işlem sürüyor veya açık bir pencere var; bitince tekrar dene."))
+            Case "tema"
+                Local $sTheme = (_WebJsonGet($sMsg, "tema") = "koyu") ? "koyu" : "acik"
+                IniWrite($iniPath, "Arayuz", "Tema", $sTheme)
+                _WebUiApplyCaption($sTheme)
+            Case "dnsYenile"
+                $g_bWebDnsReread = True
+        EndSwitch
+    WEnd
+    _WebUiSyncAll()
 EndFunc
 
 ; Servis ekranı bir sonraki turda servis durumunu ve onarım görevini yeniden okusun.
@@ -2310,6 +2347,16 @@ Func _WebUiPreviewAndExit($sDir)
         _WV2_Exec("document.getElementById('temizle').click(); document.getElementById('temizle').click()")
         __WebUiPreviewPump(800, $sLog)
     EndIf
+    ; Alt pencere açıkken yeni pencere canlı mı? Deneme penceresi açıkken (deneme başlatılmaz)
+    ; yeni pencerede bir komuta basılır; "işlem sürüyor" bildirimi beklenir. 1,5 sn sonra pencere kapanır.
+    If $g_bWebUi Then
+        $g_sPrevTestShot = $sDir & "\deneme-penceresi.png"
+        Local $aFake[3] = [2, "--wf-tcp=443 --dpi-desync=fake,multisplit --dpi-desync-split-pos=1,midsld", "--wf-tcp=443 --dpi-desync=multidisorder"]
+        AdlibRegister("__WebUiPreviewBusyClick", 500)
+        AdlibRegister("__WebUiPreviewShotTest", 1500)
+        _ShowStrategyTestWindow($aFake)
+        FileWriteLine($sLog, "alt pencere açıkken komut: kuyrukta kalan mesaj=" & ($g_sPrevBusyLeft = "" ? "yok (yanıtlandı)" : $g_sPrevBusyLeft))
+    EndIf
     ; Eski arayüze geçiş düğmesi
     If $g_bWebUi Then
         _WV2_Exec("document.querySelector('[data-komut=eskiArayuz]').click()")
@@ -2321,20 +2368,22 @@ Func _WebUiPreviewAndExit($sDir)
         FileWriteLine($sLog, "eski arayüze geçiş: yeni arayüz=" & $g_bWebUi & ", eski pencere görünür=" & (BitAND(WinGetState($hGUI), 2) = 2))
         _ScreenCapture_CaptureWnd($sDir & "\eski-gecis.png", $hGUI)
     EndIf
-    ; Strateji deneme penceresi (yalnızca görüntü; deneme başlatılmaz, 1,5 sn sonra kapanır)
-    $g_sPrevTestShot = $sDir & "\deneme-penceresi.png"
-    Local $aFake[3] = [2, "--wf-tcp=443 --dpi-desync=fake,multisplit --dpi-desync-split-pos=1,midsld", "--wf-tcp=443 --dpi-desync=multidisorder"]
-    AdlibRegister("__WebUiPreviewShotTest", 1500)
-    _ShowStrategyTestWindow($aFake)
     FileWriteLine($sLog, "bitti: yeni arayüz=" & $g_bWebUi & " " & _WV2_LastError())
     Exit
 EndFunc
 
 Func __WebUiPreviewShotTest()
     AdlibUnRegister("__WebUiPreviewShotTest")
+    _ScreenCapture_CaptureWnd(StringReplace($g_sPrevTestShot, "deneme-penceresi", "mesgul-bildirimi"), $hWebGui)
     Local $h = WinGetHandle("Bulunan stratejileri dene")
     If $h Then
         _ScreenCapture_CaptureWnd($g_sPrevTestShot, $h)
         WinClose($h)
     EndIf
+    $g_sPrevBusyLeft = _WV2_NextMessage()
+EndFunc
+
+Func __WebUiPreviewBusyClick()
+    AdlibUnRegister("__WebUiPreviewBusyClick")
+    _WV2_Exec("document.querySelector('[data-komut=tanilama]').click()")
 EndFunc
