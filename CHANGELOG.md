@@ -2,12 +2,18 @@
 
 Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-turkey) üzerine bu fork'ta (`gelistirme` dalı) yapılan değişiklikleri listeler. Temel: upstream `9eeac04` (v4.5 kaynakları).
 
-## [v4.5.1-RedRiveRR] — 2026-10-24
+## [v5.0.0] — 2026-10-24 — kararlı
 
-RedRiveRR fork'unun ilk sürümü. Temel: upstream v4.5. Program adı artık **RedRiveRR Zapret** (kilit simgesi).
+RedRiveRR fork'unun ilk kararlı sürümü. Temel: upstream v4.5. Program adı artık **RedRiveRR Zapret** (kilit simgesi); exe adları `RedRiveRR Zapret.exe` ve `RedRiveRR Zapret Lite.exe` (önceden `zapret-win-turkey.exe`). Sürüm numaraları artık upstream'den bağımsız.
+
+### Yükseltme notları
+- Yeni sürümü eski klasöre çıkarırsanız ayarlarınız korunur; eski `zapret-win-turkey.exe` silinebilir. Otomatik onarım görevi ilk açılışta yeni exe'ye kendiliğinden yönlendirilir (yalnızca aynı klasördeki ya da silinmiş eski exe için; başka klasördeki eski kopyalar görevi çekemez).
+- Masaüstü kısayolunuzu yeni exe'ye göre yeniden oluşturun.
 
 ### Yeni arayüz
-- **Tamamen yeni, kompakt arayüz** (WebView2): Bağlantı, Strateji, Servis, DNS ve Diğer ekranları; açık ve koyu tema. Varsayılan budur; klasik arayüz Ayarlar'dan veya `/eski-arayuz` ile açılabilir, WebView2 yoksa kendiliğinden açılır.
+- **Tamamen yeni, kompakt arayüz** (WebView2): Bağlantı, Strateji, Servis, DNS ve Diğer ekranları; açık ve koyu tema. Varsayılan budur.
+- **Klasik arayüz:** "Diğer → Klasik arayüze geç" alimali54/zapret-win-turkey'in özgün penceresini açar; oradaki "Yeni arayüz" düğmesiyle geri dönülür. Kalıcı olarak Ayarlar'dan veya `/eski-arayuz` ile; WebView2 yoksa kendiliğinden açılır.
+- Hakkında'da fork'un GitHub bağlantısı.
 - **Bağlantı:** tek bakışta durum (Sen → Zapret → Sağlayıcı → Discord), Başlat/Durdur.
 - **Strateji:** hızlı test / tam analiz, son analizin en iyi sonuçları, strateji/motor/site filtresi seçimi. "Tüm sonuçlar" servisi durdurmadan açılır; servis yalnızca yeni strateji seçilince güncellenir.
 - **Servis:** durum, otomatik onarım ve "kapanırsa yeniden başlat" anahtarları, kurma/kaldırma (kaldırma iki adımlı onay ister).
