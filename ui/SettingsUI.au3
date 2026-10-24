@@ -56,7 +56,7 @@ Func _SettingsUI_Show($sRoot, $sServiceName, $sAppName, $hParent, $bWebUiOption 
     _UiCard(24, 382, 512, 56 + $iExtra)
     Local $tglUpdate = _UiToggle("Açılışta yeni sürüm kontrolü yap", 44, 398, 470, IniRead($sIni, "Settings", "UpdateCheck", "1") <> "0")
     Local $tglWebUi = 0
-    If $bWebUiOption Then $tglWebUi = _UiToggle("Yeni arayüzü kullan (deneme, sonraki açılışta)", 44, 434, 470, IniRead($sIni, "Arayuz", "Yeni", "0") = "1")
+    If $bWebUiOption Then $tglWebUi = _UiToggle("Yeni arayüz (kapatırsan eski arayüz açılır, sonraki açılışta)", 44, 434, 470, IniRead($sIni, "Arayuz", "Yeni", "1") = "1")
 
     Local $lblStatus = _UiLabel(__SettingsUI_StatusText($sIni, $bService, $bTask), 24, 448 + $iExtra, 512, 36, 8.5, $UI_TEXT2)
 
@@ -91,7 +91,7 @@ Func _SettingsUI_Show($sRoot, $sServiceName, $sAppName, $hParent, $bWebUiOption 
                 Local $sWebNote = ""
                 If $bWebUiOption Then
                     Local $sWebNew = _UiToggleGet($tglWebUi) ? "1" : "0"
-                    If $sWebNew <> IniRead($sIni, "Arayuz", "Yeni", "0") Then $sWebNote = @CRLF & "Arayüz değişikliği programı yeniden açınca geçerli olur."
+                    If $sWebNew <> IniRead($sIni, "Arayuz", "Yeni", "1") Then $sWebNote = @CRLF & "Arayüz değişikliği programı yeniden açınca geçerli olur."
                     IniWrite($sIni, "Arayuz", "Yeni", $sWebNew)
                 EndIf
                 _SettingsApplyRestart($sIni, $sServiceName, $bService, $bRestart)

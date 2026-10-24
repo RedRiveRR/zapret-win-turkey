@@ -1851,8 +1851,10 @@ EndFunc
 ; WebView2 yoksa veya başlamazsa eski arayüz açılır.
 ; =========================================================================
 Func _WebUiWanted()
+    ; Yeni arayüz varsayılan (2026-10-24). Eski arayüz: Ayarlar'daki anahtar ([Arayuz] Yeni=0) veya /eski-arayuz.
     If $CmdLine[0] >= 1 And $CmdLine[1] = "/yeni-arayuz" Then Return True
-    Return IniRead($iniPath, "Arayuz", "Yeni", "0") = "1"
+    If $CmdLine[0] >= 1 And $CmdLine[1] = "/eski-arayuz" Then Return False
+    Return IniRead($iniPath, "Arayuz", "Yeni", "1") = "1"
 EndFunc
 
 Func _WebUiTheme()
