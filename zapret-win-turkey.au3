@@ -65,6 +65,7 @@ Global $g_bWebHealthIni = True, $g_bWebRestartIni = False, $g_sWebSvcHealth = ""
 ; DNS ekranı: etkin DNS sunucuları ("?" = okunmadı; PowerShell gerektirir, yalnızca sekme açılınca ve değişiklikten sonra okunur)
 Global $g_sWebDnsServers = "?", $g_bWebDnsReread = False, $g_sWebLastDnsJson = ""
 Global $g_sWebLastOtherJson = "", $g_sWebUpdateIni = "1"
+Global $g_sPrevTestShot = "" ; önizleme: deneme penceresi görüntüsünün yolu
 If $CmdLine[0] >= 2 And $CmdLine[1] = "/arayuz-onizleme" Then $g_sUiPreviewDir = $CmdLine[2]
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
@@ -570,11 +571,9 @@ While 1
                 EndIf
 
                 ; --- SPLASH SCREEN BAŞLANGICI ---
-                Local $hSplash = GUICreate("Lütfen Bekleyin", 280, 80, -1, -1, $WS_POPUP, $WS_EX_TOPMOST)
-                GUISetBkColor(0xF2F4F7, $hSplash)
-                GUICtrlCreateLabel("Güvenlik Duvarı" & @CRLF & "Kontrolleri Yapılıyor...", 10, 20, 260, 40, $SS_CENTER)
-                GUICtrlSetFont(-1, 10, 800, 0, "Segoe UI")
-                GUICtrlSetColor(-1, 0x2C3E50)
+                Local $hSplash = GUICreate("Lütfen bekleyin", 300, 84, -1, -1, $WS_POPUP, $WS_EX_TOPMOST)
+                GUISetBkColor($UI_CARD, $hSplash)
+                _UiLabel("Güvenlik duvarı kontrol ediliyor..." & @CRLF & "Lütfen bekleyin.", 16, 18, 268, 48, 10.5, $UI_TEXT, 600, $SS_CENTER, $UI_FONT_SEMI)
                 GUISetState(@SW_SHOW, $hSplash)
 
                 Local $targetPcapExe = @ScriptDir & '\bin\go-pcap2socks\go-pcap2socks.exe'
@@ -1360,15 +1359,13 @@ Func RunBlockcheck2($ctrlID)
     If FileExists(_BlockcheckResultsPath()) Then FileDelete(_BlockcheckResultsPath())
     If FileExists($logPath) Then FileDelete($logPath)
 
-    Local $hScanGUI = GUICreate("Zapret2 Blockcheck", 360, 170, -1, -1, BitOR($WS_CAPTION, $WS_SYSMENU), 0, _MainWindowHandle())
-    GUISetBkColor(0xFFFFFF, $hScanGUI)
-    Local $lblScanTitle = GUICtrlCreateLabel("Taranıyor...", 18, 16, 324, 25, $SS_CENTER)
-    GUICtrlSetFont($lblScanTitle, 12, 700, 0, "Segoe UI")
-    Local $lblScanElapsed = GUICtrlCreateLabel("Geçen süre: 00:00", 18, 53, 324, 22, $SS_CENTER)
-    GUICtrlSetFont($lblScanElapsed, 10, 400, 0, "Segoe UI")
-    Local $lblScanCount = GUICtrlCreateLabel("Bulunan strateji: 0", 18, 80, 324, 22, $SS_CENTER)
-    GUICtrlSetFont($lblScanCount, 10, 600, 0, "Segoe UI")
-    Local $btnStopScan = GUICtrlCreateButton("Analizi Durdur", 70, 115, 220, 32)
+    Local $aScanMark = _UiMark()
+    Local $hScanGUI = _UiWindow("Sağlayıcı taraması", 380, 196, _MainWindowHandle())
+    Local $lblScanTitle = _UiLabel("Taranıyor...", 24, 20, 332, 28, 13, $UI_TEXT, 700, 0, $UI_FONT_SEMI)
+    _UiCard(24, 58, 332, 60)
+    Local $lblScanElapsed = _UiLabel("Geçen süre: 00:00", 40, 68, 300, 20, 10, $UI_TEXT2)
+    Local $lblScanCount = _UiLabel("Bulunan strateji: 0", 40, 90, 300, 20, 10, $UI_TEXT, 600)
+    Local $btnStopScan = _UiButton("Analizi Durdur", 24, 136, 332, 40, $UI_KIND_SECONDARY, 10, 10, $UI_BG)
     Local $bEnoughHinted = False
     GUISetState(@SW_SHOW, $hScanGUI)
 
@@ -1379,6 +1376,7 @@ Func RunBlockcheck2($ctrlID)
 
     If $iPidBash = 0 Then
         GUIDelete($hScanGUI)
+        _UiRelease($aScanMark)
         GUISetState(@SW_ENABLE, _MainWindowHandle())
         _MainWindowShow()
         MsgBox(16 + 8192, "Analiz Başlatılamadı", "Blockcheck2 süreci başlatılamadı.")
@@ -1426,6 +1424,7 @@ Func RunBlockcheck2($ctrlID)
             $hUiTimer = TimerInit()
         EndIf
 
+        _UiTick($hScanGUI)
         Sleep(150)
     WEnd
 
@@ -1437,6 +1436,7 @@ Func RunBlockcheck2($ctrlID)
             ($bUserStopped ? ", kullanıcı durdurdu" : "") & ($isNoBypassNeeded ? ", engel yok" : ""))
 
     GUIDelete($hScanGUI)
+    _UiRelease($aScanMark)
 
     ; Sonuçları kalıcı dosyaya yaz: pencere kapatılsa bile ana menüden yeniden açılabilir.
     If $aStrategies[0] > 0 Then
@@ -1613,11 +1613,13 @@ Func _ShowStrategyTestWindow(ByRef $aStrategies, $bMainAlreadyDisabled = False)
     ; Önceki sonuçlar ana menüden açılırsa burada modal kilitle; analiz akışından gelirse kilit zaten aktiftir.
     If Not $bMainAlreadyDisabled Then GUISetState(@SW_DISABLE, _MainWindowHandle())
 
-    Local $hTestGUI = GUICreate("Bulunan Stratejileri Test Et", 500, 325, -1, -1, BitOR($WS_CAPTION, $WS_SYSMENU), 0, _MainWindowHandle())
-    GUISetBkColor(0xFFFFFF, $hTestGUI)
+    Local $aTestMark = _UiMark()
+    Local $hTestGUI = _UiWindow("Bulunan stratejileri dene", 520, 372, _MainWindowHandle())
 
-    GUICtrlCreateLabel("Bulunan stratejilerden birini seçip test edebilirsin.", 15, 14, 470, 22)
-    Local $cmbFoundStrategies = GUICtrlCreateCombo("", 15, 42, 470, 150, BitOR($CBS_DROPDOWNLIST, $WS_VSCROLL))
+    _UiLabel("Bulunan stratejilerden birini seçip deneyebilirsin.", 24, 18, 472, 22, 11, $UI_TEXT, 600, 0, $UI_FONT_SEMI)
+    Local $cmbFoundStrategies = GUICtrlCreateCombo("", 24, 48, 472, 150, BitOR($CBS_DROPDOWNLIST, $WS_VSCROLL))
+    GUICtrlSetFont($cmbFoundStrategies, 10, 400, 0, $UI_FONT)
+    _UiDarkControl($cmbFoundStrategies)
     Local $sOptions = ""
     For $i = 1 To $aStrategies[0]
         If $sOptions <> "" Then $sOptions &= "|"
@@ -1625,21 +1627,23 @@ Func _ShowStrategyTestWindow(ByRef $aStrategies, $bMainAlreadyDisabled = False)
     Next
     GUICtrlSetData($cmbFoundStrategies, $sOptions, "Strateji 1")
 
-    GUICtrlCreateLabel("Seçili strateji:", 15, 80, 470, 18)
-    Local $edtStrategyPreview = GUICtrlCreateEdit($aStrategies[1], 15, 100, 470, 62, BitOR($ES_READONLY, $ES_AUTOVSCROLL, $WS_VSCROLL))
-    Local $lblOobWarning = GUICtrlCreateLabel("", 15, 167, 470, 30)
-    GUICtrlSetColor($lblOobWarning, 0xCC0000)
-    GUICtrlSetFont($lblOobWarning, 9, 700, 0, "Segoe UI")
-    ; Belirgin durum alanı: açık mavi zemin, koyu mavi kalın yazı
-    Local $lblTestStatus = GUICtrlCreateLabel("TEST BEKLİYOR  |  Test Et'e basıp Discord/Roblox bağlantını deneyebilirsin.", 15, 202, 470, 38, BitOR($SS_CENTER, $SS_CENTERIMAGE))
-    GUICtrlSetBkColor($lblTestStatus, 0xEAF3FF)
-    GUICtrlSetColor($lblTestStatus, 0x174EA6)
-    GUICtrlSetFont($lblTestStatus, 10, 700, 0, "Segoe UI")
+    _UiLabel("SEÇİLİ STRATEJİ", 24, 88, 300, 18, 8.5, $UI_MUTED, 700)
+    Local $edtStrategyPreview = GUICtrlCreateEdit($aStrategies[1], 24, 108, 472, 62, BitOR($ES_READONLY, $ES_AUTOVSCROLL, $WS_VSCROLL), 0)
+    GUICtrlSetBkColor($edtStrategyPreview, $UI_CARD)
+    GUICtrlSetColor($edtStrategyPreview, $UI_TEXT)
+    GUICtrlSetFont($edtStrategyPreview, 9, 400, 0, "Consolas")
+    _UiDarkControl($edtStrategyPreview, "DarkMode_Explorer")
+    Local $lblOobWarning = _UiLabel("", 24, 176, 472, 30, 9, 0xFF9AA2, 700)
+    ; Belirgin durum alanı (renkler yeni tasarımın koyu temasından)
+    Local $lblTestStatus = GUICtrlCreateLabel("Deneme bekliyor. 'Dene'ye basıp Discord/Roblox bağlantını deneyebilirsin.", 24, 212, 472, 44, BitOR($SS_CENTER, $SS_CENTERIMAGE))
+    GUICtrlSetBkColor($lblTestStatus, 0x2A2B4D)
+    GUICtrlSetColor($lblTestStatus, 0xB9BAFA)
+    GUICtrlSetFont($lblTestStatus, 10, 600, 0, $UI_FONT_SEMI)
 
     ; Tek düğme: test kapalıyken başlatır, çalışırken durdurur.
-    Local $btnToggleTest = GUICtrlCreateButton("Test Et", 15, 258, 220, 34)
-    Local $btnSaveStrategy = GUICtrlCreateButton("Stratejiyi Kaydet", 245, 258, 130, 34)
-    Local $btnCloseTest = GUICtrlCreateButton("Kapat", 385, 258, 100, 34)
+    Local $btnToggleTest = _UiButton("Dene", 24, 304, 200, 40, $UI_KIND_PRIMARY, 10.5, 10, $UI_BG)
+    Local $btnSaveStrategy = _UiButton("Stratejiyi kaydet", 234, 304, 150, 40, $UI_KIND_SECONDARY, 10, 10, $UI_BG)
+    Local $btnCloseTest = _UiButton("Kapat", 394, 304, 102, 40, $UI_KIND_SECONDARY, 10, 10, $UI_BG)
     Local $bStrategyTestRunning = False
     GUISetState(@SW_SHOW, $hTestGUI)
 
@@ -1665,10 +1669,10 @@ Func _ShowStrategyTestWindow(ByRef $aStrategies, $bMainAlreadyDisabled = False)
                     ; Çalışan testi durdur.
                     _StopStrategyTest()
                     $bStrategyTestRunning = False
-                    GUICtrlSetData($btnToggleTest, "Test Et")
-                    GUICtrlSetData($lblTestStatus, "TEST DURDURULDU  |  İstersen başka bir stratejiyi test edebilirsin.")
-                    GUICtrlSetBkColor($lblTestStatus, 0xFFF4E5)
-                    GUICtrlSetColor($lblTestStatus, 0x8A4B08)
+                    GUICtrlSetData($btnToggleTest, "Dene")
+                    GUICtrlSetData($lblTestStatus, "Deneme durduruldu. İstersen başka bir stratejiyi deneyebilirsin.")
+                    GUICtrlSetBkColor($lblTestStatus, 0x33291A)
+                    GUICtrlSetColor($lblTestStatus, 0xF0C274)
                 Else
                     ; Testi başlat.
                     $iSelected = Int(StringTrimLeft(GUICtrlRead($cmbFoundStrategies), 8))
@@ -1679,16 +1683,16 @@ Func _ShowStrategyTestWindow(ByRef $aStrategies, $bMainAlreadyDisabled = False)
                         $strategyTestPID = Run($sTestCommand, @ScriptDir & "\bin\zapret\zapret-winws\", @SW_HIDE)
                         If $strategyTestPID > 0 Then
                             $bStrategyTestRunning = True
-                            GUICtrlSetData($btnToggleTest, "Testi Durdur")
-                            GUICtrlSetData($lblTestStatus, "TEST ÇALIŞIYOR  |  Discord/Roblox bağlantını dene.")
-                            GUICtrlSetBkColor($lblTestStatus, 0xE8F5E9)
-                            GUICtrlSetColor($lblTestStatus, 0x1B5E20)
+                            GUICtrlSetData($btnToggleTest, "Denemeyi durdur")
+                            GUICtrlSetData($lblTestStatus, "Deneme çalışıyor. Discord/Roblox bağlantını dene.")
+                            GUICtrlSetBkColor($lblTestStatus, 0x17302A)
+                            GUICtrlSetColor($lblTestStatus, 0x7FDBAE)
                         Else
                             $bStrategyTestRunning = False
-                            GUICtrlSetData($btnToggleTest, "Test Et")
-                            GUICtrlSetData($lblTestStatus, "BAŞLATILAMADI  |  WinWS2 dosyasını ve yetkileri kontrol et.")
-                            GUICtrlSetBkColor($lblTestStatus, 0xFDECEC)
-                            GUICtrlSetColor($lblTestStatus, 0xB71C1C)
+                            GUICtrlSetData($btnToggleTest, "Dene")
+                            GUICtrlSetData($lblTestStatus, "Başlatılamadı. winws2 dosyasını ve yönetici yetkisini kontrol et.")
+                            GUICtrlSetBkColor($lblTestStatus, 0x3A1E22)
+                            GUICtrlSetColor($lblTestStatus, 0xFF9AA2)
                         EndIf
                     EndIf
                 EndIf
@@ -1717,18 +1721,20 @@ Func _ShowStrategyTestWindow(ByRef $aStrategies, $bMainAlreadyDisabled = False)
             If Not ProcessExists("winws2.exe") Or ($strategyTestPID > 0 And Not ProcessExists($strategyTestPID)) Then
                 $bStrategyTestRunning = False
                 $strategyTestPID = 0
-                GUICtrlSetData($btnToggleTest, "Test Et")
-                GUICtrlSetData($lblTestStatus, "TEST ÇALIŞMIYOR | Bir şey süreci sonlandırdı.")
-                GUICtrlSetBkColor($lblTestStatus, 0xFDECEC)
-                GUICtrlSetColor($lblTestStatus, 0xB71C1C)
+                GUICtrlSetData($btnToggleTest, "Dene")
+                GUICtrlSetData($lblTestStatus, "Deneme durdu: zapret süreci kapandı.")
+                GUICtrlSetBkColor($lblTestStatus, 0x3A1E22)
+                GUICtrlSetColor($lblTestStatus, 0xFF9AA2)
             EndIf
         EndIf
 
+        _UiTick($hTestGUI)
         Sleep(30)
     WEnd
 
     _StopStrategyTest()
     GUIDelete($hTestGUI)
+    _UiRelease($aTestMark)
 
     If Not $bMainAlreadyDisabled Then
         GUISetState(@SW_ENABLE, _MainWindowHandle())
@@ -2310,6 +2316,20 @@ Func _WebUiPreviewAndExit($sDir)
         FileWriteLine($sLog, "eski arayüze geçiş: yeni arayüz=" & $g_bWebUi & ", eski pencere görünür=" & (BitAND(WinGetState($hGUI), 2) = 2))
         _ScreenCapture_CaptureWnd($sDir & "\eski-gecis.png", $hGUI)
     EndIf
+    ; Strateji deneme penceresi (yalnızca görüntü; deneme başlatılmaz, 1,5 sn sonra kapanır)
+    $g_sPrevTestShot = $sDir & "\deneme-penceresi.png"
+    Local $aFake[3] = [2, "--wf-tcp=443 --dpi-desync=fake,multisplit --dpi-desync-split-pos=1,midsld", "--wf-tcp=443 --dpi-desync=multidisorder"]
+    AdlibRegister("__WebUiPreviewShotTest", 1500)
+    _ShowStrategyTestWindow($aFake)
     FileWriteLine($sLog, "bitti: yeni arayüz=" & $g_bWebUi & " " & _WV2_LastError())
     Exit
+EndFunc
+
+Func __WebUiPreviewShotTest()
+    AdlibUnRegister("__WebUiPreviewShotTest")
+    Local $h = WinGetHandle("Bulunan stratejileri dene")
+    If $h Then
+        _ScreenCapture_CaptureWnd($g_sPrevTestShot, $h)
+        WinClose($h)
+    EndIf
 EndFunc
