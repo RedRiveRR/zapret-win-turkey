@@ -16,19 +16,19 @@
 ; Sayfa gösterme/gizleme için _UiSetVisible kullanılmalı (alt görüntü de gizlenir).
 ; =========================================================================
 
-; --- Renkler (RGB) ---
-Global Const $UI_BG = 0x313338
-Global Const $UI_SIDEBAR = 0x1E1F22
-Global Const $UI_CARD = 0x383A40
-Global Const $UI_TEXT = 0xF2F3F5
-Global Const $UI_TEXT2 = 0xB5BAC1
-Global Const $UI_MUTED = 0x80848E
-Global Const $UI_ACCENT = 0x5865F2
-Global Const $UI_GREEN = 0x23A55A
-Global Const $UI_RED = 0xDA373C
-Global Const $UI_YELLOW = 0xF0B232
-Global Const $UI_DISABLED_BG = 0x45474E
-Global Const $UI_DISABLED_TX = 0x8E9297
+; --- Renkler (RGB) — RedRiveRR Zapret tasarımının koyu teması (ui/web/stil.css "koyu" ile aynı aile) ---
+Global Const $UI_BG = 0x14161B
+Global Const $UI_SIDEBAR = 0x101216
+Global Const $UI_CARD = 0x1D2027
+Global Const $UI_TEXT = 0xE7EAF0
+Global Const $UI_TEXT2 = 0xB7BECB
+Global Const $UI_MUTED = 0x99A2B2
+Global Const $UI_ACCENT = 0x6466E0
+Global Const $UI_GREEN = 0x2F9E6E
+Global Const $UI_RED = 0xD33A45
+Global Const $UI_YELLOW = 0xE5A53B
+Global Const $UI_DISABLED_BG = 0x2A2E37
+Global Const $UI_DISABLED_TX = 0x6F7787
 
 Global Const $UI_FONT = "Segoe UI"
 Global Const $UI_FONT_SEMI = "Segoe UI Semibold"
@@ -52,12 +52,12 @@ Global Const $UI_KIND_SECONDARY = 3
 Global Const $UI_KIND_NAV = 4
 Global Const $UI_KIND_NAV_ACTIVE = 5
 Global $__g_aUiKinds[6][3] = [ _
-        [$UI_ACCENT, 0x4752C4, 0xFFFFFF], _
-        [$UI_GREEN, 0x1A8B4A, 0xFFFFFF], _
-        [$UI_RED, 0xA12828, 0xFFFFFF], _
-        [0x4E5058, 0x6D6F78, 0xFFFFFF], _
-        [$UI_SIDEBAR, 0x2E3035, $UI_TEXT2], _
-        [0x404249, 0x404249, 0xFFFFFF]]
+        [$UI_ACCENT, 0x5153C8, 0xFFFFFF], _
+        [$UI_GREEN, 0x268259, 0xFFFFFF], _
+        [$UI_RED, 0xB52E38, 0xFFFFFF], _
+        [0x2A2E37, 0x363B46, $UI_TEXT], _
+        [$UI_SIDEBAR, 0x1D2027, $UI_TEXT2], _
+        [0x2A2B4D, 0x2A2B4D, 0xB9BAFA]]
 
 ; Kayıtlı butonlar: etiket, görüntü, tür, son görünüm, genişlik, yükseklik, köşe, zemin,
 ;   x, y, yazı boyutu (-1: devre dışı yazısı çizilmez), bitmap'e çizilen yazı, ortalı mı
@@ -311,7 +311,7 @@ Func __UiToggleBitmap($bOn, $iBack)
     Local $hG = _GDIPlus_ImageGetGraphicsContext($hBmp)
     _GDIPlus_GraphicsSetSmoothingMode($hG, $GDIP_SMOOTHINGMODE_ANTIALIAS8X8)
     _GDIPlus_GraphicsClear($hG, BitOR(0xFF000000, $iBack))
-    Local $hTrack = _GDIPlus_BrushCreateSolid(BitOR(0xFF000000, $bOn ? $UI_GREEN : 0x80848E))
+    Local $hTrack = _GDIPlus_BrushCreateSolid(BitOR(0xFF000000, $bOn ? $UI_ACCENT : 0x3A3F4A))
     Local $hPath = _GDIPlus_PathCreate()
     _GDIPlus_PathAddArc($hPath, 0, 0, $h - 1, $h - 1, 90, 180)
     _GDIPlus_PathAddArc($hPath, $w - $h, 0, $h - 1, $h - 1, 270, 180)
