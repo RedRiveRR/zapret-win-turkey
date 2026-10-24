@@ -75,3 +75,27 @@ EndFunc
 Func _ScheduleExists($sTaskName)
     Return RunWait(@ComSpec & ' /c schtasks /Query /TN "' & $sTaskName & '"', "", @SW_HIDE) = 0
 EndFunc
+
+; Görevin tanımı (XML). Görev yoksa "".
+Func _ScheduleQueryXml($sTaskName)
+    Local $iPid = Run(@ComSpec & ' /c schtasks /Query /TN "' & $sTaskName & '" /XML', "", @SW_HIDE, $STDOUT_CHILD)
+    If $iPid = 0 Then Return ""
+    ProcessWaitClose($iPid, 10)
+    Local $s = StdoutRead($iPid)
+    Return StringInStr($s, "<Task") ? $s : ""
+EndFunc
+
+; Görev bu komutu mu çalıştırıyor? (ör. exe yeniden adlandırıldıysa görev eski yolu gösterir)
+Func _ScheduleXmlHasCommand($sXml, $sCommand)
+    Return StringInStr($sXml, "<Command>" & _ScheduleXmlEscape($sCommand) & "</Command>") > 0
+EndFunc
+
+; Görevin çalıştırdığı komut (XML kaçışları çözülmüş). Yoksa "".
+Func _ScheduleXmlCommand($sXml)
+    Local $a = StringRegExp($sXml, "<Command>(.*?)</Command>", 1)
+    If @error Then Return ""
+    Local $s = StringReplace($a[0], "&quot;", '"')
+    $s = StringReplace($s, "&lt;", "<")
+    $s = StringReplace($s, "&gt;", ">")
+    Return StringReplace($s, "&amp;", "&")
+EndFunc

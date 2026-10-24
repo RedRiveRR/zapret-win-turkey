@@ -79,6 +79,19 @@ Func _TestHealth()
     _AssertEq(_HealthQuickVerdict(True, False), "tamam", "Discord açılıyorsa tamam")
     _AssertEq(_HealthQuickVerdict(False, True), "onar", "Discord kapalı, internet var: onar")
     _AssertEq(_HealthQuickVerdict(False, False), "internet yok", "internet yoksa onarım önerilmez")
+
+    ; --- Görev komutu (exe yeniden adlandırma geçişi) ---
+    Local $sTaskXml = _ScheduleBuildXml("C:\Program Files\Z\zapret-win-turkey.exe", "/saglik", "C:\Program Files\Z", "PC\Ali", 30, "x")
+    _AssertTrue(_ScheduleXmlHasCommand($sTaskXml, "C:\Program Files\Z\zapret-win-turkey.exe"), "görev aynı exe'yi gösteriyor")
+    _AssertFalse(_ScheduleXmlHasCommand($sTaskXml, "C:\Program Files\Z\RedRiveRR Zapret.exe"), "yeniden adlandırılan exe'yi göstermiyor")
+    _AssertTrue(_ScheduleXmlHasCommand(_ScheduleBuildXml("C:\A & B\x.exe", "", "C:\", "PC\A", 30, ""), "C:\A & B\x.exe"), "özel karakterli yol")
+    _AssertEq(_ScheduleXmlCommand(_ScheduleBuildXml("C:\A & B\x.exe", "", "C:\", "PC\A", 30, "")), "C:\A & B\x.exe", "görev komutu çözülür")
+    _AssertEq(_ScheduleXmlCommand("<Task></Task>"), "", "komut yoksa boş")
+    Local $sOld = "C:\Program Files\Z\zapret-win-turkey.exe", $sNew = "C:\Program Files\Z\RedRiveRR Zapret.exe"
+    _AssertTrue(_HealthTaskShouldRepair($sOld, $sNew, True), "aynı klasörde yeniden adlandırma: onar")
+    _AssertTrue(_HealthTaskShouldRepair("D:\Eski\zapret-win-turkey.exe", $sNew, False), "görevin exe'si silinmiş: onar")
+    _AssertFalse(_HealthTaskShouldRepair($sNew, "D:\Yedek\RedRiveRR Zapret.exe", True), "başka klasördeki kopya görevi çekmez (H18)")
+    _AssertFalse(_HealthTaskShouldRepair($sNew, $sNew, True), "zaten bu exe")
 EndFunc
 
 Func __TestHealthRow(ByRef $a, $i, $s, $fScore)

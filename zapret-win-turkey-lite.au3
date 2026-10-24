@@ -248,6 +248,9 @@ WEnd
 ; --- GÜNCELLEME KONTROLÜ (arka planda; config.ini'de UpdateCheck=0 ile kapatılır) ---
 If IniRead($iniPath, "Settings", "UpdateCheck", "1") <> "0" Then _UpdateStartCheck($APP_UPDATE_REPO)
 
+; --- Exe adı/yolu değiştiyse otomatik onarım görevini bu programa yönelt ---
+_HealthTaskRepair()
+
 ; --- Ana Döngü ---
 Local $hProcessTimer = TimerInit()
 

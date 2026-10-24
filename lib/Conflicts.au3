@@ -173,8 +173,8 @@ Func _HandleForeignServices($sOurDir)
         If $aSvcs[$i][0] = "ZapretService" And _ForeignServiceIsMain($sOurDir, $aSvcs[$i][1]) Then
             Local $sMain = _ForeignServiceRoot($aSvcs[$i][1])
             _LogWarn("Asıl kurulumun servisi bulundu (" & $aSvcs[$i][1] & "); bu kopya (" & $sOurDir & ") servisi kaldırmayacak")
-            Local $sMainExe = $sMain & "\" & @ScriptName
-            Local $bCanOpen = $sMain <> "" And FileExists($sMainExe)
+            Local $sMainExe = ($sMain = "") ? "" : _InstallFindExe($sMain, @ScriptName)
+            Local $bCanOpen = $sMainExe <> ""
             Local $iAns = MsgBox(($bCanOpen ? 36 : 48) + 8192, "Asıl Kurulum Başka Klasörde", _
                     "Zapret servisi asıl kurulumunuzda çalışıyor:" & @CRLF & ($sMain = "" ? $aSvcs[$i][1] : $sMain) & @CRLF & @CRLF & _
                     "Şu an açtığınız kopya ise başka bir klasörde (muhtemelen eski bir yedek):" & @CRLF & $sOurDir & @CRLF & @CRLF & _

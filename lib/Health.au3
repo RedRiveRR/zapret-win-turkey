@@ -395,3 +395,25 @@ Func _HealthQuickCheck($sRoot)
     If $bOk Then Return "tamam"
     Return _HealthQuickVerdict(False, _HealthInternetUp($sCurl, $sNull))
 EndFunc
+
+; Görev bu programı çalıştırmıyorsa (exe yeniden adlandırıldı/taşındı: 2026-10-24 "zapret-win-turkey.exe" ->
+; "RedRiveRR Zapret.exe") görevi bu exe için yeniden kurar. Yalnız derlenmiş programda. Kurulduysa True.
+Func _HealthTaskRepair()
+    If Not @Compiled Then Return False
+    Local $sXml = _ScheduleQueryXml($HEALTH_TASK_NAME)
+    If $sXml = "" Then Return False
+    Local $sCmd, $sArgs
+    _ScheduleSelfCommand($sCmd, $sArgs, $HEALTH_ARG)
+    Local $sTaskCmd = _ScheduleXmlCommand($sXml)
+    If Not _HealthTaskShouldRepair($sTaskCmd, $sCmd, FileExists($sTaskCmd) = 1) Then Return False
+    _LogInfo("Otomatik onarım görevi " & $sTaskCmd & " gösteriyordu; " & $sCmd & " için yeniden kuruluyor")
+    Return _HealthInstallTask() = 0
+EndFunc
+
+; Görev yeniden kurulmalı mı? Yalnızca görevin exe'si silinmişse ya da aynı klasördeyse (yeniden adlandırma).
+; Başka klasördeki bir kopya (ör. eski yedek, H18) asıl kurulumun görevini kendine çekmez.
+Func _HealthTaskShouldRepair($sTaskCmd, $sOurCmd, $bTaskCmdExists)
+    If $sTaskCmd = "" Or $sTaskCmd = $sOurCmd Then Return False
+    If Not $bTaskCmdExists Then Return True
+    Return StringRegExpReplace($sTaskCmd, "\\[^\\]*$", "") = StringRegExpReplace($sOurCmd, "\\[^\\]*$", "")
+EndFunc

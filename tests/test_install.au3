@@ -11,4 +11,14 @@ Func _TestInstall()
     _AssertTrue(_InstallIsProtected(@ProgramFilesDir & "\" & $INSTALL_DIR_NAME), "varsayılan hedef korumalı")
     _AssertFalse(_InstallIsProtected(@TempDir & "\zwt"), "geçici klasör korumasız")
     _AssertTrue(StringInStr(_InstallDefaultTarget(), @ProgramFilesDir) = 1, "varsayılan hedef Program Files'ta")
+
+    ; --- Ana exe bulma (eski/yeni ad) ---
+    Local $sTmp = @TempDir & "\zwt-exe-test-" & @MSEC
+    DirCreate($sTmp)
+    _AssertEq(_InstallFindExe($sTmp, "RedRiveRR Zapret.exe"), "", "exe yoksa boş")
+    FileWrite($sTmp & "\zapret-win-turkey.exe", "x")
+    _AssertEq(_InstallFindExe($sTmp, "RedRiveRR Zapret.exe"), $sTmp & "\zapret-win-turkey.exe", "eski adlı kurulum bulunur")
+    FileWrite($sTmp & "\RedRiveRR Zapret.exe", "x")
+    _AssertEq(_InstallFindExe($sTmp, "RedRiveRR Zapret.exe"), $sTmp & "\RedRiveRR Zapret.exe", "tercih edilen ad önce")
+    DirRemove($sTmp, 1)
 EndFunc

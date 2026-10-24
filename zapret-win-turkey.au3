@@ -338,6 +338,9 @@ Local $hProcessTimer = TimerInit() ; ZAMANLAYICIYI BAŞLAT (Bunu While 1'in heme
 ; --- AÇILIŞTA DNSCRYPT SERVİS DURUMUNU KONTROL ET ---
 _CheckDnscryptStatus()
 
+; --- Exe adı/yolu değiştiyse otomatik onarım görevini bu programa yönelt ---
+_HealthTaskRepair()
+
 ; --- SERVİS ÇALIŞIYORSA DISCORD'A GERÇEKTEN ULAŞILIYOR MU? ---
 _StartupServiceCheck()
 

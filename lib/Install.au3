@@ -73,3 +73,13 @@ Func _InstallCheckBeforeService($sExeName)
     ShellExecute($sDst & "\" & $sExeName, "", $sDst)
     Return "taşındı"
 EndFunc
+
+; Bir kurulum klasöründeki ana program exe'si: önce $sPreferred, sonra bilinen adlar
+; (2026-10-24'ten önce "zapret-win-turkey.exe"). Bulunamazsa "".
+Func _InstallFindExe($sDir, $sPreferred)
+    Local $aNames[3] = [$sPreferred, "RedRiveRR Zapret.exe", "zapret-win-turkey.exe"]
+    For $sName In $aNames
+        If $sName <> "" And FileExists($sDir & "\" & $sName) Then Return $sDir & "\" & $sName
+    Next
+    Return ""
+EndFunc
