@@ -369,6 +369,9 @@ Local $hProcessTimer = TimerInit() ; ZAMANLAYICIYI BAŞLAT (Bunu While 1'in heme
 ; --- AÇILIŞTA DNSCRYPT SERVİS DURUMUNU KONTROL ET ---
 _CheckDnscryptStatus()
 
+; --- SERVİS ÇALIŞIYORSA DISCORD'A GERÇEKTEN ULAŞILIYOR MU? ---
+_StartupServiceCheck()
+
 While 1
     Local $nMsg = GUIGetMsg()
     ; Yeni arayüz: sayfa komutları eski düğme olaylarına çevrilir, durum sayfaya aktarılır.
@@ -1766,6 +1769,30 @@ Func HasFirewallRule($fullPath)
     ProcessWaitClose($iPID)
 
     Return (StringLen(StdoutRead($iPID)) > 10)
+EndFunc
+
+; Açılışta servis çalışıyorken Discord'a ulaşılamıyorsa (ör. sağlayıcı engellemeyi değiştirdi, strateji
+; artık çalışmıyor) kullanıcıya otomatik onarımı önerir. Pencere açıkken arka plandaki sağlık görevi
+; çalışmadığı için bu durum fark edilmiyordu (2026-10-24).
+Func _StartupServiceCheck()
+    If _StateStatus() <> "SERVİS MODU AKTİF" Then Return
+    If Not StringInStr(_ServiceParseBinPath(_ServiceGetConfig($serviceName)), "winws2.exe") Then Return
+    _SetStatus("DISCORD BAĞLANTISI KONTROL EDİLİYOR...")
+    Local $sVerdict = _HealthQuickCheck(@ScriptDir)
+    _LogInfo("Açılış bağlantı kontrolü (servis): " & ($sVerdict = "" ? "yapılamadı" : $sVerdict))
+    If $sVerdict = "onar" Then
+        Local $iAsk = MsgBox(36 + 8192, "Discord'a ulaşılamıyor", "Servis çalışıyor ama Discord'a bağlanılamıyor. Sağlayıcın engelleme yöntemini değiştirmiş olabilir." & @CRLF & @CRLF & _
+                "Otomatik onarım denensin mi? Önce kayıtlı yedek stratejiler, gerekirse hızlı analiz denenir (1-5 dakika). Bu sürede Discord bağlantısı kısa süre kopabilir.")
+        If $iAsk = 6 Then
+            _SetStatus("OTOMATİK ONARIM DENENİYOR...")
+            Local $iR = _HealthRun(@ScriptDir, $serviceName, $APP_NAME, True)
+            _LogInfo("Açılış: kullanıcı onayıyla onarım sonucu " & $iR)
+            MsgBox(64 + 8192, "Otomatik Onarım", _HealthResultText($iR))
+            _LoadStrategyList("Analiz Sonucu")
+        EndIf
+    EndIf
+    CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
+    _RefreshStrategyLabel()
 EndFunc
 
 ; DNS değiştikten sonra açılıştaki kontrolün aynısı: zehirlenme varsa kritik düğmeler kilitlenir.
