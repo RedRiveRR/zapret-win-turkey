@@ -75,6 +75,10 @@ Func _TestHealth()
     _AssertFalse(_HealthGuiIsOpen($sApp), "tepsiye gizlenince yine açık sayılmaz")
     GUIDelete($hW)
     _AssertFalse(_HealthGuiIsOpen($sApp), "pencere yoksa açık sayılmaz")
+    ; --- Açılış hızlı kontrolü kararı ---
+    _AssertEq(_HealthQuickVerdict(True, False), "tamam", "Discord açılıyorsa tamam")
+    _AssertEq(_HealthQuickVerdict(False, True), "onar", "Discord kapalı, internet var: onar")
+    _AssertEq(_HealthQuickVerdict(False, False), "internet yok", "internet yoksa onarım önerilmez")
 EndFunc
 
 Func __TestHealthRow(ByRef $a, $i, $s, $fScore)

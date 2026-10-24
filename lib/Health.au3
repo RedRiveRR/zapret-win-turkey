@@ -33,6 +33,8 @@ Global Const $HEALTH_PROBE_HOSTS = "gateway.discord.gg,discord.com"
 Global Const $HEALTH_INTERNET_HOSTS = "www.google.com,www.microsoft.com,1.1.1.1"
 ; Kısa kopmalarda (modem yeniden başlıyor, Wi-Fi geç bağlanıyor) onarımdan önce bekleme
 Global Const $HEALTH_RETRY_DELAY_MS = 15000
+; Oturum açılışında ağ geç gelebilir: internet yoksa bu kadar kez, aralıklarla yeniden bakılır (~2 dk).
+Global Const $HEALTH_NET_WAIT_TRIES = 4, $HEALTH_NET_WAIT_MS = 30000
 
 ; Sonuç kodları
 Global Const $HEALTH_OK = 0              ; zaten sağlıklı
@@ -224,8 +226,9 @@ Func _HealthRun($sRoot, $sName, $sAppName, $bFromGui = False)
         IniWrite($sIni, "Health", "LastResult", "sağlıklı")
         Return $HEALTH_OK
     EndIf
-    ; Kesinti mi engelleme mi? İnternet yoksa hiçbir şeyi değiştirme.
-    If Not _HealthInternetUp($sCurl, $sNull) Then
+    ; Kesinti mi engelleme mi? İnternet yoksa hiçbir şeyi değiştirme. Arka plan kontrolünde ağın
+    ; gelmesi beklenir (2026-10-24: oturum açılışındaki kontrol ağdan önce çalışıp vazgeçmişti).
+    If Not _HealthInternetUp($sCurl, $sNull) And Not __HealthWaitInternet($sCurl, $sNull, $sAppName, $bFromGui) Then
         If IniRead($sIni, "Health", "LastResult", "") <> "internet yok" Then _LogWarn("Sağlık kontrolü: internet bağlantısı yok; onarım yapılmadı")
         IniWrite($sIni, "Health", "LastResult", "internet yok")
         Return $HEALTH_NO_INTERNET
@@ -354,4 +357,41 @@ Func __HealthFail($sIni, $sText)
     If IniRead($sIni, "Health", "LastResult", "") <> "başarısız" Then __HealthNotify("Discord'a ulaşılamıyor", $sText)
     IniWrite($sIni, "Health", "LastResult", "başarısız")
     Return $HEALTH_FAILED
+EndFunc
+
+; İnternet gelene kadar bekler (yalnızca arka plan kontrolünde). Geldiyse True; program
+; penceresi açılırsa beklemeyi bırakır (kullanıcı kendisi bakıyor).
+Func __HealthWaitInternet($sCurl, $sNull, $sAppName, $bFromGui)
+    If $bFromGui Then Return False
+    For $i = 1 To $HEALTH_NET_WAIT_TRIES
+        Sleep($HEALTH_NET_WAIT_MS)
+        If _HealthGuiIsOpen($sAppName) Then Return False
+        If _HealthInternetUp($sCurl, $sNull) Then
+            _LogInfo("Sağlık kontrolü: internet " & Int($i * $HEALTH_NET_WAIT_MS / 1000) & " sn sonra geldi")
+            Return True
+        EndIf
+    Next
+    Return False
+EndFunc
+
+; Açılış hızlı kontrolü kararı: Discord açılıyorsa "tamam", açılmıyor ama internet varsa "onar", yoksa "internet yok".
+Func _HealthQuickVerdict($bDiscordOk, $bInternetUp)
+    If $bDiscordOk Then Return "tamam"
+    Return $bInternetUp ? "onar" : "internet yok"
+EndFunc
+
+; Program açılışında servis çalışırken hızlı bağlantı kontrolü (en fazla ~15 sn): her Discord hedefi bir kez.
+; Dönüş: _HealthQuickVerdict; curl bulunamazsa "".
+Func _HealthQuickCheck($sRoot)
+    Local $sNull, $sCurl = _SmartFindCurl($sRoot, $sNull)
+    If $sCurl = "" Then Return ""
+    Local $bOk = True
+    For $sHost In StringSplit($HEALTH_PROBE_HOSTS, ",", 2)
+        If Not __HealthProbeHost($sCurl, $sNull, $sHost, 1) Then
+            $bOk = False
+            ExitLoop
+        EndIf
+    Next
+    If $bOk Then Return "tamam"
+    Return _HealthQuickVerdict(False, _HealthInternetUp($sCurl, $sNull))
 EndFunc
