@@ -173,9 +173,9 @@ Global $g_sUiLastStatus = "", $g_sUiLastRun = ""
 
 ; --- Kenar çubuğu ---
 _UiCard(0, 0, $UI_SB, $UI_H, $UI_SIDEBAR, 0)
-_UiIcon($UI_ICON_SHIELD, 18, 20, 36, 36, 20, $UI_ACCENT)
-_UiLabel("Zapret", 60, 16, 160, 26, 15, $UI_TEXT, 700, 0, $UI_FONT_SEMI)
-_UiLabel("Windows Türkiye", 60, 42, 160, 18, 9, $UI_MUTED)
+_UiIcon($UI_ICON_UNLOCK, 18, 20, 36, 36, 20, $UI_ACCENT)
+_UiLabel("RedRiveRR", 60, 16, 160, 26, 15, $UI_TEXT, 700, 0, $UI_FONT_SEMI)
+_UiLabel("Zapret", 60, 42, 160, 18, 9, $UI_MUTED)
 Global $aNavText[6] = ["Ana Sayfa", "Analiz", "Servis", "Ağ Paylaşımı", "DNS", "Ayarlar"]
 Global $aNavIcon[6] = [$UI_ICON_HOME, $UI_ICON_SEARCH, $UI_ICON_HEART, $UI_ICON_SHARE, $UI_ICON_GLOBE, $UI_ICON_SETTINGS]
 For $i = 0 To 5

@@ -124,8 +124,8 @@ TraySetToolTip($APP_NAME & " Lite")
 If Not @Compiled And FileExists(@ScriptDir & "\ui\simge\kilit.ico") Then TraySetIcon(@ScriptDir & "\ui\simge\kilit.ico")
 
 ; --- Başlık ---
-_UiLabel("Zapret", 24, 14, 200, 30, 17, $UI_TEXT, 700, 0, $UI_FONT_SEMI)
-_UiLabel("Windows Türkiye Lite  ·  v" & $APP_VERSION, 26, 42, 240, 18, 8.5, $UI_MUTED)
+_UiLabel($APP_NAME, 24, 14, 260, 30, 17, $UI_TEXT, 700, 0, $UI_FONT_SEMI)
+_UiLabel("Lite  ·  v" & $APP_VERSION, 26, 42, 240, 18, 8.5, $UI_MUTED)
 Global $btnLiteSettings = _UiButton("Ayarlar", 312, 20, 84, 32, $UI_KIND_SECONDARY, 9.5, 8, $UI_BG)
 
 ; İşlem sürerken görünen ince ilerleme çubuğu

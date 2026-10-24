@@ -38,6 +38,7 @@ Global Const $UI_ICON_FONT = "Segoe MDL2 Assets"
 Global Const $UI_ICON_HOME = 0xE80F
 Global Const $UI_ICON_SEARCH = 0xE721
 Global Const $UI_ICON_SHIELD = 0xEA18
+Global Const $UI_ICON_UNLOCK = 0xE785 ; açık kilit (logo)
 Global Const $UI_ICON_SHARE = 0xE72D
 Global Const $UI_ICON_GLOBE = 0xE774
 Global Const $UI_ICON_SETTINGS = 0xE713
