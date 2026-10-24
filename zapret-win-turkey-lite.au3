@@ -1,8 +1,8 @@
 ﻿#RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Icon=bin\zapret\zapret-winws\winws2.ico
+#AutoIt3Wrapper_Icon=ui\simge\kilit.ico
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Description=Zapret Windows Türkiye Lite
+#AutoIt3Wrapper_Res_Description=RedRiveRR Zapret Lite
 #AutoIt3Wrapper_Res_Fileversion=4.5.1.0
 #AutoIt3Wrapper_Res_ProductVersion=4.5.1
 #AutoIt3Wrapper_Res_LegalCopyright=Ali Mali
@@ -120,6 +120,8 @@ Local $trayExit = TrayCreateItem("Kapat")
 TrayItemSetOnEvent(-1, "_SaveConfigAndExit")
 TraySetOnEvent($TRAY_EVENT_PRIMARYDOUBLE, "ShowGUI")
 TraySetClick(16)
+TraySetToolTip($APP_NAME & " Lite")
+If Not @Compiled And FileExists(@ScriptDir & "\ui\simge\kilit.ico") Then TraySetIcon(@ScriptDir & "\ui\simge\kilit.ico")
 
 ; --- Başlık ---
 _UiLabel("Zapret", 24, 14, 200, 30, 17, $UI_TEXT, 700, 0, $UI_FONT_SEMI)
@@ -183,7 +185,7 @@ Local $btnInstallService = _UiButton("Servis olarak yükle", 24, 412, 236, 40, $
 GUICtrlSetState($btnInstallService, $GUI_DISABLE)
 Local $btnRemoveService = _UiButton("Temizle", 272, 412, 124, 40, $UI_KIND_SECONDARY, 10, 8, $UI_BG)
 
-Global $lblFooter = _UiLabel("Zapret Windows Türkiye Lite", 24, 466, 372, 40, 8.5, $UI_MUTED)
+Global $lblFooter = _UiLabel($APP_NAME & " Lite", 24, 466, 372, 40, 8.5, $UI_MUTED)
 
 Local $aCriticalButtons[5] = [$btnRunZapret, $btnInstallService, $cmbEngine, $cmbStrategy, $cmbFilter]
 Local $aOtherButtons[5] = [$btnInstallService, $btnRemoveService, $cmbEngine, $cmbStrategy, $cmbFilter]
@@ -303,7 +305,7 @@ While 1
 
         Case $GUI_EVENT_MINIMIZE
             GUISetState(@SW_HIDE, $hGUI)
-            TraySetToolTip("Zapret Windows Türkiye Lite")
+            TraySetToolTip($APP_NAME & " Lite")
 
         Case $cmbEngine
             _UpdateEnginePaths(GUICtrlRead($cmbEngine))

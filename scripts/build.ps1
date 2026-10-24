@@ -78,7 +78,8 @@ try {
     Copy-Item (Join-Path $repo '*.au3') $src
     Copy-Item (Join-Path $repo 'lib') (Join-Path $src 'lib') -Recurse
     Copy-Item (Join-Path $repo 'ui') (Join-Path $src 'ui') -Recurse
-    $icon = Join-Path $base 'bin\zapret\zapret-winws\winws2.ico'
+    # Uygulama simgesi: kilit logosu (scripts\make-icon.ps1 ile üretilir)
+    $icon = Join-Path $repo 'ui\simge\kilit.ico'
 
     function Invoke-Compile([string]$name) {
         $in = Join-Path $src "$name.au3"

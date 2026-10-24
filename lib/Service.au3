@@ -14,7 +14,7 @@
 ; hesabına risk oluşturabilir (ADR-007). Kullanıcı açarsa yeniden başlatma sınırlıdır.
 ; =========================================================================
 
-Global Const $SERVICE_DESCRIPTION = "Zapret Windows Türkiye - DPI atlatma motoru (winws). Bu programın Servis düğmeleriyle yönetilir."
+Global Const $SERVICE_DESCRIPTION = "RedRiveRR Zapret - DPI atlatma motoru (winws). Bu programın Servis düğmeleriyle yönetilir."
 
 ; winws yolu ve argümanlardan sc.exe binPath değerini üretir (iç tırnaklar \" ile kaçışlanır).
 Func _ServiceBuildBinPath($sExePath, $sArgs)

@@ -1,11 +1,11 @@
 ﻿#RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Icon=bin\zapret\zapret-winws\winws2.ico
+#AutoIt3Wrapper_Icon=ui\simge\kilit.ico
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Description=Zapret Multi-Engine Windows Türkiye - Zapret & Zapret2 Kontrol Aracı
+#AutoIt3Wrapper_Res_Description=RedRiveRR Zapret - Discord erişimi için Zapret ve Zapret2 kontrol aracı
 #AutoIt3Wrapper_Res_Fileversion=4.5.1.0
 #AutoIt3Wrapper_Res_ProductVersion=4.5.1
-#AutoIt3Wrapper_Res_LegalCopyright=Ali Mali
+#AutoIt3Wrapper_Res_LegalCopyright=Ali Mali (zapret-win-turkey), RedRiveRR
 #AutoIt3Wrapper_Res_Language=1055
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
@@ -158,6 +158,9 @@ Local $trayExit = TrayCreateItem("Kapat")
 TrayItemSetOnEvent(-1, "_SaveConfigAndExit")
 TraySetOnEvent($TRAY_EVENT_PRIMARYDOUBLE, "ShowGUI")
 TraySetClick(16)
+TraySetToolTip($APP_NAME)
+; Derlenmemiş çalıştırmada (geliştirme/önizleme) tepside de kilit simgesi; derlenmiş exe kendi simgesini kullanır.
+If Not @Compiled And FileExists(@ScriptDir & "\ui\simge\kilit.ico") Then TraySetIcon(@ScriptDir & "\ui\simge\kilit.ico")
 
 ; Sayfa sistemi: [sayfa][denetimler]
 Global Const $PAGE_HOME = 0, $PAGE_ANALYZE = 1, $PAGE_SERVICE = 2, $PAGE_LAN = 3, $PAGE_DNS = 4, $PAGE_SETTINGS = 5
@@ -489,7 +492,7 @@ While 1
 
         Case $GUI_EVENT_MINIMIZE
             _MainWindowHide()
-            TraySetToolTip("Zapret Windows Türkiye Çalışıyor")
+            TraySetToolTip($APP_NAME & " çalışıyor")
 
         Case $cmbEngine
             _UpdateEnginePaths(GUICtrlRead($cmbEngine))

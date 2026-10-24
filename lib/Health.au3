@@ -326,7 +326,7 @@ Func _HealthInstallTask()
     Local $sCmd, $sArgs
     _ScheduleSelfCommand($sCmd, $sArgs, $HEALTH_ARG)
     Local $iRc = _ScheduleInstall($HEALTH_TASK_NAME, $sCmd, $sArgs, @ScriptDir, $HEALTH_INTERVAL_MIN, _
-            "Zapret Windows Türkiye: Discord bağlantısını kontrol eder, gerekirse servisi onarır.")
+            "RedRiveRR Zapret: Discord bağlantısını kontrol eder, gerekirse servisi onarır.")
     _LogInfo("Otomatik onarım görevi kuruldu (schtasks çıkış kodu " & $iRc & "): " & $sCmd & " " & $sArgs)
     Return $iRc
 EndFunc
