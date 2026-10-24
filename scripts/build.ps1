@@ -81,17 +81,21 @@ try {
     # Uygulama simgesi: kilit logosu (scripts\make-icon.ps1 ile üretilir)
     $icon = Join-Path $repo 'ui\simge\kilit.ico'
 
-    function Invoke-Compile([string]$name) {
+    # Exe adları (2026-10-24'ten önce kaynak adıyla aynıydı: zapret-win-turkey.exe)
+    $mainExeName = 'RedRiveRR Zapret.exe'
+    $liteExeName = 'RedRiveRR Zapret Lite.exe'
+
+    function Invoke-Compile([string]$name, [string]$exeName) {
         $in = Join-Path $src "$name.au3"
-        $out = Join-Path $src "$name.exe"
+        $out = Join-Path $src $exeName
         # /nopack: UPX ile sıkıştırılmış exe'ler antivirüslerde daha sık yanlış alarm veriyor.
         $p = Start-Process -FilePath $aut2exe -ArgumentList '/in', "`"$in`"", '/out', "`"$out`"", '/icon', "`"$icon`"", '/x64', '/nopack' -Wait -PassThru -NoNewWindow
         if (-not (Test-Path $out)) { throw "$name derlenemedi (Aut2Exe çıkış kodu $($p.ExitCode))" }
-        Write-Host ("derlendi {0}.exe ({1:N0} bayt)" -f $name, (Get-Item $out).Length)
+        Write-Host ("derlendi {0} ({1:N0} bayt)" -f $exeName, (Get-Item $out).Length)
         return $out
     }
-    $mainExe = Invoke-Compile 'zapret-win-turkey'
-    $liteExe = Invoke-Compile 'zapret-win-turkey-lite'
+    $mainExe = Invoke-Compile 'zapret-win-turkey' $mainExeName
+    $liteExe = Invoke-Compile 'zapret-win-turkey-lite' $liteExeName
 
     # Ortak: repo config dosyaları ve dokümanlar
     function Copy-Common([string]$dest, [string]$scriptName) {
@@ -129,15 +133,15 @@ try {
     # --- ZIP + özetler ---
     New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
     $zips = @()
-    foreach ($pkg in @(@{ Dir = $mainDir; Name = "zapret-win-turkey-$suffix.zip" }, @{ Dir = $liteDir; Name = "zapret-win-turkey-lite-$suffix.zip" })) {
+    foreach ($pkg in @(@{ Dir = $mainDir; Name = "RedRiveRR-Zapret-$suffix.zip" }, @{ Dir = $liteDir; Name = "RedRiveRR-Zapret-Lite-$suffix.zip" })) {
         $zip = Join-Path $OutDir $pkg.Name
         if (Test-Path $zip) { Remove-Item $zip }
         Compress-Archive -Path (Join-Path $pkg.Dir '*') -DestinationPath $zip
         $zips += $zip
     }
     $sums = $zips | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_ -Algorithm SHA256).Hash.ToLower(), (Split-Path $_ -Leaf) }
-    $sums += "{0}  {1}" -f (Get-FileHash $mainExe -Algorithm SHA256).Hash.ToLower(), 'zapret-win-turkey.exe'
-    $sums += "{0}  {1}" -f (Get-FileHash $liteExe -Algorithm SHA256).Hash.ToLower(), 'zapret-win-turkey-lite.exe'
+    $sums += "{0}  {1}" -f (Get-FileHash $mainExe -Algorithm SHA256).Hash.ToLower(), $mainExeName
+    $sums += "{0}  {1}" -f (Get-FileHash $liteExe -Algorithm SHA256).Hash.ToLower(), $liteExeName
     # LF ve BOM'suz: `sha256sum -c SHA256SUMS.txt` ile doğrudan doğrulanabilsin.
     [IO.File]::WriteAllText((Join-Path $OutDir 'SHA256SUMS.txt'), (($sums -join "`n") + "`n"), [Text.UTF8Encoding]::new($false))
     $sums | Write-Host
