@@ -145,17 +145,15 @@ Func __NetQueryDiscord()
     RunWait(@ComSpec & " /c ipconfig /flushdns", "", @SW_HIDE)
 
     Local $iPID = Run( _
-            'powershell.exe -NoProfile -NonInteractive -Command "[System.Net.Dns]::GetHostAddresses(' & "'" & "discord.com" & "'" & ') | Select-Object -ExpandProperty IPAddressToString | Select-Object -First 1"', _
+            'powershell.exe -NoProfile -NonInteractive -Command "[Console]::OutputEncoding = [Text.Encoding]::UTF8; [System.Net.Dns]::GetHostAddresses(' & "'" & "discord.com" & "'" & ') | Select-Object -ExpandProperty IPAddressToString | Select-Object -First 1"', _
             "", @SW_HIDE, $STDOUT_CHILD + $STDERR_MERGED)
     If $iPID = 0 Then Return ""
 
     Local $hTimer = TimerInit()
-    Local $sIP = ""
 
-    ; En fazla 5 saniye bekle
+    ; En fazla 5 saniye bekle. Çıktı kısa olduğu için süreç bitince bir kerede, UTF-8 olarak okunur
+    ; (Windows hata metinleri OEM kod sayfasında bozuk görünüyordu: "˜stenen ad ge‡erli").
     While ProcessExists($iPID)
-        $sIP &= StdoutRead($iPID)
-
         If TimerDiff($hTimer) > 5000 Then
             ProcessClose($iPID)
             _LogWarn("DNS kontrolü: discord.com sorgusu 5 sn içinde yanıt vermedi")
@@ -165,6 +163,5 @@ Func __NetQueryDiscord()
         Sleep(50)
     WEnd
 
-    $sIP &= StdoutRead($iPID)
-    Return StringStripWS($sIP, 3)
+    Return StringStripWS(BinaryToString(StdoutRead($iPID, False, True), 4), 3)
 EndFunc
