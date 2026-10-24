@@ -193,8 +193,10 @@ function dnsDugmesi() {
   const sec = dnsSecili();
   const ad = { saglayici: "sağlayıcının DNS'ine", cloudflare: "Cloudflare'e", sifreli: "şifreli DNS'e" }[sec];
   const degisti = sec !== '' && sec !== dnsMod;
-  $('dns-uygula').textContent = degisti ? ad.charAt(0).toUpperCase() + ad.slice(1) + ' geç' : 'Değişiklik yok';
-  $('dns-uygula').disabled = !degisti || $('dns-secim').disabled;
+  // Düğme yalnızca seçim değişince görünür (ekranı kısaltır, "değişiklik yok" düğmesi kalmaz).
+  $('dns-uygula').hidden = !degisti;
+  if (degisti) $('dns-uygula').textContent = ad.charAt(0).toUpperCase() + ad.slice(1) + ' geç';
+  $('dns-uygula').disabled = $('dns-secim').disabled;
 }
 document.querySelectorAll('input[name=dns]').forEach((r) => r.addEventListener('change', dnsDugmesi));
 $('dns-uygula').addEventListener('click', () => {

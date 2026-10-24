@@ -1,7 +1,8 @@
 /* RedRiveRR Zapret — yeni arayüz stili (tasarım: docs/tasarim/ekranlar) */
-:root[data-tema="acik"]{--bg:#F2F4F7;--surface:#FFFFFF;--surface2:#E9EDF2;--line:#EDF0F4;--text:#1D2433;--muted:#677489;--accent:#5B5BD6;--accentTint:#ECECFC;--accentText:#4342B8;--onAccent:#FFFFFF;--ok:#2F9E6E;--okTint:#E3F4EC;--okText:#1C6E4A;--warn:#C98512;--warnTint:#FBF0DC;--warnText:#8F5A00;--bad:#D33A45;--badTint:#FCEBEC;--badText:#B4232F;--logo:#5B5BD6;--knobOff:#FFFFFF}
-:root[data-tema="koyu"]{--bg:#14161B;--surface:#1D2027;--surface2:#2A2E37;--line:#262A32;--text:#E7EAF0;--muted:#99A2B2;--accent:#7E80EE;--accentTint:#2A2B4D;--accentText:#B9BAFA;--onAccent:#101218;--ok:#4CC38A;--okTint:#17302A;--okText:#7FDBAE;--warn:#E5A53B;--warnTint:#33291A;--warnText:#F0C274;--bad:#F2555F;--badTint:#3A1E22;--badText:#FF9AA2;--logo:#6466E0;--knobOff:#99A2B2}
+:root[data-tema="acik"]{--bg:#F2F4F7;--surface:#FFFFFF;--surface2:#E9EDF2;--line:#EDF0F4;--text:#1D2433;--muted:#677489;--accent:#5B5BD6;--accentTint:#ECECFC;--accentText:#4342B8;--onAccent:#FFFFFF;--ok:#2F9E6E;--okTint:#E3F4EC;--okText:#1C6E4A;--warn:#C98512;--warnTint:#FBF0DC;--warnText:#8F5A00;--bad:#D33A45;--badTint:#FCEBEC;--badText:#B4232F;--logo:#5B5BD6;--knobOff:#FFFFFF;--trackOff:#CDD3DC}
+:root[data-tema="koyu"]{--bg:#14161B;--surface:#1D2027;--surface2:#2A2E37;--line:#262A32;--text:#E7EAF0;--muted:#99A2B2;--accent:#7E80EE;--accentTint:#2A2B4D;--accentText:#B9BAFA;--onAccent:#101218;--ok:#4CC38A;--okTint:#17302A;--okText:#7FDBAE;--warn:#E5A53B;--warnTint:#33291A;--warnText:#F0C274;--bad:#F2555F;--badTint:#3A1E22;--badText:#FF9AA2;--logo:#6466E0;--knobOff:#C9CFDA;--trackOff:#3A3F4A}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:'Segoe UI Variable Text','Segoe UI',sans-serif;-webkit-user-select:none;user-select:none;overflow:hidden}
 button{font-family:inherit;color:inherit}
 .app{height:100%;display:flex;flex-direction:column}
@@ -9,8 +10,9 @@ header{padding:20px 22px 0;display:flex;align-items:center;justify-content:space
 .marka{display:flex;align-items:center;gap:10px;font-family:'Segoe UI Variable Display','Segoe UI',sans-serif;font-size:17px;font-weight:700;letter-spacing:-.2px}
 .marka span{font-weight:400}
 .ikonbtn{width:36px;height:36px;border-radius:12px;border:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;cursor:pointer}
-main{flex:1;min-height:0;padding:16px 18px 12px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;overflow-x:hidden}
-.gorunum{display:none;flex:1;flex-direction:column;gap:12px;min-height:0}
+main{flex:1;min-height:0;padding:16px 18px 12px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;overflow-x:hidden;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%)}
+.gorunum{display:none;flex:1 0 auto;flex-direction:column;gap:12px}
+.gorunum>*{flex-shrink:0}
 .gorunum.acik{display:flex}
 .sayfabaslik{padding:0 4px}
 .sayfabaslik h1{font-size:24px}
@@ -27,7 +29,7 @@ h1{margin:4px 0 0;font-family:'Segoe UI Variable Display','Segoe UI',sans-serif;
 .kahraman[data-durum="hazir"] .guc{background:var(--accent)}
 .kahraman[data-durum="hazir"] .guc svg{stroke:var(--onAccent)}
 .guc:active{transform:scale(.94)}
-.guc:disabled{opacity:.45;cursor:default}
+.guc:disabled{background:var(--surface2);opacity:.6;cursor:default}
 button:focus-visible,nav a:focus-visible,a.kart:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .yol{display:flex;align-items:flex-start}
 .dugum{display:flex;flex-direction:column;align-items:center;gap:6px;width:60px;font-size:12px;color:var(--muted)}
@@ -124,3 +126,11 @@ select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 button.satir{width:100%;border:0;background:none;text-align:left;font-size:14px;cursor:pointer;color:inherit}
 button.satir:disabled{opacity:.5;cursor:default}
 .satir .ok{color:var(--muted);flex-shrink:0}
+/* Tutarlılık düzeltmeleri (denetim 2026-10-24) */
+.kahraman h1{font-size:22px;line-height:1.2}
+.kahraman:not([data-durum="aktif"]) .dugum i:not(.engel){background:var(--surface2)}
+.anahtar{background:var(--trackOff)}
+.anahtar[aria-checked="true"]{background:var(--accent)}
+.secim .kucuk{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+:root[data-tema="acik"]{color-scheme:light}
+:root[data-tema="koyu"]{color-scheme:dark}
