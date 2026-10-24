@@ -1790,6 +1790,7 @@ Func _StartupServiceCheck()
     If _StateStatus() <> "SERVİS MODU AKTİF" Then Return
     If Not StringInStr(_ServiceParseBinPath(_ServiceGetConfig($serviceName)), "winws2.exe") Then Return
     _SetStatus("DISCORD BAĞLANTISI KONTROL EDİLİYOR...")
+    _WebUiRefreshNow()
     Local $sVerdict = _HealthQuickCheck(@ScriptDir)
     _LogInfo("Açılış bağlantı kontrolü (servis): " & ($sVerdict = "" ? "yapılamadı" : $sVerdict))
     If $sVerdict = "onar" Then
@@ -1797,6 +1798,7 @@ Func _StartupServiceCheck()
                 "Otomatik onarım denensin mi? Önce kayıtlı yedek stratejiler, gerekirse hızlı analiz denenir (1-5 dakika). Bu sürede Discord bağlantısı kısa süre kopabilir.")
         If $iAsk = 6 Then
             _SetStatus("OTOMATİK ONARIM DENENİYOR...")
+            _WebUiRefreshNow()
             Local $iR = _HealthRun(@ScriptDir, $serviceName, $APP_NAME, True)
             _LogInfo("Açılış: kullanıcı onayıyla onarım sonucu " & $iR)
             MsgBox(64 + 8192, "Otomatik Onarım", _HealthResultText($iR))
@@ -2043,10 +2045,12 @@ EndFunc
 ; Uzun işlem veya alt pencere açıkken (ana döngü beklerken) yeni pencereyi canlı tutar: durum
 ; gönderilir, basılan komutlar "işlem sürüyor" bildirimiyle reddedilir (önceden kuyrukta bekleyip
 ; sessizce yok sayılıyordu, 2026-10-24 12:34 "temizle"). _UiTick üzerinden çağrılır; ana pencere hariç.
-Func _UiYield($hWnd)
-    If Not $g_bWebUi Or Not $g_bWebPageReady Then Return
-    If $hWnd = $hGUI Or $hWnd = $hWebGui Then Return
-    If TimerDiff($g_hWebYieldTimer) < 200 Then Return
+Func _UiYield($hWnd, $bForce = False)
+    If Not $g_bWebUi Then Return
+    If Not $bForce Then
+        If $hWnd = $hGUI Or $hWnd = $hWebGui Then Return
+        If TimerDiff($g_hWebYieldTimer) < 200 Then Return
+    EndIf
     $g_hWebYieldTimer = TimerInit()
     While 1
         Local $sMsg = _WV2_NextMessage()
@@ -2065,9 +2069,23 @@ Func _UiYield($hWnd)
                 _WebUiApplyCaption($sTheme)
             Case "dnsYenile"
                 $g_bWebDnsReread = True
+            Case "hazir"
+                $g_bWebPageReady = True
+                _WV2_Post(_WebJsonObj("tip", "tema", "tema", _WebUiTheme()))
         EndSwitch
     WEnd
-    _WebUiSyncAll()
+    If $g_bWebPageReady Then _WebUiSyncAll()
+EndFunc
+
+; Ana döngüden önce süren uzun açılış adımlarında (ör. Discord kontrolü) yeni pencere güncel durumu
+; göstersin: sayfa yüklenmeyi bitirene kadar en fazla $iMaxMs bekler, sonra durumu gönderir.
+Func _WebUiRefreshNow($iMaxMs = 3000)
+    If Not $g_bWebUi Then Return
+    Local $hT = TimerInit()
+    Do
+        GUIGetMsg()
+        _UiYield(0, True)
+    Until $g_bWebPageReady Or (TimerDiff($hT) > $iMaxMs) Or (_WV2_State() <> $WV2_STATE_READY And TimerDiff($hT) > 1000)
 EndFunc
 
 ; Servis ekranı bir sonraki turda servis durumunu ve onarım görevini yeniden okusun.
