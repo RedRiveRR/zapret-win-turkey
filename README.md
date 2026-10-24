@@ -1,3 +1,25 @@
+# RedRiveRR Zapret
+
+Türkiye'de Discord (ve Roblox) erişimi için [zapret](https://github.com/bol-van/zapret) / Zapret2 kontrol aracı. Bu depo, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-turkey) projesinin **RedRiveRR fork'udur**; değişikliklerin tamamı [CHANGELOG.md](CHANGELOG.md) dosyasında.
+
+<p>
+<img src="docs/ekran/baglanti.png" width="230" alt="Bağlantı ekranı">
+<img src="docs/ekran/strateji.png" width="230" alt="Strateji ekranı">
+<img src="docs/ekran/strateji-koyu.png" width="230" alt="Strateji ekranı, koyu tema">
+</p>
+
+**Bu fork'ta öne çıkanlar**
+- Yeni, sade arayüz (açık/koyu tema): Bağlantı, Strateji, Servis, DNS ve Diğer ekranları.
+- Akıllı analiz: stratejiler Discord'a gerçek bağlantılarla ölçülüp puanlanır; en iyisi tek tıkla kullanılır.
+- Servis modu ve otomatik onarım: bilgisayar açılınca çalışır; Discord açılmazsa DNS'i ve stratejiyi kendisi düzeltmeyi dener.
+- Program Files'a kurulum, tanılama paketi, ayrıntılı log.
+
+**Gereksinim:** Windows 10/11 (64 bit), yönetici yetkisi. Yeni arayüz Microsoft Edge WebView2 kullanır (Windows 11'de yerleşik); bulunamazsa program klasik arayüzle açılır.
+
+---
+
+## Temel proje açıklaması (upstream)
+
 <img width="402" height="562" alt="image" src="https://github.com/user-attachments/assets/837b8c90-2ea8-4559-8cef-5cbd90ca3ca2" />
 <img width="402" height="432" alt="image" src="https://github.com/user-attachments/assets/b10de9fe-7a67-4584-84b9-93dba36b7f55" />
 

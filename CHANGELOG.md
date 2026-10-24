@@ -2,9 +2,26 @@
 
 Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-turkey) üzerine bu fork'ta (`gelistirme` dalı) yapılan değişiklikleri listeler. Temel: upstream `9eeac04` (v4.5 kaynakları).
 
-## [v4.5.1-RedRiveRR] — 2026-10-23
+## [v4.5.1-RedRiveRR] — 2026-10-24
 
-RedRiveRR fork'unun ilk sürümü. Temel: upstream v4.5.
+RedRiveRR fork'unun ilk sürümü. Temel: upstream v4.5. Program adı artık **RedRiveRR Zapret** (kilit simgesi).
+
+### Yeni arayüz
+- **Tamamen yeni, kompakt arayüz** (WebView2): Bağlantı, Strateji, Servis, DNS ve Diğer ekranları; açık ve koyu tema. Varsayılan budur; klasik arayüz Ayarlar'dan veya `/eski-arayuz` ile açılabilir, WebView2 yoksa kendiliğinden açılır.
+- **Bağlantı:** tek bakışta durum (Sen → Zapret → Sağlayıcı → Discord), Başlat/Durdur.
+- **Strateji:** hızlı test / tam analiz, son analizin en iyi sonuçları, strateji/motor/site filtresi seçimi. "Tüm sonuçlar" servisi durdurmadan açılır; servis yalnızca yeni strateji seçilince güncellenir.
+- **Servis:** durum, otomatik onarım ve "kapanırsa yeniden başlat" anahtarları, kurma/kaldırma (kaldırma iki adımlı onay ister).
+- **DNS:** zehirlenme durumu, sağlayıcı / Cloudflare / şifreli DNS (DNSCrypt) arasında geçiş.
+- **Diğer:** ağ paylaşımı, güncelleme kontrolü, tanılama paketi, kayıtlar, tüm ayarlar, her şeyi temizle.
+- Ayarlar, analiz, tarama ve strateji deneme pencereleri yeni tasarımın koyu renklerinde.
+- Uzun işlemler sürerken yeni pencere donmaz; o sırada basılan düğmeler "işlem sürüyor" bildirimiyle yanıtlanır.
+
+### Güvenilirlik (2026-10-24)
+- **Program açılışı, servisin kullandığı zapret sürücüsünü siliyordu.** Servis durunca (analiz, onarım) sürücü yeniden yüklenemiyor, analizde bütün stratejiler 0.0 alıyor ve servis yeniden başlamıyordu. Artık zapret veya servis çalışırken sürücüye dokunulmuyor.
+- Zapret motoru analizde hiç başlatılamazsa yanıltıcı 0.0 puanlar yerine açık hata gösteriliyor; çalışan strateji bulunamazsa önceki sonuçlar silinmiyor.
+- Oturum açılışındaki otomatik onarım kontrolü internet yoksa hemen vazgeçmiyor, ~2 dakika bekliyor.
+- Program açılınca servis çalışıyor ama Discord'a ulaşılamıyorsa (ör. sağlayıcı engellemeyi değiştirdi) otomatik onarım öneriliyor.
+- DNS kontrolündeki Windows hata metinleri logda okunur; güncelleme kontrolü başarısız olursa nedeni loglanıyor.
 
 ### Yeni
 - **Akıllı ISS analizi.** "ISS Analizi" artık şu seçenekleri sunuyor:
