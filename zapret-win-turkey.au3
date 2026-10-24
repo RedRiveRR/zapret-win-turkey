@@ -143,11 +143,12 @@ Global $bInstallServiceBusy = False
 Global $hInstallServiceUnlockTimer = 0
 Global $bInstallServiceEnableAfterLock = True
 
-; --- GUI Tasarımı (Discord benzeri koyu tema, ui/Theme.au3) ---
+; --- Klasik pencere: alimali54/zapret-win-turkey v4.5'in özgün arayüzü (yeni arayüzde "Eski arayüze geç") ---
+; Alt pencereler (Ayarlar, analiz) ui/Theme.au3 ile çizilir. Başlık "$APP_NAME v..." kalmalı: sağlık kontrolü
+; açık programı başlıktan tanır.
 _UiInit()
-Global Const $UI_W = 920, $UI_H = 600, $UI_SB = 232, $UI_CX = 252, $UI_CW = 648
-Global $hGUI = GUICreate($APP_NAME & " v" & $APP_VERSION, $UI_W, $UI_H)
-_UiDarkWindow($hGUI)
+Global $hGUI = GUICreate($APP_NAME & " v" & $APP_VERSION, 400, 580)
+GUISetBkColor(0xFFFFFF, $hGUI)
 
 ; --- Tepsi Menüsü ---
 Local $trayShow = TrayCreateItem("Göster")
@@ -165,55 +166,48 @@ TraySetToolTip($APP_NAME)
 ; Derlenmemiş çalıştırmada (geliştirme/önizleme) tepside de kilit simgesi; derlenmiş exe kendi simgesini kullanır.
 If Not @Compiled And FileExists(@ScriptDir & "\ui\simge\kilit.ico") Then TraySetIcon(@ScriptDir & "\ui\simge\kilit.ico")
 
-; Sayfa sistemi: [sayfa][denetimler]
-Global Const $PAGE_HOME = 0, $PAGE_ANALYZE = 1, $PAGE_SERVICE = 2, $PAGE_LAN = 3, $PAGE_DNS = 4, $PAGE_SETTINGS = 5
-Global $g_aPageCtrl[6][40], $g_aPageCount[6] = [0, 0, 0, 0, 0, 0], $g_iPage = -1
-Global $g_aNav[6]
 Global $g_sUiLastStatus = "", $g_sUiLastRun = ""
 
-; --- Kenar çubuğu ---
-_UiCard(0, 0, $UI_SB, $UI_H, $UI_SIDEBAR, 0)
-_UiIcon($UI_ICON_UNLOCK, 18, 20, 36, 36, 20, $UI_ACCENT)
-_UiLabel("RedRiveRR", 60, 16, 160, 26, 15, $UI_TEXT, 700, 0, $UI_FONT_SEMI)
-_UiLabel("Zapret", 60, 42, 160, 18, 9, $UI_MUTED)
-Global $aNavText[6] = ["Ana Sayfa", "Analiz", "Servis", "Ağ Paylaşımı", "DNS", "Ayarlar"]
-Global $aNavIcon[6] = [$UI_ICON_HOME, $UI_ICON_SEARCH, $UI_ICON_HEART, $UI_ICON_SHARE, $UI_ICON_GLOBE, $UI_ICON_SETTINGS]
-For $i = 0 To 5
-    $g_aNav[$i] = _UiNavItem($aNavIcon[$i], $aNavText[$i], 12, 92 + $i * 46, $UI_SB - 24)
-Next
-Global $lblFooter = _UiLabel("", 20, $UI_H - 56, $UI_SB - 30, 40, 8.5, $UI_MUTED)
+; --- Üst Durum Paneli ---
+Global $lblStatusBg = GUICtrlCreateLabel("", 15, 15, 370, 75)
+GUICtrlSetBkColor(-1, 0xF2F4F7)
+GUICtrlSetState(-1, $GUI_DISABLE)
+Local $lblStatusText = GUICtrlCreateLabel("SİSTEM HAZIRLANIYOR...", 15, 30, 370, 25, $SS_CENTER)
+GUICtrlSetFont(-1, 12, 800, 0, "Segoe UI")
+GUICtrlSetColor(-1, 0xE67E22)
+GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 
-; İşlem sürerken görünen ince ilerleme çubuğu (tüm sayfalarda, başlığın altında)
-Local $pBar = GUICtrlCreateProgress($UI_CX, 84, $UI_CW, 4, $PBS_MARQUEE)
+Local $pBar = GUICtrlCreateProgress(15, 75, 370, 15, $PBS_MARQUEE)
 GUICtrlSetState(-1, $GUI_HIDE)
 
-; --- 0) Ana Sayfa ---
-_MainPageHeader($PAGE_HOME, "Ana Sayfa", "Discord ve Roblox erişimini buradan yönetin.")
-_MainPage($PAGE_HOME, _UiCard($UI_CX, 98, $UI_CW, 146))
-Global $lblStatusDot = _MainPage($PAGE_HOME, _UiLabel("●", $UI_CX + 22, 118, 34, 40, 22, $UI_YELLOW, 400, BitOR($SS_CENTER, $SS_CENTERIMAGE)))
-Local $lblStatusText = _MainPage($PAGE_HOME, _UiLabel("SİSTEM HAZIRLANIYOR...", $UI_CX + 66, 116, 360, 34, 16, $UI_TEXT, 700, 0, $UI_FONT_SEMI))
-Local $lblStrategyInfo = _MainPage($PAGE_HOME, _UiLabel("Strateji Durumu: Kontrol Ediliyor...", $UI_CX + 68, 152, 360, 20, 9.5, $UI_TEXT2))
-Global $lblStatusHint = _MainPage($PAGE_HOME, _UiLabel("", $UI_CX + 68, 176, 360, 40, 9, $UI_MUTED))
-Local $btnRunZapret = _MainPage($PAGE_HOME, _UiButton("▶   Başlat", $UI_CX + $UI_CW - 206, 130, 182, 54, $UI_KIND_SUCCESS, 12, 12))
-GUICtrlSetState($btnRunZapret, $GUI_DISABLE)
+Local $lblStrategyInfo = GUICtrlCreateLabel("Strateji Durumu: Kontrol Ediliyor...", 15, 55, 370, 20, $SS_CENTER)
+GUICtrlSetFont(-1, 9, 400, 0, "Segoe UI")
+GUICtrlSetColor(-1, 0x666666)
+GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 
-; MOTOR / STRATEJİ / FİLTRE kartları
-Global $aCardTitle[3] = ["MOTOR", "STRATEJİ", "FİLTRE"]
-For $i = 0 To 2
-    _MainPage($PAGE_HOME, _UiCard($UI_CX + $i * 222, 262, 204, 104))
-    _MainPage($PAGE_HOME, _UiLabel($aCardTitle[$i], $UI_CX + $i * 222 + 18, 278, 170, 18, 8.5, $UI_MUTED, 700))
-Next
-Local $cmbEngine = _MainPage($PAGE_HOME, GUICtrlCreateCombo("Zapret2 (yeni motor)", $UI_CX + 18, 304, 168, 24, $CBS_DROPDOWNLIST))
+; --- Ana düğme ---
+Local $btnRunZapret = GUICtrlCreateButton("▶   Başlat", 50, 95, 300, 55)
+GUICtrlSetState(-1, $GUI_DISABLE)
+GUICtrlSetFont(-1, 11, 800, 0, "Segoe UI")
+
+; --- Motor / Strateji / Filtre (öğe metinleri program mantığında kullanılır, değiştirmeyin) ---
+GUICtrlCreateLabel("Motor:", 50, 168, 120, 20)
+GUICtrlSetFont(-1, 9, 600, 0, "Segoe UI")
+Local $cmbEngine = GUICtrlCreateCombo("Zapret2 (yeni motor)", 175, 165, 175, 25, $CBS_DROPDOWNLIST)
 GUICtrlSetData($cmbEngine, "Zapret (klasik motor)")
 If $iniEngine == "1" Then GUICtrlSetData($cmbEngine, "Zapret (klasik motor)", "Zapret (klasik motor)")
-GUICtrlSetFont($cmbEngine, 10, 400, 0, $UI_FONT)
+GUICtrlSetFont($cmbEngine, 9, 400, 0, "Segoe UI")
 GUICtrlSetState($cmbEngine, $GUI_DISABLE)
 
-Global $cmbStrategy = _MainPage($PAGE_HOME, GUICtrlCreateCombo("Analiz Sonucu", $UI_CX + 240, 304, 168, 24, $CBS_DROPDOWNLIST))
-GUICtrlSetFont($cmbStrategy, 10, 400, 0, $UI_FONT)
+GUICtrlCreateLabel("Strateji:", 50, 203, 120, 20)
+GUICtrlSetFont(-1, 9, 600, 0, "Segoe UI")
+Global $cmbStrategy = GUICtrlCreateCombo("Analiz Sonucu", 175, 200, 175, 25, $CBS_DROPDOWNLIST)
+GUICtrlSetFont($cmbStrategy, 9, 400, 0, "Segoe UI")
 GUICtrlSetState($cmbStrategy, $GUI_DISABLE)
 
-Global $cmbFilter = _MainPage($PAGE_HOME, GUICtrlCreateCombo("Kapalı (tüm trafik)", $UI_CX + 462, 304, 168, 24, $CBS_DROPDOWNLIST))
+GUICtrlCreateLabel("Filtre:", 50, 238, 120, 20)
+GUICtrlSetFont(-1, 9, 600, 0, "Segoe UI")
+Global $cmbFilter = GUICtrlCreateCombo("Kapalı (tüm trafik)", 175, 235, 175, 25, $CBS_DROPDOWNLIST)
 Global $sFilterSelectionBeforeOOB = ""
 Global $bFilterWasEnabledBeforeOOB = False
 Global $bOOBFilterLock = False
@@ -227,81 +221,49 @@ Else
     GUICtrlSetData($cmbFilter, "Kapalı (tüm trafik)", "Kapalı (tüm trafik)")
 EndIf
 $sFilterSelectionBeforeOOB = GUICtrlRead($cmbFilter)
-GUICtrlSetFont($cmbFilter, 10, 400, 0, $UI_FONT)
+GUICtrlSetFont($cmbFilter, 9, 400, 0, "Segoe UI")
 GUICtrlSetState($cmbFilter, $GUI_DISABLE)
-_UiDarkControl($cmbEngine)
-_UiDarkControl($cmbStrategy)
-_UiDarkControl($cmbFilter)
 
-_MainPage($PAGE_HOME, _UiCard($UI_CX, 384, $UI_CW, 112))
-_MainPage($PAGE_HOME, _UiIcon($UI_ICON_INFO, $UI_CX + 18, 400, 28, 28, 14, $UI_ACCENT))
-_MainPage($PAGE_HOME, _UiLabel("İpucu", $UI_CX + 54, 402, 300, 22, 11, $UI_TEXT, 700, 0, $UI_FONT_SEMI))
-_MainPage($PAGE_HOME, _UiLabel("Discord bağlanmıyorsa Analiz > Hızlı akıllı test ile en uygun stratejiyi bulun. " & _
-        "Tarayıcıda denemek yanıltıcıdır; Discord uygulamasını tamamen kapatıp yeniden açarak deneyin.", $UI_CX + 54, 428, $UI_CW - 80, 54, 9.5, $UI_TEXT2))
+; --- Ağ paylaşımı ve diğer düğmeler ---
+Global $btnLanShare = GUICtrlCreateButton("Ağdaki Cihazlarla Paylaş", 50, 280, 300, 35)
+GUICtrlSetFont(-1, 10, 600, 0, "Segoe UI")
+GUICtrlSetState(-1, $GUI_DISABLE)
 
-; --- 1) Analiz ---
-_MainPageHeader($PAGE_ANALYZE, "Analiz", "İnternet sağlayıcınız için en uygun stratejiyi bulun.")
-_MainPage($PAGE_ANALYZE, _UiCard($UI_CX, 98, $UI_CW, 176))
-_MainPage($PAGE_ANALYZE, _UiLabel("Akıllı ISS analizi", $UI_CX + 22, 116, 400, 26, 13, $UI_TEXT, 700, 0, $UI_FONT_SEMI))
-_MainPage($PAGE_ANALYZE, _UiLabel("Stratejiler Discord'un sohbet sunucusuna, discord.com ve roblox.com'a gerçek bağlantılarla sınanır; " & _
-        "en hızlı ve en kararlı olan önerilir. Tam analiz önce ISS'inizi tarar, hızlı test hazır profilleri dener.", $UI_CX + 22, 146, $UI_CW - 44, 44, 9.5, $UI_TEXT2))
-Local $btnAnalyze = _MainPage($PAGE_ANALYZE, _UiButton("ISS Analizi (Blockcheck) Yap", $UI_CX + 22, 206, 320, 46, $UI_KIND_PRIMARY, 10.5))
-GUICtrlSetState($btnAnalyze, $GUI_DISABLE)
-_MainPage($PAGE_ANALYZE, _UiCard($UI_CX, 292, $UI_CW, 96))
-_MainPage($PAGE_ANALYZE, _UiLabel("SON AKILLI ANALİZ", $UI_CX + 22, 308, 300, 18, 8.5, $UI_MUTED, 700))
-Global $lblSmartLast = _MainPage($PAGE_ANALYZE, _UiLabel("Henüz akıllı analiz yapılmadı.", $UI_CX + 22, 332, $UI_CW - 44, 44, 9.5, $UI_TEXT))
+Local $btnAnalyze = GUICtrlCreateButton("ISS Analizi (Blockcheck) Yap", 50, 325, 300, 35)
+GUICtrlSetState(-1, $GUI_DISABLE)
+GUICtrlSetFont(-1, 10, 600, 0, "Segoe UI")
 
-; --- 2) Servis ---
-_MainPageHeader($PAGE_SERVICE, "Servis", "Zapret'in bilgisayar açılınca kendiliğinden başlamasını sağlayın.")
-_MainPage($PAGE_SERVICE, _UiCard($UI_CX, 98, $UI_CW, 190))
-Global $lblSvcDot = _MainPage($PAGE_SERVICE, _UiLabel("●", $UI_CX + 22, 116, 30, 30, 16, $UI_MUTED, 400, BitOR($SS_CENTER, $SS_CENTERIMAGE)))
-Global $lblSvcTitle = _MainPage($PAGE_SERVICE, _UiLabel("Servis kurulu değil", $UI_CX + 56, 116, 500, 30, 13, $UI_TEXT, 700, BitOR($SS_LEFT, $SS_CENTERIMAGE), $UI_FONT_SEMI))
-Global $lblSvcInfo = _MainPage($PAGE_SERVICE, _UiLabel("", $UI_CX + 22, 152, $UI_CW - 44, 40, 9.5, $UI_TEXT2))
-Local $btnInstallService = _MainPage($PAGE_SERVICE, _UiButton("Servis Olarak Yükle (Otomatik Başlat)", $UI_CX + 22, 214, 300, 46, $UI_KIND_PRIMARY, 10.5))
-GUICtrlSetState($btnInstallService, $GUI_DISABLE)
-Local $btnRemoveService = _MainPage($PAGE_SERVICE, _UiButton("Servis ve Kalıntıları Temizle", $UI_CX + 334, 214, 270, 46, $UI_KIND_DANGER, 10.5))
-_MainPage($PAGE_SERVICE, _UiCard($UI_CX, 306, $UI_CW, 108))
-_MainPage($PAGE_SERVICE, _UiLabel("Otomatik onarım", $UI_CX + 22, 322, 400, 24, 11.5, $UI_TEXT, 700, 0, $UI_FONT_SEMI))
-_MainPage($PAGE_SERVICE, _UiLabel("Discord bağlantısı arka planda kontrol edilir; sorun olursa DNS, yedek stratejiler ve gerekirse hızlı analiz denenir.", _
-        $UI_CX + 22, 348, $UI_CW - 220, 44, 9.5, $UI_TEXT2))
-Global $btnSvcSettings = _MainPage($PAGE_SERVICE, _UiButton("Onarım Ayarları", $UI_CX + $UI_CW - 178, 340, 156, 40, $UI_KIND_SECONDARY, 10))
+Local $btnInstallService = GUICtrlCreateButton("Servis Olarak Yükle (Otomatik Başlat)", 50, 370, 300, 35)
+GUICtrlSetState(-1, $GUI_DISABLE)
+GUICtrlSetFont(-1, 10, 600, 0, "Segoe UI")
 
-; --- 3) Ağ Paylaşımı ---
-_MainPageHeader($PAGE_LAN, "Ağ Paylaşımı", "Oyun konsolu, akıllı TV gibi cihazlar da Zapret'ten yararlansın.")
-_MainPage($PAGE_LAN, _UiCard($UI_CX, 98, $UI_CW, 186))
-_MainPage($PAGE_LAN, _UiLabel("go-pcap2socks ile paylaşım", $UI_CX + 22, 116, 400, 26, 13, $UI_TEXT, 700, 0, $UI_FONT_SEMI))
-_MainPage($PAGE_LAN, _UiLabel("Zapret çalışırken kullanılabilir. Npcap kurulu olmalıdır. Diğer cihazda IP ve DNS ayarlarını elle girmeniz gerekir; " & _
-        "Wi-Fi yavaşlatabileceği için kablolu bağlantı önerilir. Bilgisayarınız açık kalmalıdır.", $UI_CX + 22, 146, $UI_CW - 44, 56, 9.5, $UI_TEXT2))
-Global $btnLanShare = _MainPage($PAGE_LAN, _UiButton("Ağdaki Cihazlarla Paylaş", $UI_CX + 22, 214, 280, 46, $UI_KIND_PRIMARY, 10.5))
-GUICtrlSetState($btnLanShare, $GUI_DISABLE)
-
-; --- 4) DNS ---
-_MainPageHeader($PAGE_DNS, "DNS", "DNS zehirlenmesine karşı şifreli DNS kullanın.")
-_MainPage($PAGE_DNS, _UiCard($UI_CX, 98, $UI_CW, 186))
-Global $lblDnsInfo = _MainPage($PAGE_DNS, _UiLabel("Etkin DNS okunuyor...", $UI_CX + 22, 116, $UI_CW - 44, 26, 11.5, $UI_TEXT, 600))
-_MainPage($PAGE_DNS, _UiLabel("Program açılışta DNS zehirlenmesini kontrol eder ve gerekirse Cloudflare DNS'e geçmeyi önerir. " & _
-        "DNSCrypt ise DNS sorgularını bilgisayarınızda çalışan şifreli bir aracı üzerinden gönderir.", $UI_CX + 22, 146, $UI_CW - 44, 56, 9.5, $UI_TEXT2))
 Local $sInitialDnscryptText = ($iniDnscryptInstalled == "1") ? "[ ✓ ] Dnscrypt-proxy Aktif / Kaldır" : "Dnscrypt-proxy servisi kur"
-Global $btnDnscrypt = _MainPage($PAGE_DNS, _UiButton($sInitialDnscryptText, $UI_CX + 22, 214, 300, 46, $UI_KIND_SECONDARY, 10.5))
+Global $btnDnscrypt = GUICtrlCreateButton($sInitialDnscryptText, 50, 415, 300, 35)
+GUICtrlSetFont(-1, 10, 600, 0, "Segoe UI")
 
-; --- 5) Ayarlar ---
-_MainPageHeader($PAGE_SETTINGS, "Ayarlar", "Otomatik onarım, güncelleme ve destek.")
-_MainPage($PAGE_SETTINGS, _UiCard($UI_CX, 98, $UI_CW, 136))
-Global $btnPageSettings = _MainPage($PAGE_SETTINGS, _UiButton("Ayarları Aç", $UI_CX + 22, 120, 190, 42, $UI_KIND_PRIMARY, 10))
-Global $btnPageDiag = _MainPage($PAGE_SETTINGS, _UiButton("Tanılama Paketi Oluştur", $UI_CX + 224, 120, 220, 42, $UI_KIND_SECONDARY, 10))
-Global $btnPageLogs = _MainPage($PAGE_SETTINGS, _UiButton("Log Klasörünü Aç", $UI_CX + 456, 120, 170, 42, $UI_KIND_SECONDARY, 10))
-_MainPage($PAGE_SETTINGS, _UiLabel("Tanılama paketi; log, ayar ve servis durumunu masaüstüne kaydeder. Ziyaret ettiğiniz siteler, IP ve MAC adresleri eklenmez.", _
-        $UI_CX + 22, 176, $UI_CW - 44, 40, 9, $UI_MUTED))
-_MainPage($PAGE_SETTINGS, _UiCard($UI_CX, 252, $UI_CW, 96))
-_MainPage($PAGE_SETTINGS, _UiLabel("Hakkında", $UI_CX + 22, 268, 300, 24, 11.5, $UI_TEXT, 700, 0, $UI_FONT_SEMI))
-_MainPage($PAGE_SETTINGS, _UiLabel($APP_NAME & " " & $APP_VERSION & "  ·  github.com/" & $APP_UPDATE_REPO & @CRLF & _
-        "Temel: alimali54/zapret-win-turkey  ·  Motor: bol-van/zapret", $UI_CX + 22, 296, $UI_CW - 44, 40, 9, $UI_TEXT2))
+Local $btnRemoveService = GUICtrlCreateButton("Servis ve Kalıntıları Temizle", 50, 460, 300, 35)
+GUICtrlSetFont(-1, 10, 600, 0, "Segoe UI")
+
+; Bu fork'un eklemeleri: ayarlar penceresi ve yeni arayüze dönüş.
+Global $btnPageSettings = GUICtrlCreateButton("Ayarlar", 50, 505, 145, 30)
+GUICtrlSetFont(-1, 9.5, 600, 0, "Segoe UI")
+Global $btnNewUi = GUICtrlCreateButton("Yeni arayüz", 205, 505, 145, 30)
+GUICtrlSetFont(-1, 9.5, 600, 0, "Segoe UI")
+
+Global $lblFooter = GUICtrlCreateLabel("", 0, 543, 400, 32, $SS_CENTER)
+GUICtrlSetFont(-1, 8.5, 400, 0, "Consolas")
+GUICtrlSetColor(-1, 0x95A5A6)
+
+; Program mantığının yazdığı ama klasik pencerede yer almayan denetimler (gizli).
+Global $lblStatusDot = __ClassicHidden(), $lblStatusHint = __ClassicHidden()
+Global $lblSvcDot = __ClassicHidden(), $lblSvcTitle = __ClassicHidden(), $lblSvcInfo = __ClassicHidden()
+Global $btnSvcSettings = __ClassicHidden(), $lblSmartLast = __ClassicHidden(), $lblDnsInfo = __ClassicHidden()
+Global $btnPageDiag = __ClassicHidden(), $btnPageLogs = __ClassicHidden()
 
 ; Düğme Array'lerine yeni butonu ekledik ki sistem hazır olduğunda kilitleri otomatik açılsın
 Local $aCriticalButtons[7] = [$btnRunZapret, $btnAnalyze, $btnInstallService, $cmbEngine, $cmbStrategy, $cmbFilter, $btnDnscrypt]
 Local $aOtherButtons[7] = [$btnAnalyze, $btnInstallService, $btnRemoveService, $cmbEngine, $cmbStrategy, $cmbFilter, $btnDnscrypt]
 
-_MainShowPage($PAGE_HOME)
 If $g_sUiPreviewDir = "" And _WebUiWanted() Then
     _WebUiStart()
 Else
@@ -385,7 +347,6 @@ While 1
     If $g_bWebUi Then $nMsg = _WebUiTick($nMsg)
 
     ; Kenar menüsü, hover ve durum renkleri (ui/Theme.au3)
-    If _MainNavClick($nMsg) Then ContinueLoop
     _UiTick($hGUI)
     _MainUiSync()
 
@@ -489,6 +450,9 @@ While 1
 
         Case $btnPageDiag
             _DiagCreateFromTray()
+
+        Case $btnNewUi
+            _WebUiSwitchToNew()
 
         Case $btnPageLogs
             ShellExecute(@ScriptDir & "\logs")
@@ -1021,37 +985,14 @@ EndFunc
 ; =========================================================================
 
 ; Denetimi bir sayfaya kaydeder (sayfa değişince gösterilir/gizlenir).
-Func _MainPage($iPage, $id)
-    $g_aPageCtrl[$iPage][$g_aPageCount[$iPage]] = $id
-    $g_aPageCount[$iPage] += 1
+; Klasik pencerede görünmeyen, yalnızca program mantığının yazdığı gizli denetim.
+Func __ClassicHidden()
+    Local $id = GUICtrlCreateLabel("", 0, 0, 0, 0)
+    GUICtrlSetState($id, $GUI_HIDE)
     Return $id
 EndFunc
 
-Func _MainPageHeader($iPage, $sTitle, $sSub)
-    _MainPage($iPage, _UiLabel($sTitle, $UI_CX, 22, $UI_CW, 34, 20, $UI_TEXT, 700, 0, $UI_FONT_SEMI))
-    _MainPage($iPage, _UiLabel($sSub, $UI_CX, 58, $UI_CW, 20, 10, $UI_TEXT2))
-EndFunc
-
-Func _MainShowPage($iPage)
-    If $iPage = $g_iPage Then Return
-    For $p = 0 To 5
-        For $j = 0 To $g_aPageCount[$p] - 1
-            _UiSetVisible($g_aPageCtrl[$p][$j], $p = $iPage)
-        Next
-        _UiButtonSetKind($g_aNav[$p], ($p = $iPage) ? $UI_KIND_NAV_ACTIVE : $UI_KIND_NAV)
-    Next
-    $g_iPage = $iPage
-    Switch $iPage
-        Case $PAGE_ANALYZE
-            _MainRefreshSmartSummary()
-        Case $PAGE_SERVICE
-            _MainRefreshServicePage()
-        Case $PAGE_DNS
-            _MainRefreshDnsInfo()
-    EndSwitch
-EndFunc
-
-; Önizleme: örnek durumla her sayfanın ekran görüntüsünü alır ve çıkar (sistemde hiçbir şey değiştirmez).
+; Önizleme (/arayuz-onizleme <klasör>): klasik pencerenin görüntüsünü alır ve çıkar.
 Func _MainUiPreviewAndExit($sDir)
     _UpdateEnginePaths(GUICtrlRead($cmbEngine))
     _LoadStrategyList($iniStrategy)
@@ -1061,65 +1002,39 @@ Func _MainUiPreviewAndExit($sDir)
     GUICtrlSetState($btnLanShare, $GUI_ENABLE)
     DirCreate($sDir)
     If $CmdLine[0] >= 3 And $CmdLine[3] = "/yeni-arayuz" Then _WebUiPreviewAndExit($sDir)
-    For $p = 0 To 5
-        _MainShowPage($p)
-        For $k = 1 To 15
-            _UiTick($hGUI)
-            _MainUiSync()
-            Sleep(30)
-        Next
-        _ScreenCapture_CaptureWnd($sDir & "\sayfa" & $p & ".png", $hGUI)
+    GUISetState(@SW_SHOW, $hGUI)
+    Local $aStatus[3] = ["ÇALIŞMAYA HAZIR", "SERVİS MODU AKTİF", "DNS ZEHİRLENMESİ SAPTANDI!"]
+    Local $aColor[3] = [0x2C3E50, 0x27AE60, 0xC0392B]
+    For $p = 0 To 2
+        _SetStatus($aStatus[$p])
+        GUICtrlSetColor($lblStatusText, $aColor[$p])
+        _RefreshFooter()
+        Local $hT = TimerInit()
+        While TimerDiff($hT) < 400
+            GUIGetMsg()
+        WEnd
+        _ScreenCapture_CaptureWnd($sDir & "\klasik" & $p & ".png", $hGUI)
     Next
+    ; "Yeni arayüz" düğmesi: klasik pencereden yeni arayüze dönüş
+    _WebUiSwitchToNew()
+    Local $hW = TimerInit()
+    While TimerDiff($hW) < 5000 And Not ($g_bWebUi And $g_bWebPageReady)
+        _WebUiTick(GUIGetMsg())
+    WEnd
+    Sleep(800)
+    FileWriteLine($sDir & "\klasik.log", "yeni arayüze dönüş: yeni arayüz=" & $g_bWebUi & ", sayfa hazır=" & $g_bWebPageReady & _
+            ", klasik görünür=" & (BitAND(WinGetState($hGUI), 2) = 2))
+    If $g_bWebUi Then _ScreenCapture_CaptureWnd($sDir & "\klasikten-yeni.png", $hWebGui)
     Exit
 EndFunc
 
-; Kenar menüsü tıklaması. İşlendiyse True.
-Func _MainNavClick($nMsg)
-    If $nMsg <= 0 Then Return False
-    For $i = 0 To 5
-        If $nMsg = $g_aNav[$i] Then
-            _MainShowPage($i)
-            Return True
-        EndIf
-    Next
-    Return False
-EndFunc
-
-; Durum yazısına göre nokta rengi, ipucu satırı ve Başlat/Durdur rengi. Her döngüde çağrılır; yalnız değişince çizer.
+; Klasik pencerede durum renkleri özgün koddaki GUICtrlSetColor çağrılarıyla gelir; burada yalnızca
+; servis bilgisi (gizli denetimler) tazelenir.
 Func _MainUiSync()
     Local $s = _StateStatus()
-    If $s <> $g_sUiLastStatus Then
-        $g_sUiLastStatus = $s
-        GUICtrlSetColor($lblStatusText, $UI_TEXT)
-        Local $iDot = $UI_YELLOW, $sHint = ""
-        If (StringInStr($s, "DURDU") And Not StringInStr($s, "GEÇİCİ")) Or StringInStr($s, "ZEHİRLEN") Then
-            $iDot = $UI_RED
-        ElseIf StringInStr($s, "AKTİF") Then
-            $iDot = $UI_GREEN
-        ElseIf StringInStr($s, "ÇALIŞMAYA HAZIR") Then
-            $iDot = $UI_MUTED
-        EndIf
-        Switch $s
-            Case "SERVİS MODU AKTİF"
-                $sHint = "Bilgisayar açılınca otomatik başlar. Ayrıntılar Servis sekmesinde."
-            Case "MANUEL MOD AKTİF"
-                $sHint = "Program kapanınca Zapret de durur. Kalıcı kullanım için Servis sekmesine bakın."
-            Case "ÇALIŞMAYA HAZIR"
-                $sHint = "Başlat'a basın ya da Servis sekmesinden otomatik başlatmayı açın."
-            Case "DNS ZEHİRLENMESİ SAPTANDI!"
-                $sHint = "DNS sekmesinden şifreli DNS kurun ya da programı yeniden açıp Cloudflare önerisini kabul edin."
-            Case "SERVİS YÜKLÜ - DURDU"
-                $sHint = "Servis durmuş. Bir program (ör. oyun hile koruması) kapatmış olabilir."
-        EndSwitch
-        GUICtrlSetColor($lblStatusDot, $iDot)
-        GUICtrlSetData($lblStatusHint, $sHint)
-        If $g_iPage = $PAGE_SERVICE Then _MainRefreshServicePage()
-    EndIf
-    Local $r = GUICtrlRead($btnRunZapret)
-    If $r <> $g_sUiLastRun Then
-        $g_sUiLastRun = $r
-        _UiButtonSetKind($btnRunZapret, StringInStr($r, "Durdur") ? $UI_KIND_DANGER : $UI_KIND_SUCCESS)
-    EndIf
+    If $s = $g_sUiLastStatus Then Return
+    $g_sUiLastStatus = $s
+    _MainRefreshServicePage()
 EndFunc
 
 Func _MainRefreshServicePage()
@@ -1915,6 +1830,15 @@ Func _WebUiSwitchToOld()
     _MainWindowShow(True)
 EndFunc
 
+; Klasik pencereden yeni arayüze döner (WebView2 açılamazsa klasik pencere kalır).
+Func _WebUiSwitchToNew()
+    If $g_bWebUi Then Return
+    _LogInfo("Kullanıcı yeni arayüze döndü")
+    GUISetState(@SW_HIDE, $hGUI)
+    $g_bWebPageReady = False
+    _WebUiStart()
+EndFunc
+
 Func _WebUiOnSize($hWnd, $iMsg, $wParam, $lParam)
     #forceref $iMsg, $wParam, $lParam
     If $hWnd = $hWebGui Then _WV2_Resize()
@@ -1954,7 +1878,7 @@ Func _WebUiTick($nMsg)
                     _LogInfo("Yeni arayüz: eskimiş komut yok sayıldı (" & $sCmd & ", " & $iAge & " ms)")
                     _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", "Önceki işlem sürerken basıldığı için uygulanmadı; tekrar dene."))
                 ElseIf $sCmd = "eskiArayuz" Then
-                    _LogInfo("Yeni arayüz: kullanıcı eski arayüze geçti")
+                    _LogInfo("Yeni arayüz: kullanıcı klasik arayüze geçti")
                     _WebUiSwitchToOld()
                     Return $nMsg
                 ElseIf ($sCmd = "baslat" And Not $isZapretRunning) Or ($sCmd = "durdur" And $isZapretRunning) Then
@@ -1973,6 +1897,8 @@ Func _WebUiTick($nMsg)
                     _WebUiServiceRefreshSoon()
                     Local $idSvcBtn = ($sCmd = "servisKur") ? $btnInstallService : (($sCmd = "servisKaldir") ? $btnRemoveService : $btnSvcSettings)
                     If BitAND(GUICtrlGetState($idSvcBtn), $GUI_ENABLE) Then Return $idSvcBtn
+                ElseIf $sCmd = "github" Then
+                    ShellExecute("https://github.com/" & $APP_UPDATE_REPO)
                 ElseIf $sCmd = "tanilama" Or $sCmd = "kayitlar" Or $sCmd = "ayarlar" Or $sCmd = "paylasim" Or $sCmd = "temizle" Then
                     $g_sWebLastOtherJson = ""
                     _WebUiServiceRefreshSoon()
