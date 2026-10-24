@@ -3,6 +3,7 @@
 #include "Log.au3"
 #include "Network.au3"
 #include "Install.au3"
+#include "Service.au3"
 
 ; =========================================================================
 ; --- ÇAKIŞMA TESPİTİ ---
@@ -206,7 +207,7 @@ Func _HandleForeignServices($sOurDir)
     For $i = 0 To UBound($aSvcs) - 1
         RunWait(@ComSpec & " /c sc stop " & $aSvcs[$i][0] & " & sc delete " & $aSvcs[$i][0], "", @SW_HIDE)
     Next
-    RunWait(@ComSpec & " /c sc stop WinDivert & sc delete WinDivert & sc stop WinDivert14 & sc delete WinDivert14 & sc stop monkey & sc delete monkey", "", @SW_HIDE)
+    _ServiceDriverCleanup("ZapretService") ; bizim servis çalışıyorsa sürücüye dokunulmaz (H20)
     If $bDnscrypt Then _ResetSystemDNS()
     _LogInfo("Eski kurulum servisleri kaldırıldı")
     Return True

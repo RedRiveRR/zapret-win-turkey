@@ -150,3 +150,30 @@ Func _ServiceStart($sName, $iTimeoutMs = 10000)
     RunWait(@ComSpec & " /c sc start " & $sName, "", @SW_HIDE)
     Return _ServiceWaitState($sName, "RUNNING", $iTimeoutMs)
 EndFunc
+
+; ------------------------------------------------------------------------
+; Sürücü kalıntısı temizliği (H20)
+; ------------------------------------------------------------------------
+
+; WinDivert / monkey sürücü kayıtları silinebilir mi? Kullanımdaki sürücü "silinmek üzere"
+; işaretlenir; servis ya da analiz durunca sürücü yeniden yüklenemez (servis başlamaz,
+; analizde her aday anında düşer, puanlar 0.0). Bu yüzden zapret çalışırken dokunulmaz.
+;   $bWinwsRunning: winws.exe / winws2.exe süreci var mı, $sSvcState: servisin durumu ("" = kurulu değil)
+Func _ServiceDriverCleanupAllowed($bWinwsRunning, $sSvcState)
+    If $bWinwsRunning Then Return False
+    If $sSvcState = "RUNNING" Or StringInStr($sSvcState, "PENDING") Then Return False
+    Return True
+EndFunc
+
+; Eski sürücü kayıtlarını temizler; zapret (süreç veya $sServiceName servisi) çalışıyorsa atlar.
+; Temizlendiyse True.
+Func _ServiceDriverCleanup($sServiceName)
+    Local $bWinws = (ProcessExists("winws.exe") <> 0) Or (ProcessExists("winws2.exe") <> 0)
+    Local $sState = _ServiceGetState($sServiceName)
+    If Not _ServiceDriverCleanupAllowed($bWinws, $sState) Then
+        _LogInfo("Sürücü temizliği atlandı: zapret çalışıyor (winws=" & $bWinws & ", servis=" & $sState & ")")
+        Return False
+    EndIf
+    RunWait(@ComSpec & " /c sc stop WinDivert & sc delete WinDivert & sc stop WinDivert14 & sc delete WinDivert14 & sc stop monkey & sc delete monkey", "", @SW_HIDE)
+    Return True
+EndFunc

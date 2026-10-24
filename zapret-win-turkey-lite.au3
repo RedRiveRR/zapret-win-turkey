@@ -197,7 +197,7 @@ _RefreshStrategyLabel()
 _UpdateFilterForStrategy()
 
 ; --- GÜVENLİ AÇILIŞ AKIŞI VE DİNAMİK DNS ZEHİRLENMESİ KONTROL DÖNGÜSÜ ---
-RunWait(@ComSpec & " /c sc stop WinDivert & sc delete WinDivert & sc stop WinDivert14 & sc delete WinDivert14 & sc stop monkey & sc delete monkey", "", @SW_HIDE)
+_ServiceDriverCleanup($serviceName)
 GUICtrlSetData($lblStatusText, "DNS KONTROL EDİLİYOR...")
 
 Local $isDnsChangedByApp = False
@@ -667,7 +667,7 @@ Func StopWinws($ctrlID, $statusID, $aBtns)
         MsgBox(48 + 8192, "Uyarı", "Zapret motoru (winws) kapatılamadı." & @CRLF & @CRLF & _
                 "Görev Yöneticisi'nden elle sonlandırmanız veya bilgisayarı yeniden başlatmanız gerekebilir.")
     EndIf
-    RunWait(@ComSpec & " /c sc stop WinDivert & sc delete WinDivert & sc stop WinDivert14 & sc delete WinDivert14 & sc stop monkey & sc delete monkey", "", @SW_HIDE)
+    _ServiceDriverCleanup($serviceName)
     _LogInfo("Manuel mod durduruldu")
     $isZapretRunning = False
     GUICtrlSetData($ctrlID, "▶   Başlat")

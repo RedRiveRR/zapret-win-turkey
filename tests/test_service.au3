@@ -26,6 +26,14 @@ Func _TestService()
     _AssertEq(_ServiceParseBinPath($sQc), '"C:\Z\winws2.exe" --wf-l3=ipv4 --payload="tls_client_hello"', "binPath okunur, sondaki boşluk atılır")
     _AssertEq(_ServiceParseBinPath("yok"), "", "binPath yoksa boş")
 
+    ; --- Sürücü temizliği (H20): zapret çalışırken dokunulmaz ---
+    _AssertTrue(_ServiceDriverCleanupAllowed(False, ""), "hiçbir şey çalışmıyorsa temizlenir")
+    _AssertTrue(_ServiceDriverCleanupAllowed(False, "STOPPED"), "servis durmuşsa temizlenir")
+    _AssertFalse(_ServiceDriverCleanupAllowed(False, "RUNNING"), "servis çalışırken temizlenmez")
+    _AssertFalse(_ServiceDriverCleanupAllowed(False, "START_PENDING"), "servis başlarken temizlenmez")
+    _AssertFalse(_ServiceDriverCleanupAllowed(False, "STOP_PENDING"), "servis dururken temizlenmez")
+    _AssertFalse(_ServiceDriverCleanupAllowed(True, ""), "winws çalışırken temizlenmez")
+
     ; --- Gerçek sorgu: var olmayan servis (yetki gerektirmez, hiçbir şeyi değiştirmez) ---
     _AssertEq(_ServiceGetState("zwt-olmayan-servis-123"), "", "olmayan servis kurulu değil")
     _AssertFalse(_ServiceIsInstalled("zwt-olmayan-servis-123"), "olmayan servis kurulu sayılmaz")
