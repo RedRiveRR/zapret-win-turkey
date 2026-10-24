@@ -130,6 +130,11 @@ Func _TestSmart()
         _AssertEq($iR, 1, "bypass'sız ölçüm tamamlanır")
         _AssertEq($aM[0][1] + $aM[0][3], 2, "TLS 1.2 + 1.3 iki deneme yapıldı")
     EndIf
+    ; --- Motor başlatılamıyor (H20) ---
+    _AssertTrue(_SmartEngineFailed(5, 5), "ilk 5 adayın hepsi başlatılamadıysa motor sorunu")
+    _AssertFalse(_SmartEngineFailed(4, 4), "5'ten az ölçümde karar verilmez")
+    _AssertFalse(_SmartEngineFailed(6, 5), "bir aday bile başladıysa motor çalışıyor")
+    _AssertFalse(_SmartEngineFailed(5, 0), "hiç başlatma hatası yok")
 EndFunc
 
 Func __TestSmartRow(ByRef $a, $i, $s, $fScore, $fMs, $iPhase)

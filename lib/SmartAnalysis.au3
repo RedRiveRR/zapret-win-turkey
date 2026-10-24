@@ -477,7 +477,8 @@ EndFunc
 
 ; Tam analiz. $aCandidates: [n][2] (strateji, kaynak).
 ; Dönüş: sıralı sonuçlar [n][$SMART_COL_COUNT]. $sSummary'ye özet yazılır.
-; @error: 1 = hiçbir hedefte engel yok, 2 = kullanıcı durdurdu (kısmi sonuç), 3 = geçersiz girdi
+; @error: 1 = hiçbir hedefte engel yok, 2 = kullanıcı durdurdu (kısmi sonuç), 3 = geçersiz girdi,
+;         4 = zapret motoru hiçbir adayla başlatılamadı (sürücü yüklenemiyor; H20)
 Func _SmartAnalyze(ByRef $aCandidatesIn, $sWinwsPath, $sCurl, $sNull, $sTargetsSpec, $sProgressFunc, ByRef $sSummary)
     Local $aEmpty[0][$SMART_COL_COUNT]
     $sSummary = ""
@@ -520,7 +521,7 @@ Func _SmartAnalyze(ByRef $aCandidatesIn, $sWinwsPath, $sCurl, $sNull, $sTargetsS
 
     ; --- 1) Eleme ---
     Local $aRows[$nC][$SMART_COL_COUNT]
-    Local $bAborted = False, $iMeasured = 0, $iRestMeasured = 0, $iPerfect = 0, $iSkipped = 0, $sSkipReason = ""
+    Local $bAborted = False, $iMeasured = 0, $iRestMeasured = 0, $iPerfect = 0, $iSkipped = 0, $sSkipReason = "", $iStartFail = 0
     For $i = 0 To $nC - 1
         __SmartFillRow($aRows, $i, $aCandidates[$i][0], $aCandidates[$i][1])
         If $bAborted Then ContinueLoop
@@ -547,6 +548,12 @@ Func _SmartAnalyze(ByRef $aCandidatesIn, $sWinwsPath, $sCurl, $sNull, $sTargetsS
         __SmartScoreRow($aRows, $i, $iR, $aM, $fMs, $aTargets, $aBlocked, 1)
         If $aRows[$i][$SMART_COL_SUCCESS] >= 100 Then $iPerfect += 1
         $iMeasured += 1
+        If $iR = 0 Then $iStartFail += 1
+        If _SmartEngineFailed($iMeasured, $iStartFail) Then
+            $sSummary = "Zapret motoru (winws2) hiçbir stratejiyle başlatılamadı; sürücüsü yüklenemiyor olabilir. Sonuçlar kaydedilmedi."
+            _LogError("Akıllı analiz durduruldu: ilk " & $iMeasured & " adayda winws2 başlatılamadı")
+            Return SetError(4, 0, $aEmpty)
+        EndIf
         If Not $bPrio Then $iRestMeasured += 1
         $iDone += 1
     Next
@@ -622,4 +629,10 @@ Func __SmartScoreRow(ByRef $aRows, $i, $iMeasureResult, ByRef $aM, $fMs, ByRef $
     $aRows[$i][$SMART_COL_SCORE] = _SmartScore($fSucc, $fMs, $aRows[$i][$SMART_COL_STRATEGY])
     $aRows[$i][$SMART_COL_STABLE] = ($iPhase = 2 And $fSucc >= $SMART_STABLE_RATIO)
     $aRows[$i][$SMART_COL_DETAIL] = _SmartDetail($aM, $aTargets, $aBlocked)
+EndFunc
+
+; İlk adayların hepsinde winws2 başlatılamadıysa sorun stratejide değil motorda/sürücüdedir:
+; analizi sürdürmek yanıltıcı 0.0 puanlar üretir (2026-10-24, H20).
+Func _SmartEngineFailed($iMeasured, $iStartFail)
+    Return $iMeasured >= 5 And $iStartFail = $iMeasured
 EndFunc

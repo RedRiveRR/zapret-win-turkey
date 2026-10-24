@@ -131,6 +131,10 @@ Func _SmartUI_Run(ByRef $aCandidates, $sRoot, $sWinwsPath, $sTargetsSpec, $sResu
     If $iErr = 1 Then
         MsgBox(64 + 8192, "Akıllı Analiz", $sSummary & @CRLF & @CRLF & "DNS ayarınız doğruysa Zapret'e gerek olmayabilir.")
         Return ""
+    ElseIf $iErr = 4 Then
+        MsgBox(16 + 8192, "Akıllı Analiz", $sSummary & @CRLF & @CRLF & _
+                "Programı kapatıp yeniden açın; sürmezse bilgisayarı yeniden başlatın. Önceki sonuçlar korundu.")
+        Return ""
     ElseIf $iErr = 3 Then
         MsgBox(16 + 8192, "Akıllı Analiz", "Analiz başlatılamadı (hedef listesi geçersiz).")
         Return ""
@@ -144,7 +148,12 @@ Func _SmartUI_Run(ByRef $aCandidates, $sRoot, $sWinwsPath, $sTargetsSpec, $sResu
         _LogInfo("Akıllı analiz #" & ($i + 1) & " puan " & $aRows[$i][$SMART_COL_SCORE] & ", başarı %" & $aRows[$i][$SMART_COL_SUCCESS] & _
                 ", " & $aRows[$i][$SMART_COL_MS] & " ms: " & $aRows[$i][$SMART_COL_STRATEGY])
     Next
-    _SmartSaveResults($sResultsPath, $aRows, $sSummary)
+    ; Hiçbir strateji çalışmadıysa önceki (çalışan) sonuçların üzerine yazılmaz.
+    If $aRows[0][$SMART_COL_SCORE] > 0 Or Not FileExists($sResultsPath) Then
+        _SmartSaveResults($sResultsPath, $aRows, $sSummary)
+    Else
+        _LogWarn("Akıllı analiz: çalışan strateji yok; önceki sonuçlar korundu")
+    EndIf
     Return _SmartUI_ShowResults($aRows, $sSummary, $sStrategyFile, $sWinwsPath, $hParent)
 EndFunc
 
