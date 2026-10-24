@@ -32,4 +32,11 @@ Func _TestUpdate()
 
     ; --- _UpdatePoll: sorgu başlatılmadıysa boş ---
     _AssertEq(_UpdatePoll("4.5"), "", "başlatılmamış sorgu boş döner")
+    ; --- Güncelleme sorgusu başarısızlık metni ---
+    _AssertEq(_UpdateFailText("HATA 404"), "henüz yayınlanmış sürüm yok", "404: yayınlanmış sürüm yok")
+    _AssertEq(_UpdateFailText("HATA 0"), "GitHub'a ulaşılamadı (bağlantı yok)", "bağlantı yok")
+    _AssertEq(_UpdateFailText("HATA 403"), "GitHub'a ulaşılamadı (HTTP 403)", "HTTP hata kodu")
+    _AssertEq(_UpdateFailText(""), "sürüm bilgisi alınamadı", "boş çıktı")
+    _AssertTrue(_IsVersionTag("v4.5.1-RedRiveRR"), "fork sürüm etiketi geçerli")
+    _AssertEq(_VersionCompare("v4.5.1-RedRiveRR", "4.5.1"), 0, "fork etiketi aynı sürüm sayılır")
 EndFunc

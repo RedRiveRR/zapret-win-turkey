@@ -46,7 +46,8 @@ EndFunc
 Func _UpdateStartCheck($sRepo)
     $__g_sUpdateOut = ""
     Local $sPs = "try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; " & _
-            "(Invoke-RestMethod -Uri 'https://api.github.com/repos/" & $sRepo & "/releases/latest' -TimeoutSec 8).tag_name } catch { }"
+            "(Invoke-RestMethod -Uri 'https://api.github.com/repos/" & $sRepo & "/releases/latest' -TimeoutSec 8).tag_name } " & _
+            "catch { 'HATA ' + [int]$_.Exception.Response.StatusCode }"
     $__g_iUpdatePid = Run('powershell.exe -NoProfile -NonInteractive -Command "' & $sPs & '"', "", @SW_HIDE, $STDOUT_CHILD)
 EndFunc
 
@@ -60,7 +61,7 @@ Func _UpdatePoll($sCurrent)
 
     Local $sTag = StringStripWS($__g_sUpdateOut, 3)
     If Not _IsVersionTag($sTag) Then
-        _LogInfo("Güncelleme kontrolü: sürüm bilgisi alınamadı")
+        _LogInfo("Güncelleme kontrolü: " & _UpdateFailText($sTag))
         Return ""
     EndIf
     If _VersionCompare($sTag, $sCurrent) > 0 Then
@@ -80,6 +81,13 @@ Func _UpdatePollAndNotify($sCurrent, $sReleasesUrl)
     TrayCreateItem("Yeni sürümü indir (" & $sTag & ")", -1, 0)
     TrayItemSetOnEvent(-1, "__UpdateOpenReleases")
     TrayTip("Yeni sürüm: " & $sTag, "Yeni bir sürüm yayınlandı. İndirmek için tepsi simgesine sağ tıklayın.", 10, 1)
+EndFunc
+
+; Sorgu sürüm etiketi döndürmediğinde log metni. "HATA 404": depoda yayınlanmış (taslak olmayan) sürüm yok.
+Func _UpdateFailText($sOut)
+    If $sOut = "HATA 404" Then Return "henüz yayınlanmış sürüm yok"
+    If StringLeft($sOut, 5) = "HATA " Then Return "GitHub'a ulaşılamadı (" & ($sOut = "HATA 0" ? "bağlantı yok" : "HTTP " & StringTrimLeft($sOut, 5)) & ")"
+    Return "sürüm bilgisi alınamadı"
 EndFunc
 
 Func __UpdateOpenReleases()
