@@ -19,12 +19,15 @@ Global Const $LAN_LOG_REL = "\logs\paylasim.log"
 ; Paylaşım ağı için aday /16 önekleri (ev ağıyla çakışmayan ilki seçilir).
 Global Const $LAN_PREFIXES = "172.24|10.77|172.29|10.123"
 
-; Npcap kurulu mu? (WinPcap uyumlu mod kapalıysa DLL'ler System32\Npcap altındadır.)
+; Npcap durumu: "var" | "uyumsuz" (kurulu ama "WinPcap API-compatible Mode" kapalı; go-pcap2socks
+; belgesi bu modu şart koşar) | "yok".
 Func _LanNpcapState($bCompatDll, $bNpcapDirDll, $sDriverState)
-    Return $bCompatDll Or $bNpcapDirDll Or $sDriverState <> ""
+    If $bCompatDll Then Return "var"
+    If $bNpcapDirDll Or $sDriverState <> "" Then Return "uyumsuz"
+    Return "yok"
 EndFunc
 
-Func _LanNpcapInstalled()
+Func _LanNpcapStatus()
     Local $iPid = Run(@ComSpec & " /c sc query npcap", "", @SW_HIDE, $STDOUT_CHILD)
     ProcessWaitClose($iPid, 5)
     Local $sOut = StdoutRead($iPid)
@@ -135,8 +138,9 @@ Func _LanStart($sRoot, ByRef $aPlan, ByRef $aAdapter, ByRef $sErr)
         $sErr = "go-pcap2socks bulunamadı (" & $sExe & ")."
         Return 0
     EndIf
-    If Not _LanNpcapInstalled() Then
-        $sErr = "Npcap kurulu değil. npcap.com adresinden indirip kurun."
+    Local $sNpcap = _LanNpcapStatus()
+    If $sNpcap <> "var" Then
+        $sErr = _LanNpcapMessage($sNpcap)
         Return 0
     EndIf
     $aAdapter = _LanReadAdapter()
@@ -205,4 +209,20 @@ Func _LanEnsureFirewall($sExe)
     RunWait(@ComSpec & ' /c netsh advfirewall firewall add rule name="' & $sName & '" dir=in action=allow program="' & $sExe & '" enable=yes profile=any', "", @SW_HIDE)
     RunWait(@ComSpec & ' /c netsh advfirewall firewall add rule name="' & $sName & '" dir=out action=allow program="' & $sExe & '" enable=yes profile=any', "", @SW_HIDE)
     _LogInfo("Ağ paylaşımı: güvenlik duvarı izni eklendi")
+EndFunc
+
+Func _LanNpcapMessage($sState)
+    If $sState = "uyumsuz" Then Return "Npcap kurulu ama 'WinPcap API-compatible Mode' kapalı. Npcap'i bu seçenek işaretli olarak yeniden kurun."
+    If $sState = "yok" Then Return "Npcap kurulu değil. npcap.com adresinden indirip kurun ('WinPcap API-compatible Mode' işaretli olsun)."
+    Return ""
+EndFunc
+
+; go-pcap2socks açılışta cihazda girilecek MTU'yu yazar (PS5 ve Switch'te elle girilmesi gerekir).
+; Log'dan sayıyı çıkarır; bulunamazsa "".
+Func _LanParseMtu($sLog)
+    Local $a = StringRegExp($sLog, "(?i)mtu\D{0,12}(\d{3,5})", 1)
+    If @error Then Return ""
+    Local $n = Number($a[0])
+    If $n < 576 Or $n > 9000 Then Return ""
+    Return String($n)
 EndFunc

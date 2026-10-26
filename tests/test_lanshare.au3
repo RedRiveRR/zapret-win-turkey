@@ -4,10 +4,18 @@
 
 Func _TestLanShare()
     ; --- Npcap tespiti ---
-    _AssertTrue(_LanNpcapState(True, False, ""), "uyumlu mod DLL'i yeterli")
-    _AssertTrue(_LanNpcapState(False, True, ""), "System32\Npcap DLL'i yeterli")
-    _AssertTrue(_LanNpcapState(False, False, "var"), "sürücü servisi yeterli")
-    _AssertFalse(_LanNpcapState(False, False, ""), "hiçbiri yoksa kurulu değil")
+    _AssertEq(_LanNpcapState(True, True, "var"), "var", "uyumlu mod DLL'i: hazır")
+    _AssertEq(_LanNpcapState(False, True, "var"), "uyumsuz", "yalnız System32\Npcap: uyumlu mod kapalı")
+    _AssertEq(_LanNpcapState(False, False, "var"), "uyumsuz", "yalnız sürücü servisi: uyumlu mod kapalı")
+    _AssertEq(_LanNpcapState(False, False, ""), "yok", "hiçbiri yoksa kurulu değil")
+    _AssertTrue(StringInStr(_LanNpcapMessage("uyumsuz"), "WinPcap API-compatible") > 0, "uyumsuz mesajı")
+    _AssertEq(_LanNpcapMessage("var"), "", "hazırsa mesaj yok")
+
+    ; --- MTU ---
+    _AssertEq(_LanParseMtu("Gateway: 172.24.2.1" & @LF & "MTU: 1486"), "1486", "MTU satırı")
+    _AssertEq(_LanParseMtu("level=INFO msg=settings mtu=1472"), "1472", "anahtar=değer biçimi")
+    _AssertEq(_LanParseMtu("gateway 172.24.2.1"), "", "MTU yoksa boş")
+    _AssertEq(_LanParseMtu("mtu: 12"), "", "anlamsız değer yok sayılır")
 
     ; --- Alt ağ seçimi ---
     _AssertEq(_LanPickPrefix("192.168.1.34"), "172.24", "ev ağı 192.168: varsayılan 172.24")
