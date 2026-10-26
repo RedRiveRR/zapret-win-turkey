@@ -1978,7 +1978,7 @@ Func _WebUiSyncAll()
         $sPrefix = _LanPickPrefix($g_aLanAdapter[2])
     EndIf
     Local $sLan = _WebLanJson(_LanIsRunning($pcapPID), BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) <> 0, $g_sLanError, _
-            $g_sLanNpcap, $g_aLanAdapter[0], $g_aLanAdapter[3], $sPrefix, $g_sLanMtu)
+            $g_sLanNpcap, $g_aLanAdapter[0], $g_aLanAdapter[3], $sPrefix, $g_sLanMtu, _LanDnsModeCurrent())
     If $sLan <> $g_sWebLastLanJson Then
         $g_sWebLastLanJson = $sLan
         _WV2_Post($sLan)

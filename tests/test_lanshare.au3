@@ -46,12 +46,21 @@ Func _TestLanShare()
             '{ "address": "1.1.1.1:53" }, { "address": "8.8.8.8:53" }, { "address": "local" }') > 0, "sıralı DNS listesi")
 
     ; --- Paylaşım DNS'i ---
-    _AssertEq(_LanDnsServers("127.0.0.1,::1", False), "127.0.0.1:53", "bilgisayar DNSCrypt kullanıyorsa o")
-    _AssertEq(_LanDnsServers("1.1.1.1,1.0.0.1", True), "127.0.0.1:5354", "yerel şifreli DNS")
-    _AssertEq(_LanDnsServers("1.1.1.1,1.0.0.1", False), "1.1.1.1:53|8.8.8.8:53|local", "yedek: şifresiz")
-    _AssertEq(_LanDnsServers("127.0.0.10", True), "127.0.0.1:5354", "127.0.0.10 DNSCrypt sayılmaz")
-    _AssertEq(_LanDnsProxyToml("x = 1" & @LF & "listen_addresses = ['127.0.0.1:53', '[::1]:53']" & @LF & "y = 2", 5354), _
-            "x = 1" & @LF & "listen_addresses = ['127.0.0.1:5354']" & @LF & "y = 2", "yalnız dinleme adresi değişir")
+    _AssertTrue(_LanPcUsesLocalDns("127.0.0.1,::1"), "DNSCrypt kullanan bilgisayar")
+    _AssertFalse(_LanPcUsesLocalDns("1.1.1.1,1.0.0.1"), "Cloudflare DNSCrypt değil")
+    _AssertFalse(_LanPcUsesLocalDns("127.0.0.10"), "127.0.0.10 DNSCrypt sayılmaz")
+    ; DNSCrypt servisi kurulu ve çalışıyorsa ikinci kopya açılmaz
+    _AssertEq(_LanDnsMode(True, True, False), "sistem", "çalışan DNSCrypt servisi kullanılır")
+    _AssertEq(_LanDnsMode(True, False, True), "paylasim", "DNSCrypt cevap vermiyorsa paylaşım DNS'i")
+    _AssertEq(_LanDnsMode(False, False, True), "paylasim", "DNSCrypt yoksa paylaşım DNS'i")
+    _AssertEq(_LanDnsMode(False, False, False), "sifresiz", "hiçbiri yoksa şifresiz")
+    _AssertEq(_LanDnsServers("sistem"), "127.0.0.1:53", "sistem DNSCrypt adresi")
+    _AssertEq(_LanDnsServers("paylasim"), "127.0.0.1:5354", "paylaşım DNS adresi")
+    _AssertEq(_LanDnsServers("sifresiz"), "1.1.1.1:53|8.8.8.8:53|local", "şifresiz yedek")
+    _AssertTrue(StringInStr(_LanDnsModeText("sifresiz"), "Discord") > 0, "şifresiz uyarısı")
+    Local $sToml = "x = 1" & @LF & "listen_addresses = ['127.0.0.1:53', '[::1]:53']" & @LF & "  cache_file = 'public-resolvers.md'" & @LF & "cache_file = 'relays.md'" & @LF & "# cache_file = 'yorum.md'"
+    _AssertEq(_LanDnsProxyToml($sToml, 5354), "x = 1" & @LF & "listen_addresses = ['127.0.0.1:5354']" & @LF & "  cache_file = 'paylasim-public-resolvers.md'" & @LF & _
+            "cache_file = 'paylasim-relays.md'" & @LF & "# cache_file = 'yorum.md'", "dinleme adresi ve önbellek dosyaları ayrılır, yorumlar değişmez")
     _AssertEq(_LanDnsQuery("a.bc", 0x1234), Binary("0x123401000001000000000000016102626300" & "00010001"), "DNS sorgu paketi")
 
     ; --- Kart bilgisi ---

@@ -23,6 +23,8 @@ Global Const $LAN_DNS_DIR_REL = "\bin\dnscrypt-proxy"
 Global Const $LAN_DNS_PORT = 5354
 Global Const $LAN_DNS_LOG_REL = "\logs\paylasim-dns.log"
 Global $__g_iLanDnsPid = 0, $__g_bLanDnsUsed = False
+; Son paylaşımda kullanılan DNS yolu (bkz. _LanDnsMode): "sistem" | "paylasim" | "sifresiz" | ""
+Global $__g_sLanDnsMode = ""
 ; Paylaşım ağı için aday /16 önekleri (ev ağıyla çakışmayan ilki seçilir).
 Global Const $LAN_PREFIXES = "172.24|10.77|172.29|10.123"
 
@@ -175,11 +177,15 @@ Func _LanStart($sRoot, ByRef $aPlan, ByRef $aAdapter, ByRef $sErr)
         $sErr = "Yapılandırma yazılamadı (" & $sDir & ")."
         Return 0
     EndIf
-    ; DNS: bilgisayar DNSCrypt kullanıyorsa onu, değilse paylaşıma özel yerel şifreli DNS'i kullan.
-    Local $sPcDns = _GetActiveAdapterDnsServers()
+    ; DNS: bilgisayar DNSCrypt kullanıyor VE çalışıyorsa onu (ikinci kopya açılmaz); değilse paylaşıma
+    ; özel geçici şifreli DNS; o da olmazsa şifresiz.
+    Local $bPcLocal = _LanPcUsesLocalDns(_GetActiveAdapterDnsServers())
+    Local $bLocalAnswers = $bPcLocal And _LanDnsProbe("127.0.0.1", 53, "discord.com", 2500)
+    If $bPcLocal And Not $bLocalAnswers Then _LogWarn("Ağ paylaşımı: bilgisayar DNS'i 127.0.0.1 ama DNSCrypt cevap vermiyor; paylaşıma özel DNS deneniyor")
     Local $bProxy = False
-    If Not StringInStr($sPcDns, "127.0.0.1") Then $bProxy = _LanDnsProxyStart($sRoot)
-    Local $sDnsServers = _LanDnsServers($sPcDns, $bProxy)
+    If Not $bLocalAnswers Then $bProxy = _LanDnsProxyStart($sRoot)
+    $__g_sLanDnsMode = _LanDnsMode($bPcLocal, $bLocalAnswers, $bProxy)
+    Local $sDnsServers = _LanDnsServers($__g_sLanDnsMode)
     $__g_bLanDnsUsed = $bProxy
     FileWrite($h, _LanBuildConfig($aPlan[0], $aPlan[1], $aAdapter[4], $sDnsServers))
     FileClose($h)
@@ -218,6 +224,7 @@ Func _LanStop($iPid, $sRoot)
     If $iPid > 0 And ProcessExists($iPid) Then _KillProcessTree($iPid)
     _LanDnsProxyStop()
     $__g_bLanDnsUsed = False
+    $__g_sLanDnsMode = ""
     ; Önceki oturumdan kalmış olabilir: yalnızca bu paketteki kopya hedeflenir.
     _KillProcessesUnderDir($sRoot & "\bin\go-pcap2socks")
     _LogInfo("Ağ paylaşımı durduruldu")
@@ -260,18 +267,60 @@ EndFunc
 ; Paylaşım DNS'i
 ; ------------------------------------------------------------------------
 
-; Paylaşılan cihazların DNS sunucuları. $sPcDns: bilgisayarın DNS'leri ("a,b"), $bProxy: yerel
-; şifreli DNS aracı çalışıyor mu. Bilgisayar zaten DNSCrypt kullanıyorsa (127.0.0.1) onu kullan.
-Func _LanDnsServers($sPcDns, $bProxy)
-    If StringRegExp($sPcDns, "(^|[,\s])127\.0\.0\.1($|[,\s])") Then Return "127.0.0.1:53"
-    If $bProxy Then Return "127.0.0.1:" & $LAN_DNS_PORT
-    ; Yedek: şifresiz; Discord adları sağlayıcıda düşebilir (bkz. $LAN_DNS_DIR_REL açıklaması).
+; Bilgisayarın DNS'i yerel DNSCrypt mi? ("127.0.0.1,::1" gibi)
+Func _LanPcUsesLocalDns($sPcDns)
+    Return StringRegExp($sPcDns, "(^|[,\s])127\.0\.0\.1($|[,\s])") = 1
+EndFunc
+
+; Paylaşımın DNS yolu:
+;   "sistem"   bilgisayar zaten DNSCrypt kullanıyor ve 127.0.0.1:53 Discord adını çözüyor -> ikinci kopya AÇILMAZ
+;   "paylasim" paylaşıma özel geçici şifreli DNS (127.0.0.1:5354) hazır
+;   "sifresiz" ikisi de yok -> şifresiz DNS (Discord adları sağlayıcıda düşebilir)
+Func _LanDnsMode($bPcLocal, $bLocalAnswers, $bProxyOk)
+    If $bPcLocal And $bLocalAnswers Then Return "sistem"
+    If $bProxyOk Then Return "paylasim"
+    Return "sifresiz"
+EndFunc
+
+; DNS yolundan go-pcap2socks sunucu listesi.
+Func _LanDnsServers($sMode)
+    If $sMode = "sistem" Then Return "127.0.0.1:53"
+    If $sMode = "paylasim" Then Return "127.0.0.1:" & $LAN_DNS_PORT
     Return "1.1.1.1:53|8.8.8.8:53|local"
 EndFunc
 
-; dnscrypt-proxy yapılandırmasından paylaşım kopyası: yalnızca dinleme adresi değişir.
+; Kullanıcıya gösterilecek açıklama.
+Func _LanDnsModeText($sMode)
+    Switch $sMode
+        Case "sistem"
+            Return "Bilgisayardaki DNSCrypt servisi (şifreli)"
+        Case "paylasim"
+            Return "Paylaşıma özel şifreli DNS"
+        Case "sifresiz"
+            Return "Şifresiz DNS: Discord açılmayabilir"
+    EndSwitch
+    Return ""
+EndFunc
+
+Func _LanDnsModeCurrent()
+    Return $__g_sLanDnsMode
+EndFunc
+
+; dnscrypt-proxy yapılandırmasından paylaşım kopyası: dinleme adresi ve sunucu listesi önbellek dosyaları
+; değişir (bilgisayarın DNSCrypt servisi aynı klasörde çalışıyorsa aynı dosyaya iki süreç yazmasın).
 Func _LanDnsProxyToml($sToml, $iPort)
-    Return StringRegExpReplace($sToml, "(?m)^listen_addresses\s*=.*$", "listen_addresses = ['127.0.0.1:" & $iPort & "']")
+    Local $s = StringRegExpReplace($sToml, "(?m)^listen_addresses\s*=.*$", "listen_addresses = ['127.0.0.1:" & $iPort & "']")
+    Return StringRegExpReplace($s, "(?m)^(\s*cache_file\s*=\s*')([^'/\\]+\.md)'", "${1}paylasim-${2}'")
+EndFunc
+
+; Sunucu listesi önbelleklerinin paylaşım kopyaları (imzalarıyla); yoksa ilk açılışta indirilmesi gerekirdi.
+Func __LanDnsCopyCaches($sDir)
+    For $sName In StringSplit("public-resolvers.md|relays.md", "|", 2)
+        For $sExt In StringSplit("|.minisig", "|", 2)
+            Local $sSrc = $sDir & "\" & $sName & $sExt, $sDst = $sDir & "\paylasim-" & $sName & $sExt
+            If FileExists($sSrc) And (Not FileExists($sDst) Or FileGetTime($sSrc, 0, 1) > FileGetTime($sDst, 0, 1)) Then FileCopy($sSrc, $sDst, 1)
+        Next
+    Next
 EndFunc
 
 ; A kaydı için DNS sorgu paketi (binary).
@@ -314,6 +363,7 @@ Func _LanDnsProxyStart($sRoot)
     If $h = -1 Then Return False
     FileWrite($h, _LanDnsProxyToml(FileRead($sDir & "\dnscrypt-proxy.toml"), $LAN_DNS_PORT))
     FileClose($h)
+    __LanDnsCopyCaches($sDir)
     Local $sLog = $sRoot & $LAN_DNS_LOG_REL
     FileDelete($sLog)
     $__g_iLanDnsPid = Run(@ComSpec & ' /c ""' & $sDir & '\dnscrypt-proxy.exe" -config paylasim.toml > "' & $sLog & '" 2>&1"', $sDir, @SW_HIDE)

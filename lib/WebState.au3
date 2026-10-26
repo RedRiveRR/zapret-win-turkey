@@ -266,7 +266,7 @@ EndFunc
 ; Ağ paylaşımı sayfası mesajı.
 ;   $bOn: paylaşım açık, $bCanStart: başlatılabilir mi (zapret çalışıyor), $sError: son hata ("" = yok)
 ;   $sNpcap: "var" | "yok" | "" (bilinmiyor), $sAdapter: kart adı, $bWifi, $sPrefix: ağ öneki ("" = bilinmiyor)
-Func _WebLanJson($bOn, $bCanStart, $sError, $sNpcap, $sAdapter, $bWifi, $sPrefix, $sMtu = "")
+Func _WebLanJson($bOn, $bCanStart, $sError, $sNpcap, $sAdapter, $bWifi, $sPrefix, $sMtu = "", $sDnsMode = "")
     Local $sDurum = $bOn ? "acik" : ($sError <> "" ? "hata" : "kapali")
     Local $s = _WebJsonObj("tip", "paylasim", "durum", $sDurum, "hata", $sError, "npcap", $sNpcap)
     $s = _WebJsonAdd($s, "baslatilabilir", $bCanStart = True)
@@ -280,5 +280,7 @@ Func _WebLanJson($bOn, $bCanStart, $sError, $sNpcap, $sAdapter, $bWifi, $sPrefix
         $s = _WebJsonAdd($s, "gecit", $a[1])
     EndIf
     $s = _WebJsonAdd($s, "mtu", $sMtu)
+    $s = _WebJsonAdd($s, "dnsYolu", $sDnsMode)
+    $s = _WebJsonAdd($s, "dnsYoluMetin", _LanDnsModeText($sDnsMode))
     Return $s
 EndFunc

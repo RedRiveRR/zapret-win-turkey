@@ -160,6 +160,9 @@ Func _TestWebState()
     _AssertEq(_WebJsonGet($s, "gecit"), "10.77.2.1", "başka önek")
     $s = _WebLanJson(True, True, "", "var", "Ethernet", False, "172.24", "1486")
     _AssertEq(_WebJsonGet($s, "mtu"), "1486", "MTU aktarılır")
+    $s = _WebLanJson(True, True, "", "var", "Ethernet", False, "172.24", "1478", "sistem")
+    _AssertEq(_WebJsonGet($s, "dnsYolu"), "sistem", "DNS yolu")
+    _AssertEq(_WebJsonGet($s, "dnsYoluMetin"), "Bilgisayardaki DNSCrypt servisi (şifreli)", "DNS yolu metni")
 EndFunc
 
 Func _StringRepeatW($s, $n)
