@@ -236,15 +236,32 @@ Func _LanIsRunning($iPid)
     Return $iPid > 0 And ProcessExists($iPid) <> 0
 EndFunc
 
-; Güvenlik duvarında izin kuralı yoksa sessizce ekler (program yönetici çalışır; Windows uyarısı beklenmez).
+; "netsh ... show rule ... verbose" çıktısında bu exe için kaç kural var (Program: satırları).
+; Not: verbose olmadan çıktıda Program satırı yoktur (2026-10-27: her başlatmada kural yineleniyordu).
+Func _LanFirewallRuleCount($sShowOut, $sExe)
+    Local $n = 0
+    For $sLine In StringSplit(StringStripCR($sShowOut), @LF, 2)
+        If StringRegExp($sLine, "^\s*Program\s*:") And StringInStr($sLine, $sExe) Then $n += 1
+    Next
+    Return $n
+EndFunc
+
+; Güvenlik duvarında bu exe için tam olarak bir giriş + bir çıkış izni olmasını sağlar (program yönetici
+; çalışır; Windows uyarısı beklenmez). Yinelenmiş kurallar bir kez temizlenir.
 Func _LanEnsureFirewall($sExe)
     Local $sName = "RedRiveRR Zapret - ağ paylaşımı"
-    Local $iPid = Run(@ComSpec & ' /c netsh advfirewall firewall show rule name="' & $sName & '"', "", @SW_HIDE, $STDOUT_CHILD)
+    Local $iPid = Run(@ComSpec & ' /c netsh advfirewall firewall show rule name="' & $sName & '" verbose', "", @SW_HIDE, $STDOUT_CHILD)
     ProcessWaitClose($iPid, 10)
-    If StringInStr(StdoutRead($iPid), $sExe) Then Return
-    RunWait(@ComSpec & ' /c netsh advfirewall firewall add rule name="' & $sName & '" dir=in action=allow program="' & $sExe & '" enable=yes profile=any', "", @SW_HIDE)
-    RunWait(@ComSpec & ' /c netsh advfirewall firewall add rule name="' & $sName & '" dir=out action=allow program="' & $sExe & '" enable=yes profile=any', "", @SW_HIDE)
-    _LogInfo("Ağ paylaşımı: güvenlik duvarı izni eklendi")
+    Local $n = _LanFirewallRuleCount(StdoutRead($iPid), $sExe)
+    If $n = 2 Then Return
+    If $n > 0 Then RunWait(@ComSpec & ' /c netsh advfirewall firewall delete rule name="' & $sName & '"', "", @SW_HIDE)
+    Local $iIn = RunWait(@ComSpec & ' /c netsh advfirewall firewall add rule name="' & $sName & '" dir=in action=allow program="' & $sExe & '" enable=yes profile=any', "", @SW_HIDE)
+    Local $iOut = RunWait(@ComSpec & ' /c netsh advfirewall firewall add rule name="' & $sName & '" dir=out action=allow program="' & $sExe & '" enable=yes profile=any', "", @SW_HIDE)
+    If $iIn = 0 And $iOut = 0 Then
+        _LogInfo("Ağ paylaşımı: güvenlik duvarı izni eklendi" & ($n > 0 ? " (" & $n & " yinelenmiş kural temizlendi)" : ""))
+    Else
+        _LogWarn("Ağ paylaşımı: güvenlik duvarı izni eklenemedi (netsh " & $iIn & "/" & $iOut & ")")
+    EndIf
 EndFunc
 
 Func _LanNpcapMessage($sState)

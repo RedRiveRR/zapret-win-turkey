@@ -61,6 +61,14 @@ Func _TestLanShare()
     Local $sToml = "x = 1" & @LF & "listen_addresses = ['127.0.0.1:53', '[::1]:53']" & @LF & "  cache_file = 'public-resolvers.md'" & @LF & "cache_file = 'relays.md'" & @LF & "# cache_file = 'yorum.md'"
     _AssertEq(_LanDnsProxyToml($sToml, 5354), "x = 1" & @LF & "listen_addresses = ['127.0.0.1:5354']" & @LF & "  cache_file = 'paylasim-public-resolvers.md'" & @LF & _
             "cache_file = 'paylasim-relays.md'" & @LF & "# cache_file = 'yorum.md'", "dinleme adresi ve önbellek dosyaları ayrılır, yorumlar değişmez")
+    ; --- Güvenlik duvarı kural sayımı (netsh verbose çıktısı) ---
+    Local $sExe = "C:\Program Files\Zapret Windows Turkiye\bin\go-pcap2socks\go-pcap2socks.exe"
+    Local $sShow = "Rule Name:   x" & @CRLF & "Direction:   In" & @CRLF & "Program:                              " & $sExe & @CRLF & @CRLF & _
+            "Rule Name:   x" & @CRLF & "Direction:   Out" & @CRLF & "Program:                              " & $sExe & @CRLF
+    _AssertEq(_LanFirewallRuleCount($sShow, $sExe), 2, "giriş + çıkış kuralı")
+    _AssertEq(_LanFirewallRuleCount($sShow & $sShow, $sExe), 4, "yinelenmiş kurallar sayılır")
+    _AssertEq(_LanFirewallRuleCount("No rules match the specified criteria.", $sExe), 0, "kural yok")
+    _AssertEq(_LanFirewallRuleCount("Rule Name: x" & @CRLF & "Direction: In", $sExe), 0, "verbose olmayan çıktıda Program satırı yok")
     _AssertEq(_LanDnsQuery("a.bc", 0x1234), Binary("0x123401000001000000000000016102626300" & "00010001"), "DNS sorgu paketi")
 
     ; --- Kart bilgisi ---
