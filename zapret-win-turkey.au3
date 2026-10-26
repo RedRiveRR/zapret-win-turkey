@@ -126,6 +126,8 @@ Global $zapretPID = 0
 Global $pcapPID = 0
 ; Ağ paylaşımı: kullanılan cihaz ayarları (_LanPlan), kart (_LanParseAdapter), son hata, otomatik yeniden başlatma sayısı
 Global $g_aLanPlan[5] = ["", "", "", "", ""], $g_aLanAdapter[5] = ["", "", "", False, ""], $g_sLanError = "", $g_iLanRestarts = 0
+; Yeni arayüzün paylaşım sayfası: Npcap durumu ("var/uyumsuz/yok", "" = okunmadı), cihaz MTU'su, son gönderilen mesaj
+Global $g_sLanNpcap = "", $g_sLanMtu = "", $g_sWebLastLanJson = ""
 Global $bServiceStoppedWarned = False
 Global $bDnsReset = True
 Global $g_sEngineFooter = ""
@@ -1648,21 +1650,28 @@ EndFunc
 ; Başlatır; $bInteractive ise sonucu (cihaz ayarları ya da hata nedeni) kullanıcıya gösterir.
 Func _LanShareStart($bInteractive)
     Local $sErr
+    $g_sLanMtu = ""
     $pcapPID = _LanStart(@ScriptDir, $g_aLanPlan, $g_aLanAdapter, $sErr)
     If $pcapPID = 0 Then
         $g_sLanError = $sErr
+        $g_sLanNpcap = _LanNpcapStatus()
         GUICtrlSetData($btnLanShare, "Ağdaki Cihazlarla Paylaş")
         If $bInteractive Then _LanShareNotify("Ağ paylaşımı başlamadı", $sErr, True)
         Return False
     EndIf
     $g_sLanError = ""
+    $g_sLanNpcap = "var"
+    $g_sLanMtu = _LanParseMtu(_LanLogTail(@ScriptDir & $LAN_LOG_REL, 40))
     GUICtrlSetData($btnLanShare, "[ ✓ ] Paylaşım Aktif / Durdur")
-    If $bInteractive Then
+    If $bInteractive And $g_bWebUi Then
+        _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", "Paylaşım açık. Cihazda sayfadaki ayarları gir."))
+    ElseIf $bInteractive Then
         MsgBox(64 + 8192, "Ağ paylaşımı açık", "Konsol veya TV'nin ağ ayarlarını elle (statik) girin:" & @CRLF & @CRLF & _
                 "IP adresi:   " & $g_aLanPlan[3] & "   (ikinci cihaz " & _LanDeviceIP(StringRegExpReplace($g_aLanPlan[1], "\.2\.1$", ""), 2) & " ...)" & @CRLF & _
                 "Alt ağ maskesi:   " & $g_aLanPlan[2] & @CRLF & _
                 "Ağ geçidi:   " & $g_aLanPlan[1] & @CRLF & _
-                "DNS:   " & $g_aLanPlan[1] & @CRLF & @CRLF & _
+                "DNS:   " & $g_aLanPlan[1] & @CRLF & _
+                ($g_sLanMtu = "" ? "" : "MTU (PS5 ve Switch):   " & $g_sLanMtu & @CRLF) & @CRLF & _
                 "Bilgisayar ve cihaz aynı modeme bağlı olmalı; bilgisayar açık kalmalı." & _
                 ($g_aLanAdapter[3] ? @CRLF & @CRLF & "Bilgisayar Wi-Fi ile bağlı: paylaşım yavaş olabilir, kablo önerilir." : ""), 0, _MainWindowHandle())
     EndIf
@@ -1679,7 +1688,10 @@ EndFunc
 ; yine düşerse kapatıp nedenini bildirir (önceden arayüz "aktif" demeye devam ediyordu).
 Func _LanShareWatch()
     If GUICtrlRead($btnLanShare) <> "[ ✓ ] Paylaşım Aktif / Durdur" Then Return
-    If _LanIsRunning($pcapPID) Then Return
+    If _LanIsRunning($pcapPID) Then
+        If $g_sLanMtu = "" Then $g_sLanMtu = _LanParseMtu(_LanLogTail(@ScriptDir & $LAN_LOG_REL, 40))
+        Return
+    EndIf
     Local $sReason = _LanErrorReason(_LanLogTail(@ScriptDir & $LAN_LOG_REL))
     _LogWarn("Ağ paylaşımı beklenmedik şekilde durdu" & ($sReason = "" ? "" : ": " & $sReason))
     If $g_iLanRestarts < 1 Then
@@ -1692,6 +1704,14 @@ Func _LanShareWatch()
     _LanShareStop()
     $g_sLanError = ($sReason = "" ? "go-pcap2socks kapandı. Ayrıntı: logs\paylasim.log" : $sReason)
     _LanShareNotify("Ağ paylaşımı durdu", $g_sLanError, False)
+EndFunc
+
+; Paylaşım sayfası açılınca: paylaşım kapalıysa kart ve Npcap bilgisini okur (ayarlar önceden görünsün).
+Func _WebUiLanRefresh()
+    $g_sWebLastLanJson = ""
+    If _LanIsRunning($pcapPID) Then Return
+    $g_aLanAdapter = _LanReadAdapter()
+    $g_sLanNpcap = _LanNpcapStatus()
 EndFunc
 
 ; Bildirim: yeni arayüzde sayfa içi, değilse ileti kutusu (etkileşimli) ya da tepsi balonu.
@@ -1878,6 +1898,10 @@ Func _WebUiTick($nMsg)
                     _WebUiServiceRefreshSoon()
                     Local $idSvcBtn = ($sCmd = "servisKur") ? $btnInstallService : (($sCmd = "servisKaldir") ? $btnRemoveService : $btnSvcSettings)
                     If BitAND(GUICtrlGetState($idSvcBtn), $GUI_ENABLE) Then Return $idSvcBtn
+                ElseIf $sCmd = "paylasimYenile" Then
+                    _WebUiLanRefresh()
+                ElseIf $sCmd = "npcap" Then
+                    ShellExecute("https://npcap.com/#download")
                 ElseIf $sCmd = "github" Then
                     ShellExecute("https://github.com/" & $APP_UPDATE_REPO)
                 ElseIf $sCmd = "tanilama" Or $sCmd = "kayitlar" Or $sCmd = "ayarlar" Or $sCmd = "paylasim" Or $sCmd = "temizle" Then
@@ -1905,6 +1929,10 @@ Func _WebUiTick($nMsg)
                 EndIf
             Case "dnsYenile"
                 $g_bWebDnsReread = True
+            Case "kopyala"
+                ; Paylaşım sayfasındaki ayarlar (IP, maske...) panoya
+                Local $sCopy = _WebJsonGet($sMsg, "metin")
+                If StringLen($sCopy) > 0 And StringLen($sCopy) < 64 Then ClipPut($sCopy)
             Case "ayar"
                 _WebUiServiceRefreshSoon()
                 If $iAge <= 2000 Then _WebUiApplySetting(_WebJsonGet($sMsg, "ad"), _WebJsonGet($sMsg, "deger") = "true")
@@ -1941,6 +1969,18 @@ Func _WebUiSyncAll()
     _WebUiSyncStrategy()
     _WebUiSyncService()
     _WebUiSyncDns()
+    Local $sPrefix = ""
+    If $g_aLanPlan[1] <> "" Then
+        $sPrefix = StringRegExpReplace($g_aLanPlan[1], "\.2\.1$", "")
+    ElseIf $g_aLanAdapter[0] <> "" Then
+        $sPrefix = _LanPickPrefix($g_aLanAdapter[2])
+    EndIf
+    Local $sLan = _WebLanJson(_LanIsRunning($pcapPID), BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) <> 0, $g_sLanError, _
+            $g_sLanNpcap, $g_aLanAdapter[0], $g_aLanAdapter[3], $sPrefix, $g_sLanMtu)
+    If $sLan <> $g_sWebLastLanJson Then
+        $g_sWebLastLanJson = $sLan
+        _WV2_Post($sLan)
+    EndIf
     Local $sOther = _WebOtherJson(GUICtrlRead($btnLanShare), BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) <> 0, $g_sWebUpdateIni, _
             $APP_VERSION, $g_sEngineFooter, BitAND(GUICtrlGetState($btnRemoveService), $GUI_ENABLE) <> 0)
     If $sOther <> $g_sWebLastOtherJson Then
@@ -2271,6 +2311,11 @@ Func _WebUiPreviewAndExit($sDir)
         __WebUiPreviewPump(500, $sLog)
         _WV2_Exec("document.getElementById('temizle').click(); document.getElementById('temizle').click()")
         __WebUiPreviewPump(800, $sLog)
+        ; Ağ paylaşımı sayfası (kart ve Npcap yalnızca okunur; go-pcap2socks başlatılmaz)
+        _WV2_Exec("document.getElementById('paylasim-ac').click()")
+        __WebUiPreviewPump(3500, $sLog)
+        FileWriteLine($sLog, "paylaşım sayfası: " & $g_sWebLastLanJson)
+        _ScreenCapture_CaptureWnd($sDir & "\paylasim.png", $hWebGui)
     EndIf
     ; Alt pencere açıkken yeni pencere canlı mı? Deneme penceresi açıkken (deneme başlatılmaz)
     ; yeni pencerede bir komuta basılır; "işlem sürüyor" bildirimi beklenir. 1,5 sn sonra pencere kapanır.
