@@ -37,8 +37,8 @@ Func _TestLanShare()
     _AssertEq(_LanDeviceIP("10.77", 0), "10.77.2.50", "alt sınır")
 
     ; --- Yapılandırma ---
-    Local $s = _LanBuildConfig("172.24.0.0/16", "172.24.2.1", "192.168.1.105")
-    _AssertTrue(StringInStr($s, '"network": "172.24.0.0/16", "localIP": "172.24.2.1", "interfaceGateway": "192.168.1.105"') > 0, "kart kendi IP'siyle seçilir")
+    Local $s = _LanBuildConfig("172.24.0.0/16", "172.24.2.1", "192.168.1.50")
+    _AssertTrue(StringInStr($s, '"network": "172.24.0.0/16", "localIP": "172.24.2.1", "interfaceGateway": "192.168.1.50"') > 0, "kart kendi IP'siyle seçilir")
     _AssertTrue(StringInStr($s, '"dstPort": "53", "outboundTag": "dns-out"') > 0, "DNS bilgisayara yönlenir")
     _AssertTrue(StringInStr(_LanBuildConfig("10.77.0.0/16", "10.77.2.1", ""), "interfaceGateway") = 0, "geçit bilinmiyorsa alan yazılmaz")
     _AssertTrue(StringInStr(_LanBuildConfig("10.77.0.0/16", "10.77.2.1", "", "127.0.0.1:5354"), '"servers": [ { "address": "127.0.0.1:5354" } ]') > 0, "tek DNS sunucusu")
