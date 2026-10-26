@@ -1670,7 +1670,7 @@ Func _LanShareStart($bInteractive)
                 "IP adresi:   " & $g_aLanPlan[3] & "   (ikinci cihaz " & _LanDeviceIP(StringRegExpReplace($g_aLanPlan[1], "\.2\.1$", ""), 2) & " ...)" & @CRLF & _
                 "Alt ağ maskesi:   " & $g_aLanPlan[2] & @CRLF & _
                 "Ağ geçidi:   " & $g_aLanPlan[1] & @CRLF & _
-                "DNS:   " & $g_aLanPlan[1] & @CRLF & _
+                "DNS:   1.1.1.1  (ikincil 8.8.8.8)" & @CRLF & _
                 ($g_sLanMtu = "" ? "" : "MTU (PS5 ve Switch):   " & $g_sLanMtu & @CRLF) & @CRLF & _
                 "Bilgisayar ve cihaz aynı modeme bağlı olmalı; bilgisayar açık kalmalı." & _
                 ($g_aLanAdapter[3] ? @CRLF & @CRLF & "Bilgisayar Wi-Fi ile bağlı: paylaşım yavaş olabilir, kablo önerilir." : ""), 0, _MainWindowHandle())
@@ -1875,7 +1875,9 @@ Func _WebUiTick($nMsg)
                 Local $sCmd = _WebJsonGet($sMsg, "ad")
                 $g_sWebLastJson = "" ; düğme yeniden etkinleşsin diye durum tekrar gönderilir
                 ; Uzun bir iş sürerken kuyrukta kalmış komutlar yok sayılır.
-                If $iAge > 2000 Then
+                ; Eşik 10 sn: sayfa yüklenirken (ör. kart bilgisi okunurken) basılan düğme kaybolmasın,
+                ; ama dakikalarca süren analiz sırasında kuyrukta kalan tıklamalar yine yok sayılsın.
+                If $iAge > 10000 Then
                     _LogInfo("Yeni arayüz: eskimiş komut yok sayıldı (" & $sCmd & ", " & $iAge & " ms)")
                     _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", "Önceki işlem sürerken basıldığı için uygulanmadı; tekrar dene."))
                 ElseIf $sCmd = "eskiArayuz" Then

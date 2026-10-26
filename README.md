@@ -107,7 +107,9 @@ PlayStation, Xbox, Switch, akıllı TV gibi cihazlar bilgisayarınızdaki Zapret
   - **IP adresi:** `172.24.2.10` – `172.24.2.255` arasında kullanılmayan bir adres (ör. `172.24.2.50`)
   - **Alt ağ maskesi:** `255.255.0.0`
   - **Ağ geçidi:** `172.24.2.1`
-  - **DNS:** `1.1.1.1` ve `8.8.8.8`
+  - **DNS:** `1.1.1.1` ve `8.8.8.8` (DNS soruları bilgisayardaki şifreli DNS'ten cevaplanır; Türkiye'de Discord adları şifresiz DNS'te engellendiği için bu gerekli)
+  - **MTU:** PS5 ve Nintendo Switch'te elle girilmeli; değer *Diğer → Ağ paylaşımı* sayfasında görünür (ör. 1478).
+- Uygulamadaki **Ağ paylaşımı** sayfası bu ayarları kopyalanabilir biçimde ve PS5/PS4/Xbox/Switch/akıllı TV için adım adım gösterir.
 
 > [!CAUTION]
 > Wi-Fi üzerinden paylaşımda belirgin hız düşüşü olabilir; bilgisayarı modeme kabloyla bağlamanız önerilir. Paylaşım sürerken bilgisayar açık kalmalıdır.

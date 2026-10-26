@@ -279,7 +279,6 @@ function paylasimUygula(m) {
   $('paylasim-ip2').textContent = m.ip2 ? 'İkinci cihaz: ' + m.ip2 + ', sonrakiler birer artar.' : '';
   $('paylasim-maske').textContent = m.maske || '—';
   $('paylasim-gecit').textContent = m.gecit || '—';
-  $('paylasim-dns').textContent = m.gecit || '—';
   $('paylasim-mtu').textContent = m.mtu || '—';
 }
 
