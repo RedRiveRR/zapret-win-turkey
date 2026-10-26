@@ -41,6 +41,18 @@ Func _TestLanShare()
     _AssertTrue(StringInStr($s, '"network": "172.24.0.0/16", "localIP": "172.24.2.1", "interfaceGateway": "192.168.1.105"') > 0, "kart kendi IP'siyle seçilir")
     _AssertTrue(StringInStr($s, '"dstPort": "53", "outboundTag": "dns-out"') > 0, "DNS bilgisayara yönlenir")
     _AssertTrue(StringInStr(_LanBuildConfig("10.77.0.0/16", "10.77.2.1", ""), "interfaceGateway") = 0, "geçit bilinmiyorsa alan yazılmaz")
+    _AssertTrue(StringInStr(_LanBuildConfig("10.77.0.0/16", "10.77.2.1", "", "127.0.0.1:5354"), '"servers": [ { "address": "127.0.0.1:5354" } ]') > 0, "tek DNS sunucusu")
+    _AssertTrue(StringInStr(_LanBuildConfig("10.77.0.0/16", "10.77.2.1", "", "1.1.1.1:53|8.8.8.8:53|local"), _
+            '{ "address": "1.1.1.1:53" }, { "address": "8.8.8.8:53" }, { "address": "local" }') > 0, "sıralı DNS listesi")
+
+    ; --- Paylaşım DNS'i ---
+    _AssertEq(_LanDnsServers("127.0.0.1,::1", False), "127.0.0.1:53", "bilgisayar DNSCrypt kullanıyorsa o")
+    _AssertEq(_LanDnsServers("1.1.1.1,1.0.0.1", True), "127.0.0.1:5354", "yerel şifreli DNS")
+    _AssertEq(_LanDnsServers("1.1.1.1,1.0.0.1", False), "1.1.1.1:53|8.8.8.8:53|local", "yedek: şifresiz")
+    _AssertEq(_LanDnsServers("127.0.0.10", True), "127.0.0.1:5354", "127.0.0.10 DNSCrypt sayılmaz")
+    _AssertEq(_LanDnsProxyToml("x = 1" & @LF & "listen_addresses = ['127.0.0.1:53', '[::1]:53']" & @LF & "y = 2", 5354), _
+            "x = 1" & @LF & "listen_addresses = ['127.0.0.1:5354']" & @LF & "y = 2", "yalnız dinleme adresi değişir")
+    _AssertEq(_LanDnsQuery("a.bc", 0x1234), Binary("0x123401000001000000000000016102626300" & "00010001"), "DNS sorgu paketi")
 
     ; --- Kart bilgisi ---
     Local $aA = _LanParseAdapter("Wi-Fi|Intel(R) Wi-Fi 6 AX201|192.168.1.1|192.168.1.34,172.20.0.1|Native 802.11|192.168.1.34" & @CRLF)

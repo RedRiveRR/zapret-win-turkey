@@ -16,6 +16,13 @@
 
 Global Const $LAN_EXE_REL = "\bin\go-pcap2socks\go-pcap2socks.exe"
 Global Const $LAN_LOG_REL = "\logs\paylasim.log"
+; Paylaşılan cihazların DNS'i için yerel şifreli DNS (paketteki dnscrypt-proxy, ayrı portta).
+; Sağlayıcı Discord adları için ŞİFRESİZ DNS sorularını düşürüyor (2026-10-27, 1.1.1.1 ve 8.8.8.8'e
+; ham UDP ile doğrulandı); go-pcap2socks yalnız şifresiz DNS konuşabildiği için arada bu aracı gerekir.
+Global Const $LAN_DNS_DIR_REL = "\bin\dnscrypt-proxy"
+Global Const $LAN_DNS_PORT = 5354
+Global Const $LAN_DNS_LOG_REL = "\logs\paylasim-dns.log"
+Global $__g_iLanDnsPid = 0, $__g_bLanDnsUsed = False
 ; Paylaşım ağı için aday /16 önekleri (ev ağıyla çakışmayan ilki seçilir).
 Global Const $LAN_PREFIXES = "172.24|10.77|172.29|10.123"
 
@@ -70,12 +77,18 @@ EndFunc
 ; IPv4 address of the physical network interface to capture on"; modemin adresi değil). "" = varsayılan
 ; rota kartını kendisi seçer.
 ; Tüm DNS sorguları (53) bilgisayarın çözücüsüne gider: cihaz DNS olarak ağ geçidini kullanabilir.
-Func _LanBuildConfig($sNetwork, $sLocalIP, $sIfaceIP)
+; $sDnsServers: "|" ile ayrılmış DNS sunucuları (ilk cevap veren kazanır), bkz. _LanDnsServers.
+Func _LanBuildConfig($sNetwork, $sLocalIP, $sIfaceIP, $sDnsServers = "local")
     Local $sPcap = '"network": "' & $sNetwork & '", "localIP": "' & $sLocalIP & '"'
     If $sIfaceIP <> "" Then $sPcap &= ', "interfaceGateway": "' & $sIfaceIP & '"'
+    Local $sDns = ""
+    For $sSrv In StringSplit($sDnsServers, "|", 2)
+        If $sSrv = "" Then ContinueLoop
+        $sDns &= ($sDns = "" ? "" : ", ") & '{ "address": "' & $sSrv & '" }'
+    Next
     Return '{' & @CRLF & _
             '  "pcap": { ' & $sPcap & ' },' & @CRLF & _
-            '  "dns": { "servers": [ { "address": "local" } ] },' & @CRLF & _
+            '  "dns": { "servers": [ ' & $sDns & ' ] },' & @CRLF & _
             '  "routing": { "rules": [ { "dstPort": "53", "outboundTag": "dns-out" } ] },' & @CRLF & _
             '  "outbounds": [ { "tag": "", "direct": {} }, { "tag": "dns-out", "dns": {} } ],' & @CRLF & _
             '  "capture": { "enabled": false }' & @CRLF & _
@@ -162,7 +175,13 @@ Func _LanStart($sRoot, ByRef $aPlan, ByRef $aAdapter, ByRef $sErr)
         $sErr = "Yapılandırma yazılamadı (" & $sDir & ")."
         Return 0
     EndIf
-    FileWrite($h, _LanBuildConfig($aPlan[0], $aPlan[1], $aAdapter[4]))
+    ; DNS: bilgisayar DNSCrypt kullanıyorsa onu, değilse paylaşıma özel yerel şifreli DNS'i kullan.
+    Local $sPcDns = _GetActiveAdapterDnsServers()
+    Local $bProxy = False
+    If Not StringInStr($sPcDns, "127.0.0.1") Then $bProxy = _LanDnsProxyStart($sRoot)
+    Local $sDnsServers = _LanDnsServers($sPcDns, $bProxy)
+    $__g_bLanDnsUsed = $bProxy
+    FileWrite($h, _LanBuildConfig($aPlan[0], $aPlan[1], $aAdapter[4], $sDnsServers))
     FileClose($h)
     _LanEnsureFirewall($sExe)
 
@@ -185,17 +204,20 @@ Func _LanStart($sRoot, ByRef $aPlan, ByRef $aAdapter, ByRef $sErr)
         Local $sTail = _LanLogTail($sLog)
         $sErr = _LanErrorReason($sTail)
         If $sErr = "" Then $sErr = "go-pcap2socks hemen kapandı. Ayrıntı: logs\paylasim.log"
+        _LanDnsProxyStop()
         _LogWarn("Ağ paylaşımı başlamadı: " & StringReplace(StringStripWS($sTail, 3), @CRLF, " | "))
         Return 0
     EndIf
     _LogInfo("Ağ paylaşımı başladı (PID " & $iPid & ", kart " & $aAdapter[0] & ($aAdapter[3] ? " [Wi-Fi]" : "") & _
-            ", ağ " & $aPlan[0] & ", geçit " & $aPlan[1] & ", kart IP " & $aAdapter[4] & ", ev ağı geçidi " & $aAdapter[1] & ")")
+            ", ağ " & $aPlan[0] & ", geçit " & $aPlan[1] & ", kart IP " & $aAdapter[4] & ", ev ağı geçidi " & $aAdapter[1] & ", DNS " & $sDnsServers & ")")
     Return $iPid
 EndFunc
 
 ; Paylaşımı durdurur (cmd + go-pcap2socks süreç ağacı).
 Func _LanStop($iPid, $sRoot)
     If $iPid > 0 And ProcessExists($iPid) Then _KillProcessTree($iPid)
+    _LanDnsProxyStop()
+    $__g_bLanDnsUsed = False
     ; Önceki oturumdan kalmış olabilir: yalnızca bu paketteki kopya hedeflenir.
     _KillProcessesUnderDir($sRoot & "\bin\go-pcap2socks")
     _LogInfo("Ağ paylaşımı durduruldu")
@@ -203,6 +225,7 @@ EndFunc
 
 ; Paylaşım çalışıyor mu? (cmd sarmalayıcısı go-pcap2socks kapanınca o da kapanır)
 Func _LanIsRunning($iPid)
+    If $__g_bLanDnsUsed And Not _LanDnsProxyRunning() Then Return False ; Discord adları çözülemez hale gelir
     Return $iPid > 0 And ProcessExists($iPid) <> 0
 EndFunc
 
@@ -231,4 +254,90 @@ Func _LanParseMtu($sLog)
     Local $n = Number($a[0])
     If $n < 576 Or $n > 9000 Then Return ""
     Return String($n)
+EndFunc
+
+; ------------------------------------------------------------------------
+; Paylaşım DNS'i
+; ------------------------------------------------------------------------
+
+; Paylaşılan cihazların DNS sunucuları. $sPcDns: bilgisayarın DNS'leri ("a,b"), $bProxy: yerel
+; şifreli DNS aracı çalışıyor mu. Bilgisayar zaten DNSCrypt kullanıyorsa (127.0.0.1) onu kullan.
+Func _LanDnsServers($sPcDns, $bProxy)
+    If StringRegExp($sPcDns, "(^|[,\s])127\.0\.0\.1($|[,\s])") Then Return "127.0.0.1:53"
+    If $bProxy Then Return "127.0.0.1:" & $LAN_DNS_PORT
+    ; Yedek: şifresiz; Discord adları sağlayıcıda düşebilir (bkz. $LAN_DNS_DIR_REL açıklaması).
+    Return "1.1.1.1:53|8.8.8.8:53|local"
+EndFunc
+
+; dnscrypt-proxy yapılandırmasından paylaşım kopyası: yalnızca dinleme adresi değişir.
+Func _LanDnsProxyToml($sToml, $iPort)
+    Return StringRegExpReplace($sToml, "(?m)^listen_addresses\s*=.*$", "listen_addresses = ['127.0.0.1:" & $iPort & "']")
+EndFunc
+
+; A kaydı için DNS sorgu paketi (binary).
+Func _LanDnsQuery($sName, $iId)
+    Local $s = Hex(BitAND($iId, 0xFFFF), 4) & "01000001000000000000"
+    For $sLabel In StringSplit($sName, ".", 2)
+        If $sLabel = "" Then ContinueLoop
+        $s &= Hex(StringLen($sLabel), 2) & StringTrimLeft(StringToBinary($sLabel, 1), 2)
+    Next
+    Return Binary("0x" & $s & "0000010001")
+EndFunc
+
+; Yerel DNS'e ham UDP sorusu; $iTimeoutMs içinde cevap gelirse True.
+Func _LanDnsProbe($sIP, $iPort, $sName, $iTimeoutMs = 2000)
+    UDPStartup()
+    Local $aSock = UDPOpen($sIP, $iPort)
+    If @error Then Return False
+    Local $iId = Random(1, 65535, 1)
+    UDPSend($aSock, _LanDnsQuery($sName, $iId))
+    Local $hT = TimerInit(), $bOk = False
+    While TimerDiff($hT) < $iTimeoutMs
+        Local $bData = UDPRecv($aSock, 512, 1)
+        If BinaryLen($bData) >= 12 And Dec(Hex(BinaryMid($bData, 1, 2))) = $iId Then
+            $bOk = True
+            ExitLoop
+        EndIf
+        Sleep(50)
+    WEnd
+    UDPCloseSocket($aSock)
+    Return $bOk
+EndFunc
+
+; Paylaşım için yerel şifreli DNS'i başlatır (sistem DNS'ine dokunmaz). Discord adını çözene kadar
+; en fazla 25 sn bekler. Dönüş: True = hazır.
+Func _LanDnsProxyStart($sRoot)
+    _LanDnsProxyStop()
+    Local $sDir = $sRoot & $LAN_DNS_DIR_REL
+    If Not FileExists($sDir & "\dnscrypt-proxy.exe") Or Not FileExists($sDir & "\dnscrypt-proxy.toml") Then Return False
+    Local $h = FileOpen($sDir & "\paylasim.toml", $FO_OVERWRITE + $FO_UTF8_NOBOM)
+    If $h = -1 Then Return False
+    FileWrite($h, _LanDnsProxyToml(FileRead($sDir & "\dnscrypt-proxy.toml"), $LAN_DNS_PORT))
+    FileClose($h)
+    Local $sLog = $sRoot & $LAN_DNS_LOG_REL
+    FileDelete($sLog)
+    $__g_iLanDnsPid = Run(@ComSpec & ' /c ""' & $sDir & '\dnscrypt-proxy.exe" -config paylasim.toml > "' & $sLog & '" 2>&1"', $sDir, @SW_HIDE)
+    If $__g_iLanDnsPid = 0 Then Return False
+    Local $hT = TimerInit()
+    While TimerDiff($hT) < 25000
+        If Not ProcessExists($__g_iLanDnsPid) Then ExitLoop
+        If _LanDnsProbe("127.0.0.1", $LAN_DNS_PORT, "discord.com", 1500) Then
+            _LogInfo("Ağ paylaşımı: yerel şifreli DNS hazır (127.0.0.1:" & $LAN_DNS_PORT & ", " & Int(TimerDiff($hT) / 1000) & " sn)")
+            Return True
+        EndIf
+        Sleep(500)
+    WEnd
+    _LogWarn("Ağ paylaşımı: yerel şifreli DNS hazırlanamadı; şifresiz DNS'e düşülüyor (Discord adları çözülemeyebilir)")
+    _LanDnsProxyStop()
+    Return False
+EndFunc
+
+; Yalnızca kendi başlattığımız kopyayı (PID) kapatır; kullanıcının DNSCrypt servisine dokunulmaz.
+Func _LanDnsProxyStop()
+    If $__g_iLanDnsPid > 0 And ProcessExists($__g_iLanDnsPid) Then _KillProcessTree($__g_iLanDnsPid)
+    $__g_iLanDnsPid = 0
+EndFunc
+
+Func _LanDnsProxyRunning()
+    Return $__g_iLanDnsPid > 0 And ProcessExists($__g_iLanDnsPid) <> 0
 EndFunc
