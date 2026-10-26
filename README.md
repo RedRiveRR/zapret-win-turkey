@@ -99,20 +99,41 @@ Zapret motoru hiç başlatılamazsa (ör. sürücü yüklenemiyor) analiz yanıl
 - **Lite sürüm** (`RedRiveRR Zapret Lite.exe`): yalnızca motor klasörüyle gelen küçük paket; başlat/durdur, strateji, servis ve hazır profilleri akıllı test etme (tepsi menüsü). Ağ paylaşımı ve DNSCrypt içermez.
 
 ## Ağdaki cihazlarla paylaşım
-PlayStation, Xbox, Switch, akıllı TV gibi cihazlar bilgisayarınızdaki Zapret üzerinden bağlanabilir ([go-pcap2socks](https://github.com/DaniilSokolyuk/go-pcap2socks)).
+PlayStation, Xbox, Nintendo Switch ve akıllı TV gibi cihazlar, bilgisayarınızdaki Zapret üzerinden internete çıkabilir. Böylece Discord gibi engelli hizmetler bu cihazlarda da açılır (ör. PS5'te Discord ve sesli sohbet). Altyapı: [go-pcap2socks](https://github.com/DaniilSokolyuk/go-pcap2socks).
 
-- Bilgisayarda **[Npcap](https://npcap.com/)** kurulu olmalı; bilgisayar ve cihaz aynı yerel ağda olmalı; Zapret çalışıyor olmalı.
-- *Diğer → Ağ paylaşımı* anahtarını açın, güvenlik duvarı iznini onaylayın.
-- Diğer cihazın ağ ayarlarını elle girin:
-  - **IP adresi:** `172.24.2.10` – `172.24.2.255` arasında kullanılmayan bir adres (ör. `172.24.2.50`)
-  - **Alt ağ maskesi:** `255.255.0.0`
-  - **Ağ geçidi:** `172.24.2.1`
-  - **DNS:** `1.1.1.1` ve `8.8.8.8` (DNS soruları bilgisayardaki şifreli DNS'ten cevaplanır; Türkiye'de Discord adları şifresiz DNS'te engellendiği için bu gerekli)
-  - **MTU:** PS5 ve Nintendo Switch'te elle girilmeli; değer *Diğer → Ağ paylaşımı* sayfasında görünür (ör. 1478).
-- Uygulamadaki **Ağ paylaşımı** sayfası bu ayarları kopyalanabilir biçimde ve PS5/PS4/Xbox/Switch/akıllı TV için adım adım gösterir.
+**Nasıl çalışır?** Bilgisayar yerel ağda bir ağ geçidi gibi davranır. Cihazın trafiği bilgisayardan çıktığı için Zapret ona da uygulanır.
 
-> [!CAUTION]
-> Wi-Fi üzerinden paylaşımda belirgin hız düşüşü olabilir; bilgisayarı modeme kabloyla bağlamanız önerilir. Paylaşım sürerken bilgisayar açık kalmalıdır.
+> [!IMPORTANT]
+> Cihaz bu ayarlarla internete **bilgisayar üzerinden** çıkar. Bilgisayar açık, RedRiveRR Zapret çalışıyor ve paylaşım açık değilse cihazda **hiçbir şey** internete bağlanmaz (mağaza ve diğer oyunlar dahil).
+> Ayarları cihazın ana bağlantısının yerine, cihaz izin veriyorsa **ayrı bir bağlantı kaydı** olarak ekleyin (ör. Nintendo Switch'te "Manuel kurulum" ile yeni kayıt). PS5, PS4 ve Xbox'ta tek kayıt olduğundan, bilgisayarsız oynarken IP ve DNS ayarlarını **Otomatik**'e döndürün; Discord gerekince yeniden elle girin.
+
+**Gereksinimler**
+- Bilgisayarda **[Npcap](https://npcap.com/#download)**, kurulumda **"WinPcap API-compatible Mode"** işaretli olarak kurulmuş olmalı.
+- Bilgisayar ve cihaz aynı modeme bağlı olmalı. Bilgisayarın modeme **kabloyla** bağlı olması önerilir; Wi-Fi'de paylaşım belirgin şekilde yavaşlar.
+- Zapret çalışıyor olmalı (Bağlantı ekranından başlatılmış ya da servis kurulu).
+
+**Kullanım**
+1. **Diğer → Ağ paylaşımı → Paylaşımı başlat.** Güvenlik duvarı izni program tarafından sessizce verilir.
+2. Cihazın ağ ayarlarını elle (statik) girin. Sayfa bu değerleri her satırda **Kopyala** düğmesiyle gösterir:
+
+   | Ayar | Değer |
+   |---|---|
+   | IP adresi | `172.24.2.50` (ikinci cihaz `.51`, sonrakiler birer artar) |
+   | Alt ağ maskesi | `255.255.0.0` (önek uzunluğu 16) |
+   | Ağ geçidi | `172.24.2.1` |
+   | Birincil / ikincil DNS | `1.1.1.1` / `8.8.8.8`; ağ geçidinin adresini **yazmayın** |
+   | MTU | PS5 ve Switch'te **elle** girilmeli; değer sayfada görünür (ör. 1478) |
+
+   Ev ağınız zaten 172.24.x.x kullanıyorsa program farklı bir aralık (ör. 10.77.x.x) seçer; sayfadaki değerleri kullanın.
+3. Sayfadaki rehberde **PS5, PS4, Xbox, Nintendo Switch ve akıllı TV** için adım adım menü yolu var.
+4. Cihazda bağlantı testini yapın, ardından Discord'u açın.
+
+**DNS ve Discord.** Türkiye'de bazı sağlayıcılar Discord adreslerini soran **şifresiz** DNS sorularını düşürür. Bilgisayarınız şifreli DNS kullandığı için bundan etkilenmez, ama paylaşılan cihazlar etkilenir. Bu yüzden paylaşım, cihazların DNS sorularını şifreli DNS'ten cevaplar:
+- Bilgisayarda **DNSCrypt servisi** kurulu ve çalışıyorsa doğrudan o kullanılır; **ikinci bir servis açılmaz**.
+- Kurulu değilse paketteki DNSCrypt, paylaşıma özel **geçici** bir kopya olarak çalışır (127.0.0.1:5354). Bu bir servis değildir, bilgisayarınızın DNS ayarına dokunmaz ve paylaşım kapanınca kapanır.
+- İkisi de olmazsa şifresiz DNS'e düşülür ve sayfadaki **Cihazların DNS'i** satırı "Şifresiz" uyarısı verir; bu durumda Discord açılmayabilir.
+
+**Kararlılık.** Paylaşım her açılışta doğru ağ kartını ve çakışmayan adres aralığını kendisi seçer. Paylaşım ya da şifreli DNS düşerse bir kez kendiliğinden yeniden başlar; olmazsa nedeni bildirilir. Kayıtlar `logs\paylasim.log` ve `logs\paylasim-dns.log` dosyalarındadır. Lite sürümde ağ paylaşımı yoktur.
 
 ## Sorun giderme
 
@@ -125,6 +146,9 @@ PlayStation, Xbox, Switch, akıllı TV gibi cihazlar bilgisayarınızdaki Zapret
 | Yeni arayüz açılmıyor | WebView2 eksik olabilir; program klasik arayüzle açılır. [WebView2 çalışma zamanını](https://developer.microsoft.com/microsoft-edge/webview2/) kurabilirsiniz. |
 | Sesli görüşme çalışmıyor | Puan sesi ölçmez; *Tüm sonuçlar*dan başka bir stratejiyi *Seçileni Kullan* ile deneyin. |
 | GoodbyeDPI / başka zapret çalışıyor | Program açılışta çakışan araçları (GoodbyeDPI, ByeDPI, başka klasördeki winws) tespit eder ve onayınızla kapatır. |
+| Konsol "internete bağlanılamıyor" diyor | Paylaşımın açık olduğunu kontrol edin. DNS olarak ağ geçidini (172.24.2.1) değil, `1.1.1.1` / `8.8.8.8` yazın. PS5/Switch'te MTU'yu sayfadaki değerle (ör. 1478) elle girin; olmazsa 1400 deneyin. Bilgisayarda VPN açıksa kapatın. |
+| Konsolda internet var ama Discord açılmıyor | *Ağ paylaşımı* sayfasında **Cihazların DNS'i** satırına bakın; "Şifresiz" yazıyorsa şifreli DNS açılamamıştır. Paylaşımı durdurup yeniden başlatın; sürerse `logs\paylasim-dns.log` ile bildirin. Bilgisayarda Zapret'in çalıştığından emin olun. |
+| Bilgisayar kapalıyken konsolda internet yok | Beklenen davranış: paylaşım ayarlarıyla cihaz bilgisayar üzerinden çıkar. Bilgisayarsız oynarken cihazda IP ve DNS ayarlarını **Otomatik**'e döndürün. |
 
 Sorun sürerse **Diğer → Sorun bildirmek için paket oluştur** ile masaüstüne bir ZIP kaydedin ve [Issues](https://github.com/RedRiveRR/zapret-win-turkey/issues) sayfasına ekleyin. Kayıtlar `logs\app.log` dosyasındadır.
 
