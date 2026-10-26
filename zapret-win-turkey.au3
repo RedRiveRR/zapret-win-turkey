@@ -128,6 +128,8 @@ Global $pcapPID = 0
 Global $g_aLanPlan[5] = ["", "", "", "", ""], $g_aLanAdapter[5] = ["", "", "", False, ""], $g_sLanError = "", $g_iLanRestarts = 0
 ; Yeni arayüzün paylaşım sayfası: Npcap durumu ("var/uyumsuz/yok", "" = okunmadı), cihaz MTU'su, son gönderilen mesaj
 Global $g_sLanNpcap = "", $g_sLanMtu = "", $g_sWebLastLanJson = ""
+; Yeni arayüz: paylaşım başlat/durdur bitti, sayfadaki "Başlatılıyor…" kilidi açılsın (bir sonraki eşitlemede "bitti").
+Global $g_bWebLanDone = False
 Global $bServiceStoppedWarned = False
 Global $bDnsReset = True
 Global $g_sEngineFooter = ""
@@ -537,6 +539,7 @@ While 1
             Else
                 _LanShareStop()
             EndIf
+            $g_bWebLanDone = True
 
         Case $btnRunZapret
             If $isZapretRunning = False Then
@@ -1902,11 +1905,18 @@ Func _WebUiTick($nMsg)
                     If BitAND(GUICtrlGetState($idSvcBtn), $GUI_ENABLE) Then Return $idSvcBtn
                 ElseIf $sCmd = "paylasimYenile" Then
                     _WebUiLanRefresh()
+                    $g_bWebLanDone = True
+                ElseIf $sCmd = "paylasimBaslat" Or $sCmd = "paylasimDurdur" Then
+                    ; Komut hedef durumdur (aç/kapa değil): başlatma sürerken sıraya giren ikinci basış
+                    ; paylaşımı hemen kapatıyordu (2026-10-27, H26).
+                    Local $bLanOn = (GUICtrlRead($btnLanShare) = "[ ✓ ] Paylaşım Aktif / Durdur")
+                    If ($sCmd = "paylasimBaslat") <> $bLanOn And BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) Then Return $btnLanShare
+                    $g_bWebLanDone = True
                 ElseIf $sCmd = "npcap" Then
                     ShellExecute("https://npcap.com/#download")
                 ElseIf $sCmd = "github" Then
                     ShellExecute("https://github.com/" & $APP_UPDATE_REPO)
-                ElseIf $sCmd = "tanilama" Or $sCmd = "kayitlar" Or $sCmd = "ayarlar" Or $sCmd = "paylasim" Or $sCmd = "temizle" Then
+                ElseIf $sCmd = "tanilama" Or $sCmd = "kayitlar" Or $sCmd = "ayarlar" Or $sCmd = "temizle" Then
                     $g_sWebLastOtherJson = ""
                     _WebUiServiceRefreshSoon()
                     Local $idOther
@@ -1917,8 +1927,6 @@ Func _WebUiTick($nMsg)
                             $idOther = $btnPageLogs
                         Case "ayarlar"
                             $idOther = $btnPageSettings
-                        Case "paylasim"
-                            $idOther = $btnLanShare
                         Case Else
                             $idOther = $btnRemoveService
                     EndSwitch
@@ -1979,7 +1987,11 @@ Func _WebUiSyncAll()
     EndIf
     Local $sLan = _WebLanJson(_LanIsRunning($pcapPID), BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) <> 0, $g_sLanError, _
             $g_sLanNpcap, $g_aLanAdapter[0], $g_aLanAdapter[3], $sPrefix, $g_sLanMtu, _LanDnsModeCurrent())
-    If $sLan <> $g_sWebLastLanJson Then
+    If $g_bWebLanDone Then
+        $g_bWebLanDone = False
+        $g_sWebLastLanJson = $sLan
+        _WV2_Post(_WebJsonAdd($sLan, "bitti", True))
+    ElseIf $sLan <> $g_sWebLastLanJson Then
         $g_sWebLastLanJson = $sLan
         _WV2_Post($sLan)
     EndIf

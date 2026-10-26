@@ -15,9 +15,9 @@
 //   {tip:"dns", durum, baslik, aciklama, mod:"saglayici|cloudflare|sifreli|diger|", sunucular, degistirAcik}
 //   {tip:"dnsYenile"} (DNS sekmesi açılınca), {tip:"komut", ad:"dns", mod}
 //   {tip:"diger", paylasim, paylasimAcik, guncelleme, hakkinda, temizleAcik}
-//   {tip:"komut", ad:"tanilama|kayitlar|ayarlar|paylasim|temizle"}, {tip:"ayar", ad:"guncelleme", deger:bool}
-//   {tip:"paylasim", durum:"acik|kapali|hata", hata, npcap:"var|uyumsuz|yok|", baslatilabilir, kart, wifi, ip, ip2, maske, gecit, mtu}
-//   {tip:"komut", ad:"paylasimYenile|npcap"}, {tip:"kopyala", metin}
+//   {tip:"komut", ad:"tanilama|kayitlar|ayarlar|temizle"}, {tip:"ayar", ad:"guncelleme", deger:bool}
+//   {tip:"paylasim", durum:"acik|kapali|hata", hata, npcap:"var|uyumsuz|yok|", baslatilabilir, kart, wifi, ip, ip2, maske, gecit, mtu, bitti}
+//   {tip:"komut", ad:"paylasimBaslat|paylasimDurdur|paylasimYenile|npcap"} (bitti: başlat/durdur/yenile işlendi), {tip:"kopyala", metin}
 //   {tip:"bildirim", metin}   (program -> sayfa, birkaç saniye görünür)
 //   {tip:"komut", ad:"servisKur|servisKaldir|servisAyarlar"}, {tip:"ayar", ad:"onarim|yenidenBaslat", deger:bool}
 'use strict';
@@ -247,7 +247,28 @@ function digerUygula(m) {
 // --- Ağ paylaşımı ---
 $('paylasim-ac').addEventListener('click', () => { gorunumAc('paylasim'); gonder({ tip: 'komut', ad: 'paylasimYenile' }); });
 $('paylasim-geri').addEventListener('click', () => gorunumAc('diger'));
-$('paylasim-dugme').addEventListener('click', () => { $('paylasim-dugme').disabled = true; gonder({ tip: 'komut', ad: 'paylasim' }); });
+// Başlatma ~10 sn sürer (şifreli DNS + kart okuma). Bu sürede düğme kilitli kalır ve ne olduğunu söyler;
+// komut aç/kapa değil hedef durumdur, böylece sırada kalan ikinci basış paylaşımı kapatamaz.
+let paylasimAcik = false;
+let paylasimBekliyor = 0;
+function paylasimBeklemeBitti() {
+  clearTimeout(paylasimBekliyor);
+  paylasimBekliyor = 0;
+}
+$('paylasim-dugme').addEventListener('click', () => {
+  if (paylasimBekliyor) return;
+  const d = $('paylasim-dugme');
+  d.disabled = true;
+  d.textContent = paylasimAcik ? 'Durduruluyor…' : 'Başlatılıyor…';
+  if (!paylasimAcik) {
+    $('paylasim-baslik').textContent = 'Paylaşım başlatılıyor';
+    $('paylasim-aciklama').textContent = 'Şifreli DNS ve ağ kartı hazırlanıyor; birkaç saniye sürer.';
+    $('paylasim-durum').dataset.durum = 'bekliyor';
+  }
+  // Program cevap vermezse düğme sonsuza dek kilitli kalmasın.
+  paylasimBekliyor = setTimeout(() => { paylasimBekliyor = 0; gonder({ tip: 'komut', ad: 'paylasimYenile' }); }, 45000);
+  gonder({ tip: 'komut', ad: paylasimAcik ? 'paylasimDurdur' : 'paylasimBaslat' });
+});
 document.querySelectorAll('[data-kopyala]').forEach((b) => b.addEventListener('click', () => {
   const metin = $(b.dataset.kopyala).textContent;
   if (!metin || metin === '—') return;
@@ -262,6 +283,9 @@ document.querySelectorAll('[data-rehber]').forEach((b) => b.addEventListener('cl
 
 function paylasimUygula(m) {
   const acik = m.durum === 'acik';
+  paylasimAcik = acik;
+  if (paylasimBekliyor && !m.bitti) return; // işlem sürüyor: ara durumlar düğmeyi açmasın
+  paylasimBeklemeBitti();
   $('paylasim-durum').dataset.durum = acik ? 'acik' : (m.durum === 'hata' ? 'hata' : 'yok');
   $('paylasim-baslik').textContent = acik ? 'Paylaşım açık' : (m.durum === 'hata' ? 'Paylaşım çalışmıyor' : 'Paylaşım kapalı');
   $('paylasim-aciklama').textContent = m.hata || (acik ? 'Cihazda aşağıdaki ayarları girdiysen bağlanabilir.'
