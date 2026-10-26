@@ -62,11 +62,14 @@ Func _LanDeviceIP($sPrefix, $iN)
     Return $sPrefix & ".2." & (49 + $iN)
 EndFunc
 
-; go-pcap2socks yapılandırması. $sIfaceGateway: dinlenecek kartın ev ağı geçidi ("" = kendisi seçsin).
+; go-pcap2socks yapılandırması (config.json, exe'nin yanında).
+; $sIfaceIP: dinlenecek kartın BU BİLGİSAYARDAKİ IPv4 adresi (go-pcap2socks belgesi: "interfaceGateway =
+; IPv4 address of the physical network interface to capture on"; modemin adresi değil). "" = varsayılan
+; rota kartını kendisi seçer.
 ; Tüm DNS sorguları (53) bilgisayarın çözücüsüne gider: cihaz DNS olarak ağ geçidini kullanabilir.
-Func _LanBuildConfig($sNetwork, $sLocalIP, $sIfaceGateway)
+Func _LanBuildConfig($sNetwork, $sLocalIP, $sIfaceIP)
     Local $sPcap = '"network": "' & $sNetwork & '", "localIP": "' & $sLocalIP & '"'
-    If $sIfaceGateway <> "" Then $sPcap &= ', "interfaceGateway": "' & $sIfaceGateway & '"'
+    If $sIfaceIP <> "" Then $sPcap &= ', "interfaceGateway": "' & $sIfaceIP & '"'
     Return '{' & @CRLF & _
             '  "pcap": { ' & $sPcap & ' },' & @CRLF & _
             '  "dns": { "servers": [ { "address": "local" } ] },' & @CRLF & _
@@ -76,15 +79,19 @@ Func _LanBuildConfig($sNetwork, $sLocalIP, $sIfaceGateway)
             '}' & @CRLF
 EndFunc
 
-; PowerShell çıktısı "ad|açıklama|geçit|ip1,ip2|ortam" -> [ad, geçit, IP'ler, Wi-Fi mi]
+; PowerShell çıktısı "ad|açıklama|ev ağı geçidi|tüm IPv4'ler|ortam|kartın IPv4'ü"
+; -> [ad, ev ağı geçidi, tüm IPv4'ler (çakışma denetimi için), Wi-Fi mi, kartın kendi IPv4'ü]
 Func _LanParseAdapter($sOut)
-    Local $a[4] = ["", "", "", False]
+    Local $a[5] = ["", "", "", False, ""]
     Local $aF = StringSplit(StringStripWS($sOut, 3), "|", 2)
-    If UBound($aF) < 5 Then Return $a
+    If UBound($aF) < 6 Then Return $a
     $a[0] = $aF[0]
     $a[1] = StringStripWS($aF[2], 3)
     $a[2] = StringStripWS($aF[3], 3)
     $a[3] = StringRegExp($aF[1] & " " & $aF[4], "(?i)wi-?fi|wireless|802\.11|wlan") = 1
+    ; Kartta birden fazla IPv4 olabilir: ilki
+    Local $aOwn = StringSplit(StringStripWS($aF[5], 3), ",", 2)
+    $a[4] = StringStripWS($aOwn[0], 3)
     Return $a
 EndFunc
 
@@ -93,7 +100,8 @@ Func _LanReadAdapter()
     Local $sBody = "$c = Get-NetIPConfiguration -InterfaceAlias $adapter.Name; " & _
             "$g = ($c.IPv4DefaultGateway | Select-Object -First 1).NextHop; " & _
             "$ips = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | ForEach-Object { $_.IPAddress }) -join ','; " & _
-            "$adapter.Name + '|' + $adapter.InterfaceDescription + '|' + $g + '|' + $ips + '|' + $adapter.PhysicalMediaType"
+            "$own = (Get-NetIPAddress -InterfaceAlias $adapter.Name -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.PrefixOrigin -ne 'WellKnown' } | ForEach-Object { $_.IPAddress }) -join ','; " & _
+            "$adapter.Name + '|' + $adapter.InterfaceDescription + '|' + $g + '|' + $ips + '|' + $adapter.PhysicalMediaType + '|' + $own"
     Return _LanParseAdapter(_NetReadPowerShell(_NetWithAdapter($sBody)))
 EndFunc
 
@@ -144,7 +152,7 @@ Func _LanStart($sRoot, ByRef $aPlan, ByRef $aAdapter, ByRef $sErr)
         $sErr = "Yapılandırma yazılamadı (" & $sDir & ")."
         Return 0
     EndIf
-    FileWrite($h, _LanBuildConfig($aPlan[0], $aPlan[1], $aAdapter[1]))
+    FileWrite($h, _LanBuildConfig($aPlan[0], $aPlan[1], $aAdapter[4]))
     FileClose($h)
     _LanEnsureFirewall($sExe)
 
@@ -171,7 +179,7 @@ Func _LanStart($sRoot, ByRef $aPlan, ByRef $aAdapter, ByRef $sErr)
         Return 0
     EndIf
     _LogInfo("Ağ paylaşımı başladı (PID " & $iPid & ", kart " & $aAdapter[0] & ($aAdapter[3] ? " [Wi-Fi]" : "") & _
-            ", ağ " & $aPlan[0] & ", geçit " & $aPlan[1] & ", ev ağı geçidi " & $aAdapter[1] & ")")
+            ", ağ " & $aPlan[0] & ", geçit " & $aPlan[1] & ", kart IP " & $aAdapter[4] & ", ev ağı geçidi " & $aAdapter[1] & ")")
     Return $iPid
 EndFunc
 

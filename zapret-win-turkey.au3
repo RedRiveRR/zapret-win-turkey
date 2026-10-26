@@ -125,7 +125,7 @@ Global $isZapretRunning = False
 Global $zapretPID = 0
 Global $pcapPID = 0
 ; Ağ paylaşımı: kullanılan cihaz ayarları (_LanPlan), kart (_LanParseAdapter), son hata, otomatik yeniden başlatma sayısı
-Global $g_aLanPlan[5] = ["", "", "", "", ""], $g_aLanAdapter[4] = ["", "", "", False], $g_sLanError = "", $g_iLanRestarts = 0
+Global $g_aLanPlan[5] = ["", "", "", "", ""], $g_aLanAdapter[5] = ["", "", "", False, ""], $g_sLanError = "", $g_iLanRestarts = 0
 Global $bServiceStoppedWarned = False
 Global $bDnsReset = True
 Global $g_sEngineFooter = ""
