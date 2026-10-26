@@ -141,6 +141,23 @@ Func _TestWebState()
     _AssertEq(_WebJsonGet($s, "paylasimAcik"), "false", "paylaşım düğmesi kapalı")
     _AssertEq(_WebJsonGet($s, "guncelleme"), "false", "güncelleme kontrolü kapalı")
     _AssertEq(_WebJsonGet($s, "hakkinda"), "Sürüm 4.5.1", "motor bilinmiyorsa yalnız sürüm")
+
+    ; --- Ağ paylaşımı sayfası ---
+    $s = _WebLanJson(True, True, "", "var", "Ethernet", False, "172.24")
+    _AssertEq(_WebJsonGet($s, "tip"), "paylasim", "paylaşım mesajı")
+    _AssertEq(_WebJsonGet($s, "durum"), "acik", "açık")
+    _AssertEq(_WebJsonGet($s, "ip"), "172.24.2.50", "ilk cihaz IP'si")
+    _AssertEq(_WebJsonGet($s, "ip2"), "172.24.2.51", "ikinci cihaz IP'si")
+    _AssertEq(_WebJsonGet($s, "gecit"), "172.24.2.1", "ağ geçidi")
+    _AssertEq(_WebJsonGet($s, "maske"), "255.255.0.0", "maske")
+    $s = _WebLanJson(False, False, "Npcap kurulu değil.", "yok", "", False, "")
+    _AssertEq(_WebJsonGet($s, "durum"), "hata", "hata durumu")
+    _AssertEq(_WebJsonGet($s, "baslatilabilir"), "false", "başlatılamaz")
+    _AssertEq(_WebJsonGet($s, "ip"), "", "önek bilinmiyorsa ayar yok")
+    $s = _WebLanJson(False, True, "", "", "Wi-Fi", True, "10.77")
+    _AssertEq(_WebJsonGet($s, "durum"), "kapali", "kapalı")
+    _AssertEq(_WebJsonGet($s, "wifi"), "true", "Wi-Fi")
+    _AssertEq(_WebJsonGet($s, "gecit"), "10.77.2.1", "başka önek")
 EndFunc
 
 Func _StringRepeatW($s, $n)

@@ -1,6 +1,7 @@
 ﻿#include-once
 #include "WebMsg.au3"
 #include "SmartAnalysis.au3"
+#include "LanShare.au3"
 
 ; =========================================================================
 ; Eski arayüzün durum metinlerini yeni arayüzün "durum" mesajına çevirir.
@@ -260,4 +261,23 @@ Func __WebSet4(ByRef $a, $s0, $s1, $s2, $s3)
     $a[1] = $s1
     $a[2] = $s2
     $a[3] = $s3
+EndFunc
+
+; Ağ paylaşımı sayfası mesajı.
+;   $bOn: paylaşım açık, $bCanStart: başlatılabilir mi (zapret çalışıyor), $sError: son hata ("" = yok)
+;   $sNpcap: "var" | "yok" | "" (bilinmiyor), $sAdapter: kart adı, $bWifi, $sPrefix: ağ öneki ("" = bilinmiyor)
+Func _WebLanJson($bOn, $bCanStart, $sError, $sNpcap, $sAdapter, $bWifi, $sPrefix)
+    Local $sDurum = $bOn ? "acik" : ($sError <> "" ? "hata" : "kapali")
+    Local $s = _WebJsonObj("tip", "paylasim", "durum", $sDurum, "hata", $sError, "npcap", $sNpcap)
+    $s = _WebJsonAdd($s, "baslatilabilir", $bCanStart = True)
+    $s = _WebJsonAdd($s, "kart", $sAdapter)
+    $s = _WebJsonAdd($s, "wifi", $bWifi = True)
+    If $sPrefix <> "" Then
+        Local $a = _LanPlan($sPrefix)
+        $s = _WebJsonAdd($s, "ip", $a[3])
+        $s = _WebJsonAdd($s, "ip2", _LanDeviceIP($sPrefix, 2))
+        $s = _WebJsonAdd($s, "maske", $a[2])
+        $s = _WebJsonAdd($s, "gecit", $a[1])
+    EndIf
+    Return $s
 EndFunc
