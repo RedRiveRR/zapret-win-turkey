@@ -20,6 +20,7 @@
 #include "test_webmsg.au3"
 #include "test_webstate.au3"
 #include "test_appstate.au3"
+#include "test_lanshare.au3"
 
 _TestProcess()
 _TestBlockcheck()
@@ -37,5 +38,6 @@ _TestInstall()
 _TestWebMsg()
 _TestWebState()
 _TestAppState()
+_TestLanShare()
 
 Exit _AssertSummary()
