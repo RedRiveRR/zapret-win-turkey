@@ -6,6 +6,7 @@
     Repoda olmayan ikililer (zapret-winws, cygwin, blockcheck yardımcıları) upstream'in
     v4.5 release ZIP'inden alınır. ZIP'in SHA256 özeti sabitlenmiştir; değişirse derleme durur.
     Üzerine bu repodaki kaynaklar, config dosyaları ve Aut2Exe ile derlenen exe konur.
+    Exe'lere sürüm bilgisi (ürün adı, açıklama, sürüm) scripts\set-version.ps1 ile yazılır.
     Upstream ZIP'indeki geliştiriciye ait config.ini ve blockcheck logları pakete alınmaz.
 
     Çıktı: dist\zapret-win-turkey-<sürüm>-<commit>.zip, dist\zapret-win-turkey-lite-<sürüm>-<commit>.zip,
@@ -85,17 +86,21 @@ try {
     $mainExeName = 'RedRiveRR Zapret.exe'
     $liteExeName = 'RedRiveRR Zapret Lite.exe'
 
-    function Invoke-Compile([string]$name, [string]$exeName) {
+    . (Join-Path $PSScriptRoot 'set-version.ps1')
+
+    function Invoke-Compile([string]$name, [string]$exeName, [string]$description) {
         $in = Join-Path $src "$name.au3"
         $out = Join-Path $src $exeName
         # /nopack: UPX ile sıkıştırılmış exe'ler antivirüslerde daha sık yanlış alarm veriyor.
         $p = Start-Process -FilePath $aut2exe -ArgumentList '/in', "`"$in`"", '/out', "`"$out`"", '/icon', "`"$icon`"", '/x64', '/nopack' -Wait -PassThru -NoNewWindow
         if (-not (Test-Path $out)) { throw "$name derlenemedi (Aut2Exe çıkış kodu $($p.ExitCode))" }
-        Write-Host ("derlendi {0} ({1:N0} bayt)" -f $exeName, (Get-Item $out).Length)
+        # Ürün adı/açıklama/sürüm: boş kimlikli imzasız exe Akıllı Uygulama Denetimi'nde daha kolay engelleniyor (H25).
+        Set-ExeVersionInfo -Path $out -Version $version -Description $description -OriginalName $exeName
+        Write-Host ("derlendi {0} ({1:N0} bayt, sürüm {2})" -f $exeName, (Get-Item $out).Length, (Get-Item $out).VersionInfo.FileVersion)
         return $out
     }
-    $mainExe = Invoke-Compile 'zapret-win-turkey' $mainExeName
-    $liteExe = Invoke-Compile 'zapret-win-turkey-lite' $liteExeName
+    $mainExe = Invoke-Compile 'zapret-win-turkey' $mainExeName 'RedRiveRR Zapret'
+    $liteExe = Invoke-Compile 'zapret-win-turkey-lite' $liteExeName 'RedRiveRR Zapret Lite'
 
     # Ortak: repo config dosyaları ve dokümanlar
     function Copy-Common([string]$dest, [string]$scriptName) {
