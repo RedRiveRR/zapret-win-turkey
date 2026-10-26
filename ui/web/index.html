@@ -120,8 +120,7 @@
     <section class="gorunum" id="g-diger">
       <div class="sayfabaslik"><h1>Diğer</h1></div>
       <section class="kart liste">
-        <div class="satir"><span class="ad"><b>Ağ paylaşımı</b><span class="kucuk">Telefon ve konsol bu bilgisayar üzerinden bağlansın. Npcap gerekir.</span></span>
-          <button class="anahtar" role="switch" aria-checked="false" aria-label="Ağ paylaşımı" id="paylasim" disabled><span></span></button></div>
+        <button class="satir tik" id="paylasim-ac"><span class="ad"><b>Ağ paylaşımı</b><span class="kucuk">Konsol ve akıllı TV bu bilgisayar üzerinden bağlansın.</span></span><span class="deger" id="paylasim-ozet">Kapalı</span><svg class="ok" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
         <div class="satir"><span class="ad"><b>Güncellemeleri kontrol et</b><span class="kucuk">Açılışta yeni sürüm var mı bakar.</span></span>
           <button class="anahtar" role="switch" aria-checked="true" aria-label="Güncellemeleri kontrol et" id="guncelleme" disabled><span></span></button></div>
       </section>
@@ -134,6 +133,32 @@
       </section>
       <button class="tehlike" id="temizle" data-onay="Temizlemek için tekrar bas" disabled>Her şeyi temizle ve DNS'i sıfırla</button>
       <p class="kucuk" style="margin:0 4px">Servis, WinDivert ve DNSCrypt kaldırılır, DNS otomatiğe döner.</p>
+    </section>
+    <!-- Ağ paylaşımı (Diğer'den açılır) -->
+    <section class="gorunum" id="g-paylasim">
+      <div class="sayfabaslik geri"><button class="ikonbtn" id="paylasim-geri" aria-label="Diğer'e dön"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button><div><h1>Ağ paylaşımı</h1><p>Konsol ve TV, bu bilgisayardaki Zapret üzerinden bağlansın.</p></div></div>
+      <section class="kart servisdurum" id="paylasim-durum" data-durum="yok">
+        <span class="servisikon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path></svg></span>
+        <span class="ad"><b id="paylasim-baslik">Paylaşım kapalı</b><span class="kucuk" id="paylasim-aciklama"></span></span>
+      </section>
+      <button class="birincil" id="paylasim-dugme" disabled>Paylaşımı başlat</button>
+      <section class="kart liste">
+        <div class="satir"><span class="ad"><b>Npcap</b><span class="kucuk">Ağ kartını dinlemek için gereken sürücü ("WinPcap API-compatible Mode" işaretli kurulmalı).</span></span><span class="deger" id="paylasim-npcap">—</span><button class="baglanti" data-komut="npcap" id="npcap-indir" hidden>İndir</button></div>
+        <div class="satir"><span class="ad"><b>Bağlantı</b><span class="kucuk" id="paylasim-kart-not">Kablo önerilir; Wi-Fi'de paylaşım yavaşlar.</span></span><span class="deger" id="paylasim-kart">—</span></div>
+      </section>
+      <section class="kart liste" id="paylasim-ayar">
+        <div class="dnsbaslik">Cihazda girilecek ayarlar (elle / statik)</div>
+        <div class="satir"><span class="ad"><b>IP adresi</b><span class="kucuk" id="paylasim-ip2"></span></span><span class="deger kod" id="paylasim-ip">—</span><button class="baglanti" data-kopyala="paylasim-ip">Kopyala</button></div>
+        <div class="satir"><span class="ad"><b>Alt ağ maskesi</b></span><span class="deger kod" id="paylasim-maske">—</span><button class="baglanti" data-kopyala="paylasim-maske">Kopyala</button></div>
+        <div class="satir"><span class="ad"><b>Ağ geçidi</b></span><span class="deger kod" id="paylasim-gecit">—</span><button class="baglanti" data-kopyala="paylasim-gecit">Kopyala</button></div>
+        <div class="satir"><span class="ad"><b>DNS</b><span class="kucuk">Ağ geçidiyle aynı; sorgular bilgisayarın DNS'inden geçer.</span></span><span class="deger kod" id="paylasim-dns">—</span><button class="baglanti" data-kopyala="paylasim-dns">Kopyala</button></div>
+        <div class="satir"><span class="ad"><b>MTU</b><span class="kucuk">PS5 ve Switch'te elle girilmeli; paylaşım başlayınca görünür.</span></span><span class="deger kod" id="paylasim-mtu">—</span><button class="baglanti" data-kopyala="paylasim-mtu">Kopyala</button></div>
+      </section>
+      <section class="kart rehber">
+        <div class="sekmeler" role="tablist" aria-label="Cihaz rehberi"><button role="tab" aria-selected="true" data-rehber="ps5">PlayStation 5</button><button role="tab" aria-selected="false" data-rehber="ps4">PlayStation 4</button><button role="tab" aria-selected="false" data-rehber="xbox">Xbox</button><button role="tab" aria-selected="false" data-rehber="switch">Nintendo Switch</button><button role="tab" aria-selected="false" data-rehber="tv">Akıllı TV</button></div>
+        <ol class="adimlar" data-rehber-icerik="ps5"><li>Ayarlar → Ağ → Ayarlar → İnternet Bağlantısını Kur.</li><li>Kullandığın bağlantıyı seç (kablo ya da Wi-Fi), Options tuşu → Gelişmiş Ayarlar.</li><li>IP Adresi Ayarları: <b>Manuel</b>. IP adresi, Alt Ağ Maskesi ve Varsayılan Ağ Geçidi'ni yaz.</li><li>Birincil DNS: ağ geçidiyle aynı adres. İkincil DNS boş kalabilir.</li><li>MTU: <b>Manuel</b>, yukarıdaki MTU değeri (PS5'te gerekli).</li><li>Tamam → bağlantıyı test et.</li></ol><ol class="adimlar" data-rehber-icerik="ps4" hidden><li>Ayarlar → Ağ → İnternet Bağlantısını Kur → Kablo veya Wi-Fi → <b>Özel</b>.</li><li>IP Adresi Ayarları: <b>Manuel</b>. IP adresi, Alt Ağ Maskesi, Varsayılan Ağ Geçidi'ni yaz.</li><li>Birincil DNS: ağ geçidiyle aynı adres.</li><li>MTU: Otomatik (bağlanmazsa Manuel ve yukarıdaki değer), Proxy: Kullanma → test et.</li></ol><ol class="adimlar" data-rehber-icerik="xbox" hidden><li>Ayarlar → Genel → Ağ ayarları → Gelişmiş ayarlar.</li><li>IP ayarları → <b>El ile</b>: IP adresi, alt ağ maskesi, ağ geçidi.</li><li>DNS ayarları → <b>El ile</b>: birincil DNS = ağ geçidi.</li><li>Geri dön → Ağ bağlantısını test et.</li></ol><ol class="adimlar" data-rehber-icerik="switch" hidden><li>Sistem Ayarları → İnternet → İnternet Ayarları → ağını seç → Ayarı Değiştir.</li><li>IP Adresi Ayarları: <b>Manuel</b>. IP adresi, Alt Ağ Maskesi, Ağ Geçidi.</li><li>DNS Ayarları: <b>Manuel</b>. Birincil DNS = ağ geçidi.</li><li>MTU: yukarıdaki MTU değeri (Switch'te gerekli).</li><li>Kaydet → Bağlantıyı Test Et.</li></ol><ol class="adimlar" data-rehber-icerik="tv" hidden><li>Android / Google TV: Ayarlar → Ağ ve İnternet → ağın → IP ayarları: <b>Statik</b>.</li><li>IP adresi, ağ geçidi ve DNS'i yaz; ağ önek uzunluğu: <b>16</b>.</li><li>Samsung / LG: Ağ ayarları → IP ayarları → <b>Manuel</b> (aynı değerler).</li><li>Discord veya YouTube uygulamasını yeniden aç.</li></ol>
+        <p class="kucuk">Menü adları cihaz yazılımı sürümüne göre biraz farklı olabilir. Bilgisayar ve cihaz aynı modeme bağlı olmalı, bilgisayar açık kalmalı.</p>
+      </section>
     </section>
   </main>
   <div class="bildirim" id="bildirim" role="status" aria-live="polite"></div>

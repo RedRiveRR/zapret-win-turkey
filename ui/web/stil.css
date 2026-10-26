@@ -134,3 +134,15 @@ button.satir:disabled{opacity:.5;cursor:default}
 .secim .kucuk{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 :root[data-tema="acik"]{color-scheme:light}
 :root[data-tema="koyu"]{color-scheme:dark}
+/* Ağ paylaşımı */
+.sayfabaslik.geri{display:flex;align-items:center;gap:12px}
+.sayfabaslik.geri h1{margin:0}
+.deger.kod{font-family:Consolas,'Cascadia Mono',monospace;color:var(--text);font-size:14px}
+#paylasim-ayar .satir{gap:10px}
+.servisdurum[data-durum="acik"]{--t:var(--ok);--tt:var(--onAccent);background:var(--okTint)}
+.rehber{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.rehber .kucuk{margin:0}
+.sekmeler{display:flex;gap:6px;flex-wrap:wrap}
+.sekmeler button{border:0;border-radius:10px;padding:6px 10px;font-size:12.5px;font-weight:600;background:var(--surface2);color:var(--muted);cursor:pointer}
+.sekmeler button[aria-selected="true"]{background:var(--accentTint);color:var(--accentText)}
+.adimlar{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:1.4}

@@ -16,6 +16,8 @@
 //   {tip:"dnsYenile"} (DNS sekmesi açılınca), {tip:"komut", ad:"dns", mod}
 //   {tip:"diger", paylasim, paylasimAcik, guncelleme, hakkinda, temizleAcik}
 //   {tip:"komut", ad:"tanilama|kayitlar|ayarlar|paylasim|temizle"}, {tip:"ayar", ad:"guncelleme", deger:bool}
+//   {tip:"paylasim", durum:"acik|kapali|hata", hata, npcap:"var|uyumsuz|yok|", baslatilabilir, kart, wifi, ip, ip2, maske, gecit, mtu}
+//   {tip:"komut", ad:"paylasimYenile|npcap"}, {tip:"kopyala", metin}
 //   {tip:"bildirim", metin}   (program -> sayfa, birkaç saniye görünür)
 //   {tip:"komut", ad:"servisKur|servisKaldir|servisAyarlar"}, {tip:"ayar", ad:"onarim|yenidenBaslat", deger:bool}
 'use strict';
@@ -30,7 +32,7 @@ function gorunumAc(ad) {
   if (ad === 'dns') gonder({ tip: 'dnsYenile' });
   document.querySelectorAll('.gorunum').forEach((g) => g.classList.toggle('acik', g.id === 'g-' + ad));
   document.querySelectorAll('nav a').forEach((a) => {
-    const secili = a.dataset.gorunum === ad;
+    const secili = a.dataset.gorunum === (ad === 'paylasim' ? 'diger' : ad);
     a.classList.toggle('secili', secili);
     if (secili) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   });
@@ -227,7 +229,6 @@ function dnsUygula(m) {
 }
 
 // --- Diğer ---
-$('paylasim').addEventListener('click', () => { $('paylasim').disabled = true; gonder({ tip: 'komut', ad: 'paylasim' }); });
 $('guncelleme').addEventListener('click', () => {
   const b = $('guncelleme');
   const yeni = b.getAttribute('aria-checked') !== 'true';
@@ -237,12 +238,49 @@ $('guncelleme').addEventListener('click', () => {
 onayliDugme($('temizle'), 'temizle');
 
 function digerUygula(m) {
-  $('paylasim').setAttribute('aria-checked', String(!!m.paylasim));
-  $('paylasim').disabled = !m.paylasimAcik;
   $('guncelleme').setAttribute('aria-checked', String(!!m.guncelleme));
   $('guncelleme').disabled = false;
   $('hakkinda').textContent = m.hakkinda || '';
   $('temizle').disabled = !m.temizleAcik;
+}
+
+// --- Ağ paylaşımı ---
+$('paylasim-ac').addEventListener('click', () => { gorunumAc('paylasim'); gonder({ tip: 'komut', ad: 'paylasimYenile' }); });
+$('paylasim-geri').addEventListener('click', () => gorunumAc('diger'));
+$('paylasim-dugme').addEventListener('click', () => { $('paylasim-dugme').disabled = true; gonder({ tip: 'komut', ad: 'paylasim' }); });
+document.querySelectorAll('[data-kopyala]').forEach((b) => b.addEventListener('click', () => {
+  const metin = $(b.dataset.kopyala).textContent;
+  if (!metin || metin === '—') return;
+  gonder({ tip: 'kopyala', metin });
+  b.textContent = 'Kopyalandı';
+  setTimeout(() => { b.textContent = 'Kopyala'; }, 1500);
+}));
+document.querySelectorAll('[data-rehber]').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-rehber]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('[data-rehber-icerik]').forEach((p) => { p.hidden = p.dataset.rehberIcerik !== b.dataset.rehber; });
+}));
+
+function paylasimUygula(m) {
+  const acik = m.durum === 'acik';
+  $('paylasim-durum').dataset.durum = acik ? 'acik' : (m.durum === 'hata' ? 'hata' : 'yok');
+  $('paylasim-baslik').textContent = acik ? 'Paylaşım açık' : (m.durum === 'hata' ? 'Paylaşım çalışmıyor' : 'Paylaşım kapalı');
+  $('paylasim-aciklama').textContent = m.hata || (acik ? 'Cihazda aşağıdaki ayarları girdiysen bağlanabilir.'
+    : (m.baslatilabilir ? 'Başlatınca cihaz bu bilgisayar üzerinden çıkar.' : "Önce Bağlantı ekranından Zapret'i başlat (ya da servisi kur)."));
+  $('paylasim-ozet').textContent = acik ? 'Açık' : (m.durum === 'hata' ? 'Hata' : 'Kapalı');
+  const d = $('paylasim-dugme');
+  d.textContent = acik ? 'Paylaşımı durdur' : 'Paylaşımı başlat';
+  d.className = acik ? 'tehlike' : 'birincil';
+  d.disabled = !acik && (!m.baslatilabilir || m.npcap === 'yok' || m.npcap === 'uyumsuz');
+  $('paylasim-npcap').textContent = { var: 'Kurulu', yok: 'Kurulu değil', uyumsuz: 'Uyumlu mod kapalı' }[m.npcap] || '—';
+  $('npcap-indir').hidden = m.npcap !== 'yok' && m.npcap !== 'uyumsuz';
+  $('paylasim-kart').textContent = m.kart ? (m.wifi ? 'Wi-Fi' : 'Kablolu') : '—';
+  $('paylasim-kart-not').textContent = m.wifi ? "Wi-Fi'de paylaşım yavaş olabilir; mümkünse kablo kullan." : "Kablo önerilir; Wi-Fi'de paylaşım yavaşlar.";
+  $('paylasim-ip').textContent = m.ip || '—';
+  $('paylasim-ip2').textContent = m.ip2 ? 'İkinci cihaz: ' + m.ip2 + ', sonrakiler birer artar.' : '';
+  $('paylasim-maske').textContent = m.maske || '—';
+  $('paylasim-gecit').textContent = m.gecit || '—';
+  $('paylasim-dns').textContent = m.gecit || '—';
+  $('paylasim-mtu').textContent = m.mtu || '—';
 }
 
 // --- Bildirim ---
@@ -266,6 +304,7 @@ if (wv) {
     else if (m.tip === 'bildirim') bildirimGoster(m.metin);
     else if (m.tip === 'dns') dnsUygula(m);
     else if (m.tip === 'diger') digerUygula(m);
+    else if (m.tip === 'paylasim') paylasimUygula(m);
   });
 }
 gonder({ tip: 'hazir' });
