@@ -110,6 +110,12 @@ EndFunc
 
 ; Log'un son satırlarından kullanıcıya gösterilecek kısa hata nedeni ("" = bilinmiyor).
 Func _LanErrorReason($sLogTail)
+    ; Yalnızca hata satırları: normal açılış satırları ("Using ethernet interface"...) yanlış neden üretmesin.
+    Local $sErrLines = ""
+    For $sLine In StringSplit(StringStripCR($sLogTail), @LF, 2)
+        If StringRegExp($sLine, "(?i)level=(error|warn)|error|fatal|panic|couldn't|failed") Then $sErrLines &= $sLine & @LF
+    Next
+    $sLogTail = $sErrLines
     If StringRegExp($sLogTail, "(?i)wpcap\.dll|couldn't load") Then Return "Npcap yüklenemedi (Npcap'i yeniden kurun)."
     If StringRegExp($sLogTail, "(?i)setup PCAP capture|no such device|interface") Then Return "Ağ kartı dinlenemedi (VPN veya sanal ağ kartı açıksa kapatın)."
     If StringRegExp($sLogTail, "(?i)address already in use|bind") Then Return "Gereken ağ portu başka bir programda."
@@ -220,7 +226,7 @@ EndFunc
 ; go-pcap2socks açılışta cihazda girilecek MTU'yu yazar (PS5 ve Switch'te elle girilmesi gerekir).
 ; Log'dan sayıyı çıkarır; bulunamazsa "".
 Func _LanParseMtu($sLog)
-    Local $a = StringRegExp($sLog, "(?i)mtu\D{0,12}(\d{3,5})", 1)
+    Local $a = StringRegExp($sLog, "(?i)\bmtu\b\D{0,30}(\d{3,5})", 1)
     If @error Then Return ""
     Local $n = Number($a[0])
     If $n < 576 Or $n > 9000 Then Return ""

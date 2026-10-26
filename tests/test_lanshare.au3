@@ -15,6 +15,9 @@ Func _TestLanShare()
     _AssertEq(_LanParseMtu("Gateway: 172.24.2.1" & @LF & "MTU: 1486"), "1486", "MTU satırı")
     _AssertEq(_LanParseMtu("level=INFO msg=settings mtu=1472"), "1472", "anahtar=değer biçimi")
     _AssertEq(_LanParseMtu("gateway 172.24.2.1"), "", "MTU yoksa boş")
+    ; go-pcap2socks'un gerçek çıktısı (2026-10-27 deneme çalıştırması)
+    _AssertEq(_LanParseMtu('time=2026-10-27T00:10:50.775+03:00 level=INFO msg="  Gateway:        172.24.2.1"' & @LF & _
+            'time=2026-10-27T00:10:50.775+03:00 level=INFO msg="  MTU:            1486 (or lower)"'), "1486", "gerçek çıktıdaki MTU")
     _AssertEq(_LanParseMtu("mtu: 12"), "", "anlamsız değer yok sayılır")
 
     ; --- Alt ağ seçimi ---
@@ -58,4 +61,6 @@ Func _TestLanShare()
     _AssertTrue(StringInStr(_LanErrorReason("couldn't load wpcap.dll"), "Npcap") > 0, "Npcap hatası")
     _AssertTrue(StringInStr(_LanErrorReason("Failed to setup PCAP capture"), "ağ kartı") > 0, "kart hatası")
     _AssertEq(_LanErrorReason("başka bir şey"), "", "bilinmeyen hata")
+    _AssertEq(_LanErrorReason('time=x level=INFO msg="Using ethernet interface" interface=Ethernet'), "", "normal açılış satırı hata sayılmaz")
+    _AssertTrue(StringInStr(_LanErrorReason('time=x level=ERROR msg="Failed to setup PCAP capture"'), "ağ kartı") > 0, "hata satırındaki kart sorunu")
 EndFunc
