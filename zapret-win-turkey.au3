@@ -39,6 +39,7 @@
 #include "ui\WebView2.au3"
 #include "lib\WebState.au3"
 #include "lib\AppState.au3"
+#include "lib\LanShare.au3"
 #include <ScreenCapture.au3>
 #include "lib\Install.au3"
 
@@ -123,6 +124,8 @@ Global $currentEngine = "Zapret2"
 Global $isZapretRunning = False
 Global $zapretPID = 0
 Global $pcapPID = 0
+; Ağ paylaşımı: kullanılan cihaz ayarları (_LanPlan), kart (_LanParseAdapter), son hata, otomatik yeniden başlatma sayısı
+Global $g_aLanPlan[5] = ["", "", "", "", ""], $g_aLanAdapter[4] = ["", "", "", False], $g_sLanError = "", $g_iLanRestarts = 0
 Global $bServiceStoppedWarned = False
 Global $bDnsReset = True
 Global $g_sEngineFooter = ""
@@ -400,6 +403,7 @@ While 1
 		If $bZapretAlive Then
 			; 1. Zapret yaşıyorsa LAN Paylaşım butonunu aktif et
 			If BitAND(GUICtrlGetState($btnLanShare), $GUI_DISABLE) Then GUICtrlSetState($btnLanShare, $GUI_ENABLE)
+			_LanShareWatch()
 			; Servis durduktan sonra yeniden başladıysa "DURDU" yazısı takılı kalmasın.
 			_RefreshIfServiceRecovered()
 		Else
@@ -407,14 +411,7 @@ While 1
 			If BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) Then
 				GUICtrlSetState($btnLanShare, $GUI_DISABLE)
 
-				If GUICtrlRead($btnLanShare) = "[ ✓ ] Paylaşım Aktif / Durdur" Then
-					GUICtrlSetData($btnLanShare, "Ağdaki Cihazlarla Paylaş")
-                    GUICtrlSetFont($btnLanShare, 10, 600, 0, "Segoe UI")
-					If ProcessExists("go-pcap2socks.exe") Then
-						ProcessClose("go-pcap2socks.exe")
-						$pcapPID = 0
-					EndIf
-				EndIf
+				If GUICtrlRead($btnLanShare) = "[ ✓ ] Paylaşım Aktif / Durdur" Then _LanShareStop()
 			EndIf
 
 			; 3. Zapret ölmüşse VE bizim arayüz hala "Çalışıyor" modundaysa (Çökme veya Harici Kapatma durumu)
@@ -533,81 +530,10 @@ While 1
 
 		Case $btnLanShare
             If GUICtrlRead($btnLanShare) = "Ağdaki Cihazlarla Paylaş" Then
-                ; --- ADIM 1: NPCAP KONTROLÜ ---
-                If Not FileExists(@SystemDir & "\Packet.dll") Then
-                    GUICtrlSetData($btnLanShare, "Ağdaki Cihazlarla Paylaş")
-                    GUICtrlSetFont($btnLanShare, 10, 600, 0, "Segoe UI")
-                    MsgBox(8208, "Eksik Bileşen", "HATA: Sistemde Npcap sürücüsü bulunamadı!" & @CRLF & @CRLF & _
-                            "go-pcap2socks motorunun çalışabilmesi için Npcap kurulmalıdır." & @CRLF & _
-                            "Lütfen npcap.com adresinden indirip kurun.")
-                    ContinueLoop
-                EndIf
-
-                ; --- SPLASH SCREEN BAŞLANGICI ---
-                Local $hSplash = GUICreate("Lütfen bekleyin", 300, 84, -1, -1, $WS_POPUP, $WS_EX_TOPMOST)
-                GUISetBkColor($UI_CARD, $hSplash)
-                _UiLabel("Güvenlik duvarı kontrol ediliyor..." & @CRLF & "Lütfen bekleyin.", 16, 18, 268, 48, 10.5, $UI_TEXT, 600, $SS_CENTER, $UI_FONT_SEMI)
-                GUISetState(@SW_SHOW, $hSplash)
-
-                Local $targetPcapExe = @ScriptDir & '\bin\go-pcap2socks\go-pcap2socks.exe'
-
-                If Not HasFirewallRule($targetPcapExe) Then
-                    GUISetState(@SW_HIDE, $hSplash)
-
-                    RunWait('powershell -NoProfile -Command "Remove-NetFirewallRule -Program ''' & $targetPcapExe & ''' -ErrorAction SilentlyContinue"', "", @SW_HIDE)
-                    RunWait(@ComSpec & ' /c netsh advfirewall firewall delete rule name=all program="' & $targetPcapExe & '"', "", @SW_HIDE)
-
-                    MsgBox(8256, "Güvenlik Duvarı İzni", "go-pcap2socks için ağ izni gerekiyor." & @CRLF & @CRLF & _
-                            "1. Birazdan Windows Güvenlik Duvarı uyarısı gelecektir." & @CRLF & _
-                            "2. Lütfen gelen ekranda kutucukları işaretleyip 'Erişime izin ver' (Allow) butonuna basın.")
-
-                    Local $tmpPID = Run('"' & $targetPcapExe & '"', @ScriptDir & '\bin\go-pcap2socks', @SW_HIDE)
-                    MsgBox(8256, "Onay", "Güvenlik duvarı iznini onayladıysanız Tamam'a basın.")
-                    ProcessClose($tmpPID)
-
-                    GUISetState(@SW_SHOW, $hSplash)
-                EndIf
-
-                ; --- ADIM 3: SÜRECİ BAŞLATMA ---
-                If Not ProcessExists("go-pcap2socks.exe") Then
-                    $pcapPID = Run('"' & $targetPcapExe & '"', @ScriptDir & '\bin\go-pcap2socks', @SW_HIDE)
-                    _LogInfo("Ağ paylaşımı: go-pcap2socks başlatıldı (PID " & $pcapPID & ")")
-                EndIf
-
-                ; --- GERÇEKTEN ÇALIŞIYOR MU KONTROLÜ ---
-                Sleep(500)
-
-                If Not ProcessExists("go-pcap2socks.exe") Then
-                    GUIDelete($hSplash)
-                    GUICtrlSetData($btnLanShare, "Ağdaki Cihazlarla Paylaş")
-                    GUICtrlSetFont($btnLanShare, 10, 600, 0, "Segoe UI")
-                    $pcapPID = 0
-                    MsgBox(16 + 8192, "Başlatma Hatası", "HATA: go-pcap2socks başlatılamadı!" & @CRLF & @CRLF & _
-                            "• Sanal bir ağ kartı oluşturan VPN vb program kullanıyorsanız kapatın.")
-                    ContinueLoop
-                EndIf
-
-                GUIDelete($hSplash)
-
-                ; BAŞARILI DURUM: Butonu Yeşile Boya ve Metni Değiştir
-                GUICtrlSetData($btnLanShare, "[ ✓ ] Paylaşım Aktif / Durdur")
-                GUICtrlSetFont($btnLanShare, 10, 800, 0, "Segoe UI")
-
-                MsgBox(8256, "go-pcap2socks Ağ Yapılandırması", _
-                        "Ağdaki diğer cihazınızda şu IP ayarlarını giriniz:" & @CRLF & @CRLF & _
-                        "• IP Aralığı: 172.24.2.10 - 172.24.2.255" & @CRLF & _
-                        "• Ağ Geçidi (Gateway): 172.24.2.1" & @CRLF & _
-                        "• Alt Ağ Maskesi (Maske): 255.255.0.0" & @CRLF & _
-                        "• DNS 1: 1.1.1.1" & @CRLF & _
-                        "• DNS 2: 8.8.8.8")
+                $g_iLanRestarts = 0
+                _LanShareStart(True)
             Else
-                ; DURDURMA İŞLEMİ
-                If ProcessExists("go-pcap2socks.exe") Then
-                    ProcessClose("go-pcap2socks.exe")
-                    $pcapPID = 0
-                EndIf
-                GUICtrlSetData($btnLanShare, "Ağdaki Cihazlarla Paylaş")
-                GUICtrlSetFont($btnLanShare, 10, 600, 0, "Segoe UI")
+                _LanShareStop()
             EndIf
 
         Case $btnRunZapret
@@ -856,7 +782,7 @@ EndFunc
 
 Func ExitApp()
     If $isZapretRunning Then StopWinws($btnRunZapret, $lblStatusText, $aOtherButtons)
-    If ProcessExists("go-pcap2socks.exe") Then ProcessClose("go-pcap2socks.exe")
+    If $pcapPID > 0 Or ProcessExists("go-pcap2socks.exe") Then _LanStop($pcapPID, @ScriptDir)
     Exit
 EndFunc
 
@@ -1692,15 +1618,6 @@ Func HasValidStrategy()
 EndFunc
 
 ; --- Güvenlik Duvarı Sorgu Fonksiyonu ---
-Func HasFirewallRule($fullPath)
-	Local $fixedPath = StringReplace($fullPath, "I", "i")
-	Local $psCmd = 'powershell -NoProfile -Command "Get-NetFirewallApplicationFilter -Program ''' & $fixedPath & ''' -ErrorAction SilentlyContinue | Get-NetFirewallRule | Where-Object { $_.Action -eq ''Allow'' -and $_.Enabled -eq ''True'' }"'
-	Local $iPID = Run(@ComSpec & ' /c ' & $psCmd, "", @SW_HIDE, $STDOUT_CHILD)
-    ProcessWaitClose($iPID)
-
-    Return (StringLen(StdoutRead($iPID)) > 10)
-EndFunc
-
 ; Açılışta servis çalışıyorken Discord'a ulaşılamıyorsa (ör. sağlayıcı engellemeyi değiştirdi, strateji
 ; artık çalışmıyor) kullanıcıya otomatik onarımı önerir. Pencere açıkken arka plandaki sağlık görevi
 ; çalışmadığı için bu durum fark edilmiyordu (2026-10-24).
@@ -1725,6 +1642,67 @@ Func _StartupServiceCheck()
     EndIf
     CheckServiceStatus($btnRunZapret, $lblStatusText, $aCriticalButtons, $cmbFilter)
     _RefreshStrategyLabel()
+EndFunc
+
+; --- Ağ paylaşımı (lib/LanShare.au3) ---
+; Başlatır; $bInteractive ise sonucu (cihaz ayarları ya da hata nedeni) kullanıcıya gösterir.
+Func _LanShareStart($bInteractive)
+    Local $sErr
+    $pcapPID = _LanStart(@ScriptDir, $g_aLanPlan, $g_aLanAdapter, $sErr)
+    If $pcapPID = 0 Then
+        $g_sLanError = $sErr
+        GUICtrlSetData($btnLanShare, "Ağdaki Cihazlarla Paylaş")
+        If $bInteractive Then _LanShareNotify("Ağ paylaşımı başlamadı", $sErr, True)
+        Return False
+    EndIf
+    $g_sLanError = ""
+    GUICtrlSetData($btnLanShare, "[ ✓ ] Paylaşım Aktif / Durdur")
+    If $bInteractive Then
+        MsgBox(64 + 8192, "Ağ paylaşımı açık", "Konsol veya TV'nin ağ ayarlarını elle (statik) girin:" & @CRLF & @CRLF & _
+                "IP adresi:   " & $g_aLanPlan[3] & "   (ikinci cihaz " & _LanDeviceIP(StringRegExpReplace($g_aLanPlan[1], "\.2\.1$", ""), 2) & " ...)" & @CRLF & _
+                "Alt ağ maskesi:   " & $g_aLanPlan[2] & @CRLF & _
+                "Ağ geçidi:   " & $g_aLanPlan[1] & @CRLF & _
+                "DNS:   " & $g_aLanPlan[1] & @CRLF & @CRLF & _
+                "Bilgisayar ve cihaz aynı modeme bağlı olmalı; bilgisayar açık kalmalı." & _
+                ($g_aLanAdapter[3] ? @CRLF & @CRLF & "Bilgisayar Wi-Fi ile bağlı: paylaşım yavaş olabilir, kablo önerilir." : ""), 0, _MainWindowHandle())
+    EndIf
+    Return True
+EndFunc
+
+Func _LanShareStop()
+    _LanStop($pcapPID, @ScriptDir)
+    $pcapPID = 0
+    GUICtrlSetData($btnLanShare, "Ağdaki Cihazlarla Paylaş")
+EndFunc
+
+; Ana döngüden saniyede bir: paylaşım açık görünüyor ama süreç düştüyse bir kez yeniden başlatır,
+; yine düşerse kapatıp nedenini bildirir (önceden arayüz "aktif" demeye devam ediyordu).
+Func _LanShareWatch()
+    If GUICtrlRead($btnLanShare) <> "[ ✓ ] Paylaşım Aktif / Durdur" Then Return
+    If _LanIsRunning($pcapPID) Then Return
+    Local $sReason = _LanErrorReason(_LanLogTail(@ScriptDir & $LAN_LOG_REL))
+    _LogWarn("Ağ paylaşımı beklenmedik şekilde durdu" & ($sReason = "" ? "" : ": " & $sReason))
+    If $g_iLanRestarts < 1 Then
+        $g_iLanRestarts += 1
+        If _LanShareStart(False) Then
+            _LogInfo("Ağ paylaşımı otomatik olarak yeniden başlatıldı")
+            Return
+        EndIf
+    EndIf
+    _LanShareStop()
+    $g_sLanError = ($sReason = "" ? "go-pcap2socks kapandı. Ayrıntı: logs\paylasim.log" : $sReason)
+    _LanShareNotify("Ağ paylaşımı durdu", $g_sLanError, False)
+EndFunc
+
+; Bildirim: yeni arayüzde sayfa içi, değilse ileti kutusu (etkileşimli) ya da tepsi balonu.
+Func _LanShareNotify($sTitle, $sText, $bInteractive)
+    If $g_bWebUi And $g_bWebPageReady Then
+        _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", $sTitle & ": " & $sText))
+    ElseIf $bInteractive Then
+        MsgBox(48 + 8192, $sTitle, $sText, 0, _MainWindowHandle())
+    Else
+        TrayTip($sTitle, $sText, 10, 2)
+    EndIf
 EndFunc
 
 ; DNS değiştikten sonra açılıştaki kontrolün aynısı: zehirlenme varsa kritik düğmeler kilitlenir.
