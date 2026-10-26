@@ -280,6 +280,10 @@ function paylasimUygula(m) {
   $('paylasim-maske').textContent = m.maske || '—';
   $('paylasim-gecit').textContent = m.gecit || '—';
   $('paylasim-mtu').textContent = m.mtu || '—';
+  const dy = $('paylasim-dnsyolu');
+  dy.textContent = acik ? ({ sistem: 'DNSCrypt servisi', paylasim: 'Şifreli (paylaşıma özel)', sifresiz: 'Şifresiz' }[m.dnsYolu] || '—') : '—';
+  dy.classList.toggle('uyari-metin', acik && m.dnsYolu === 'sifresiz');
+  if (acik && m.dnsYoluMetin) $('paylasim-dnsyolu-not').textContent = m.dnsYoluMetin + '.';
 }
 
 // --- Bildirim ---
