@@ -120,4 +120,36 @@ final class DohSocksFrontTests: XCTestCase {
         a.stop()
         XCTAssertTrue(TpwsArgs.isPortFree(fp))
     }
+
+    func testEventLogReportsRequestedNameChosenTargetAndResult() {
+        let up = freePort(), fp = freePort()
+        let ls = startFakeUpstream(port: up) { _ in }
+        defer { close(ls) }
+        let lock = NSLock(); var events: [String] = []
+        let front = DohSocksFront(port: fp, upstreamPort: up, resolve: { _ in ["162.159.128.233"] })
+        front.onEvent = { lock.lock(); events.append($0); lock.unlock() }
+        XCTAssertNoThrow(try front.start()); defer { front.stop() }
+        let c = connectLocal(fp); defer { close(c) }
+        writeAll(c, [5, 1, 0]); _ = readN(c, 2)
+        writeAll(c, Socks5.encodeConnect(target: .domain("discord.com"), port: 443))
+        XCTAssertEqual(readN(c, 10)[1], 0)
+        lock.lock(); defer { lock.unlock() }
+        XCTAssertEqual(events, ["discord.com:443 -> 162.159.128.233 (DoH) tamam"])
+    }
+
+    func testEventLogMarksIPv4RequestsAndFailures() {
+        let up = freePort(), fp = freePort()
+        let ls = startFakeUpstream(port: up, replyCode: 5) { _ in }
+        defer { close(ls) }
+        let lock = NSLock(); var events: [String] = []
+        let front = DohSocksFront(port: fp, upstreamPort: up, resolve: { _ in [] })
+        front.onEvent = { lock.lock(); events.append($0); lock.unlock() }
+        XCTAssertNoThrow(try front.start()); defer { front.stop() }
+        let c = connectLocal(fp); defer { close(c) }
+        writeAll(c, [5, 1, 0]); _ = readN(c, 2)
+        writeAll(c, Socks5.encodeConnect(target: .ipv4([195, 175, 254, 2]), port: 443))
+        XCTAssertEqual(readN(c, 10)[1], 5)
+        lock.lock(); defer { lock.unlock() }
+        XCTAssertEqual(events, ["195.175.254.2:443 -> 195.175.254.2 hata 5"])
+    }
 }
