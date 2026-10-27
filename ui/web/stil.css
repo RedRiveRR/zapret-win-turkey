@@ -144,6 +144,8 @@ button.satir:disabled{opacity:.5;cursor:default}
 .cihaz-durum.etkin{color:var(--okText);font-weight:600}
 .yeni-surum b{color:var(--accent)}
 .vurgu-deger{color:var(--accent)!important;font-weight:700}
+/* macOS sürümü (macos/): Windows'a özgü satırlar gizlenir; Windows 'platform' mesajı göndermez */
+[data-platform="macos"] [data-yalniz="windows"]{display:none!important}
 .cihaz-not{margin:0;padding:10px 0 12px;font-size:12px;color:var(--muted);line-height:1.45}
 .servisdurum[data-durum="acik"]{--t:var(--ok);--tt:var(--onAccent);background:var(--okTint)}
 .rehber{padding:12px 14px;display:flex;flex-direction:column;gap:10px}

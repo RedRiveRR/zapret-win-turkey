@@ -20,6 +20,7 @@
 //    cihazlar:[{ip, tur:"PlayStation|Samsung|...|", durum:"Etkin|N dk önce|HH:MM'de", etkin, baglanti, ilk:"HH:MM"}]}
 //   {tip:"komut", ad:"paylasimBaslat|paylasimDurdur|paylasimYenile|npcap"} (bitti: başlat/durdur/yenile işlendi), {tip:"kopyala", metin}
 //   {tip:"bildirim", metin}   (program -> sayfa, birkaç saniye görünür)
+//   {tip:"platform", ad:"macos"}   (yalnız macOS sürümü; Windows'a özgü [data-yalniz="windows"] satırları gizlenir)
 //   {tip:"komut", ad:"servisKur|servisKaldir|servisAyarlar"}, {tip:"ayar", ad:"onarim|yenidenBaslat", deger:bool}
 'use strict';
 
@@ -365,6 +366,7 @@ if (wv) {
     else if (m.tip === 'dns') dnsUygula(m);
     else if (m.tip === 'diger') digerUygula(m);
     else if (m.tip === 'paylasim') paylasimUygula(m);
+    else if (m.tip === 'platform') document.documentElement.dataset.platform = m.ad; // macOS sürümü
   });
 }
 gonder({ tip: 'hazir' });

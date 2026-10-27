@@ -1,4 +1,8 @@
-// Uygulama giriş noktası (Task 5'te AppKit uygulaması olacak).
-import ZapretCore
+// RedRiveRR Zapret (macOS) giriş noktası.
+import AppKit
 
-print("RedRiveRR Zapret (macOS) — iskelet")
+let app = NSApplication.shared
+let delegate = AppDelegate()
+app.delegate = delegate
+app.setActivationPolicy(.regular)
+app.run()

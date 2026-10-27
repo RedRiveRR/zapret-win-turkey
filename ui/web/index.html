@@ -96,7 +96,7 @@
         <button class="ikincil" id="servis-ayar" data-servis="ayarlar" disabled>Onarım ayarları</button>
         <button class="tehlike" id="servis-kaldir" data-servis="kaldir" data-onay="Kaldırmak için tekrar bas" hidden disabled>Servisi kaldır</button>
       </div>
-      <p class="kucuk" id="kaldir-not" hidden style="margin:0 4px">Kaldırınca WinDivert ve DNSCrypt kalıntıları da temizlenir, DNS otomatiğe döner.</p>
+      <p class="kucuk" id="kaldir-not" data-yalniz="windows" hidden style="margin:0 4px">Kaldırınca WinDivert ve DNSCrypt kalıntıları da temizlenir, DNS otomatiğe döner.</p>
     </section>
     <!-- DNS -->
     <section class="gorunum" id="g-dns">
@@ -129,7 +129,7 @@
         <button class="satir tik" data-komut="tanilama"><span class="ad"><b>Sorun bildirmek için paket oluştur</b><span class="kucuk">Ayarlar ve kayıtlar tek dosyada; ziyaret geçmişi eklenmez, IP/MAC adresleri ve kullanıcı adınız maskelenir.</span></span><svg class="ok" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
         <button class="satir tik" data-komut="kayitlar"><span class="ad"><b>Kayıtları aç</b></span><svg class="ok" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
         <button class="satir tik" data-komut="ayarlar"><span class="ad"><b>Tüm ayarlar</b><span class="kucuk">Onarım ayrıntıları, şimdi kontrol et.</span></span><svg class="ok" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
-        <button class="satir tik" data-komut="eskiArayuz"><span class="ad"><b>Klasik arayüze geç</b><span class="kucuk">alimali54/zapret-win-turkey'in özgün arayüzü. Oradan "Yeni arayüz" ile geri dönersin.</span></span><svg class="ok" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+        <button class="satir tik" data-komut="eskiArayuz" data-yalniz="windows"><span class="ad"><b>Klasik arayüze geç</b><span class="kucuk">alimali54/zapret-win-turkey'in özgün arayüzü. Oradan "Yeni arayüz" ile geri dönersin.</span></span><svg class="ok" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
         <div class="satir"><span class="ad"><b>Hakkında</b><span class="kucuk" id="hakkinda"></span><span class="kucuk">github.com/RedRiveRR/zapret-win-turkey</span><span class="kucuk">Temel: alimali54/zapret-win-turkey, motor: bol-van/zapret</span></span><button class="baglanti" data-komut="github">GitHub</button></div>
       </section>
       <button class="tehlike" id="temizle" data-onay="Temizlemek için tekrar bas" disabled>Her şeyi temizle ve DNS'i sıfırla</button>
@@ -150,7 +150,7 @@
         <p class="cihaz-not" id="paylasim-cihaz-not" hidden>"Etkin": cihaz son bir dakikada yeni bağlantı açtı. Ayrılan cihaz bir dakika içinde "N dk önce" olur; bağlı ama boşta bekleyen cihaz da böyle görünebilir.</p>
       </section>
       <section class="kart liste">
-        <div class="satir"><span class="ad"><b>Npcap</b><span class="kucuk">Ağ kartını dinlemek için gereken sürücü ("WinPcap API-compatible Mode" işaretli kurulmalı).</span></span><span class="deger" id="paylasim-npcap">—</span><button class="baglanti" data-komut="npcap" id="npcap-indir" hidden>İndir</button></div>
+        <div class="satir" data-yalniz="windows"><span class="ad"><b>Npcap</b><span class="kucuk">Ağ kartını dinlemek için gereken sürücü ("WinPcap API-compatible Mode" işaretli kurulmalı).</span></span><span class="deger" id="paylasim-npcap">—</span><button class="baglanti" data-komut="npcap" id="npcap-indir" hidden>İndir</button></div>
         <div class="satir"><span class="ad"><b>Bağlantı</b><span class="kucuk" id="paylasim-kart-not">Kablo önerilir; Wi-Fi'de paylaşım yavaşlar.</span></span><span class="deger" id="paylasim-kart">—</span></div>
         <div class="satir"><span class="ad"><b>Cihazların DNS'i</b><span class="kucuk" id="paylasim-dnsyolu-not">Discord adları için şifreli DNS kullanılır (DNSCrypt kuruluysa o, değilse paylaşıma özel geçici bir kopya).</span></span><span class="deger" id="paylasim-dnsyolu">—</span></div>
       </section>

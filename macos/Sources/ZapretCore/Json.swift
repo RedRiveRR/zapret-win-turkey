@@ -39,7 +39,7 @@ public enum Json {
         }
     }
 
-    static func quote(_ s: String) -> String {
+    public static func quote(_ s: String) -> String {
         var out = "\""
         for ch in s.unicodeScalars {
             switch ch {
