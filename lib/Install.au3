@@ -83,3 +83,20 @@ Func _InstallFindExe($sDir, $sPreferred)
     Next
     Return ""
 EndFunc
+
+; Kullanıcının düzenlediği / zapret'in doldurduğu listeler pakette config\varsayilan\ altında gelir;
+; config\ altında yoksa oradan kopyalanır, varsa hiç dokunulmaz. Önceden paket bu dosyaları doğrudan
+; config\ içinde taşıyordu: yeni sürüm eski klasöre "Değiştir" ile çıkarılınca kullanıcının site
+; listeleri ve öğrenilmiş otomatik liste varsayılana dönüyordu (2026-10-27). Kopyalanan sayıyı döndürür.
+Global Const $INSTALL_CONFIG_DEFAULTS = "hostlist.txt|excludelist.txt|autohostlist.txt"
+
+Func _InstallEnsureConfigDefaults($sRoot)
+    Local $iCopied = 0
+    For $sName In StringSplit($INSTALL_CONFIG_DEFAULTS, "|", 2)
+        Local $sDst = $sRoot & "\config\" & $sName
+        Local $sSrc = $sRoot & "\config\varsayilan\" & $sName
+        If FileExists($sDst) Or Not FileExists($sSrc) Then ContinueLoop
+        If FileCopy($sSrc, $sDst, $FC_CREATEPATH) Then $iCopied += 1
+    Next
+    Return $iCopied
+EndFunc

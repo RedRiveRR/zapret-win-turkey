@@ -104,6 +104,8 @@ Local $normalHostlistPath = @ScriptDir & "\config\hostlist.txt"
 Local $iniPath = @ScriptDir & "\config\config.ini"
 Local $exludelistPath = @ScriptDir & "\config\excludelist.txt"
 Global $strategiesIniPath = @ScriptDir & "\config\strategies.ini"
+; Paketle gelen varsayılan site listeleri (config\varsayilan\) yalnız eksikse kopyalanır.
+_InstallEnsureConfigDefaults(@ScriptDir)
 Global $g_aStrategies = _StrategyDefaults("Zapret2")
 
 ; --- CONFIG DOSYASINDAN AYARLARI OKU ---

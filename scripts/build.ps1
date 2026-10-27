@@ -104,9 +104,13 @@ try {
 
     # Ortak: repo config dosyaları ve dokümanlar
     function Copy-Common([string]$dest, [string]$scriptName) {
-        New-Item -ItemType Directory -Force -Path (Join-Path $dest 'config') | Out-Null
-        foreach ($f in 'autohostlist.txt', 'excludelist.txt', 'hostlist.txt', 'strategies.ini') {
-            Copy-Item (Join-Path $repo "config\$f") (Join-Path $dest 'config')
+        New-Item -ItemType Directory -Force -Path (Join-Path $dest 'config\varsayilan') | Out-Null
+        Copy-Item (Join-Path $repo 'config\strategies.ini') (Join-Path $dest 'config')
+        # Kullanıcının düzenlediği / zapret'in doldurduğu listeler config\ içine konmaz: yeni sürüm eski
+        # klasöre çıkarılınca üzerlerine yazılıyordu. Program açılışta eksik olanı buradan kopyalar
+        # (lib\Install.au3 _InstallEnsureConfigDefaults).
+        foreach ($f in 'autohostlist.txt', 'excludelist.txt', 'hostlist.txt') {
+            Copy-Item (Join-Path $repo "config\$f") (Join-Path $dest 'config\varsayilan')
         }
         Copy-Item (Join-Path $src "$scriptName.au3") $dest
         Copy-Item (Join-Path $src 'lib') (Join-Path $dest 'lib') -Recurse

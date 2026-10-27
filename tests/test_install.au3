@@ -21,4 +21,23 @@ Func _TestInstall()
     FileWrite($sTmp & "\RedRiveRR Zapret.exe", "x")
     _AssertEq(_InstallFindExe($sTmp, "RedRiveRR Zapret.exe"), $sTmp & "\RedRiveRR Zapret.exe", "tercih edilen ad önce")
     DirRemove($sTmp, 1)
+
+    ; --- Varsayılan listeler: yalnız eksikse kopyalanır, kullanıcının dosyası ezilmez ---
+    Local $sRoot = @TempDir & "\zwt-cfg-test-" & @MSEC
+    DirCreate($sRoot & "\config\varsayilan")
+    _AssertEq(_InstallEnsureConfigDefaults($sRoot), 0, "varsayılan klasörü boşsa bir şey yapılmaz")
+    FileWrite($sRoot & "\config\varsayilan\hostlist.txt", "discord.com")
+    FileWrite($sRoot & "\config\varsayilan\excludelist.txt", "gov.tr")
+    FileWrite($sRoot & "\config\varsayilan\autohostlist.txt", "")
+    FileWrite($sRoot & "\config\hostlist.txt", "benim-sitem.example")
+    _AssertEq(_InstallEnsureConfigDefaults($sRoot), 2, "eksik iki dosya kopyalanır")
+    _AssertEq(FileRead($sRoot & "\config\hostlist.txt"), "benim-sitem.example", "kullanıcının listesi korunur")
+    _AssertEq(FileRead($sRoot & "\config\excludelist.txt"), "gov.tr", "eksik liste varsayılandan gelir")
+    _AssertTrue(FileExists($sRoot & "\config\autohostlist.txt"), "boş varsayılan da kopyalanır")
+    _AssertEq(_InstallEnsureConfigDefaults($sRoot), 0, "ikinci çağrıda bir şey değişmez")
+    DirRemove($sRoot, 1)
+    Local $sBare = @TempDir & "\zwt-cfg-bos-" & @MSEC
+    DirCreate($sBare)
+    _AssertEq(_InstallEnsureConfigDefaults($sBare), 0, "config klasörü yoksa hata vermez")
+    DirRemove($sBare, 1)
 EndFunc

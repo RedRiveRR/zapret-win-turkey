@@ -55,7 +55,15 @@ Bu depo, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-t
 > [!NOTE]
 > Bazı antivirüsler, paket yakalama sürücüsü (WinDivert/Monkey) içerdiği için zapret dosyalarını yanlışlıkla şüpheli bulabilir. Dosyalar bol-van/zapret dağıtımındaki orijinal ikililerdir; özetleri [THIRD_PARTY.md](THIRD_PARTY.md) dosyasında.
 
-**Eski sürümden geçiş:** 5.0.0'dan önce exe adı `zapret-win-turkey.exe` idi. Yeni sürümü aynı klasöre çıkarırsanız ayarlarınız (`config\`) korunur; eski exe'yi silebilirsiniz. Otomatik onarım görevi ilk açılışta kendiliğinden yeni exe'ye yönlendirilir. Eski kurulumun servisleri başka bir klasördeyse program bunu fark eder ve onayınızla temizler.
+**Yeni sürüme güncelleme:**
+1. Programı tepsi simgesinden **Kapat** ile kapatın.
+2. Yeni ZIP'i programın bulunduğu klasöre (ör. `C:\Program Files\Zapret Windows Turkiye`) çıkarın; Windows sorarsa **Dosyaları değiştir**'i seçin.
+3. Servis kuruluysa Windows bazı motor dosyaları (ör. `winws2.exe`, `WinDivert64.sys`) için "dosya kullanımda" diyebilir; bunlar için **Atla** deyin. Motor dosyaları değişen bir sürüm olursa sürüm notunda ayrıca yazılır.
+4. Programı yeniden açın.
+
+Ayarlarınız (`config\config.ini`), seçtiğiniz strateji, analiz sonuçları ve site listeleriniz (`hostlist.txt`, `excludelist.txt`, otomatik liste) korunur. 5.1.1'den itibaren paket bu listeleri `config\varsayilan\` altında getirir ve yalnızca eksikse kopyalar. 5.1.0 ve öncesinin ZIP'leri bu listeleri `config\` içinde taşıdığından, onları eski klasöre çıkarırsanız listeleriniz varsayılana döner.
+
+5.0.0'dan önce exe adı `zapret-win-turkey.exe` idi; eski exe'yi silebilirsiniz. Otomatik onarım görevi ilk açılışta kendiliğinden yeni exe'ye yönlendirilir. Eski kurulumun servisleri başka bir klasördeyse program bunu fark eder ve onayınızla temizler.
 
 ## İlk kullanım
 1. Programı açın. Açılışta DNS kontrol edilir; sağlayıcınızın DNS'i Discord'u yanlış gösteriyorsa Cloudflare'e geçmeniz önerilir.
