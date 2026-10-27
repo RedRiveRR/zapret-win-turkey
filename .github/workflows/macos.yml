@@ -1,0 +1,24 @@
+name: macOS
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [gelistirme]
+    paths:
+      - 'macos/**'
+      - 'ui/**'
+      - 'veri/**'
+      - '.github/workflows/macos.yml'
+
+jobs:
+  test:
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: macos
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift sürümü
+        run: swift --version
+      - name: Birim testleri
+        run: swift test

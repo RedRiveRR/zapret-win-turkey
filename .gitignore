@@ -23,3 +23,6 @@ desktop.ini
 
 # Windows NUL aygıtına yazmak isteyen ama Git Bash altında dosya oluşturan komutlar
 nul
+
+# superpowers plan çalışma alanı (ledger, briefler)
+.superpowers/
