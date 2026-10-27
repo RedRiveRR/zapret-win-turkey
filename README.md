@@ -52,6 +52,9 @@ Bu depo, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-t
 3. **`RedRiveRR Zapret.exe`** dosyasını çalıştırın; yönetici izni istenir.
 4. Servis kurarken program kendisini `C:\Program Files\Zapret Windows Turkiye` klasörüne taşımayı önerir; kabul etmeniz önerilir. Kısayolu bu klasördeki exe'ye göre oluşturun.
 
+> [!IMPORTANT]
+> Windows 11'de **Akıllı Uygulama Denetimi** açıksa program (kod imzalama sertifikası olmadığı için) açılışta engellenebilir. Böyle olursa ne yapacağınız [Sorun giderme](#sorun-giderme) bölümünde.
+
 > [!NOTE]
 > Bazı antivirüsler, paket yakalama sürücüsü (WinDivert/Monkey) içerdiği için zapret dosyalarını yanlışlıkla şüpheli bulabilir. Dosyalar bol-van/zapret dağıtımındaki orijinal ikililerdir; özetleri [THIRD_PARTY.md](THIRD_PARTY.md) dosyasında.
 
@@ -153,7 +156,7 @@ PlayStation, Xbox, Nintendo Switch ve akıllı TV gibi cihazlar, bilgisayarını
 | "Servis durdu" | Bir program (çoğunlukla oyun hile koruması) zapret'i kapatmış olabilir. Bilgisayarı yeniden başlatın ya da **Servis → Servisi kaldır**, ardından **Servisi kur**. |
 | Yeni arayüz açılmıyor | WebView2 eksik olabilir; program klasik arayüzle açılır. [WebView2 çalışma zamanını](https://developer.microsoft.com/microsoft-edge/webview2/) kurabilirsiniz. |
 | "Windows bilgisayarınızı korudu" (SmartScreen) | İnternetten indirilen imzasız programlarda çıkar. **Ek bilgi → Yine de çalıştır** deyin. Dosyanın değişmediğini `SHA256SUMS.txt` ile doğrulayabilirsiniz. |
-| "Akıllı Uygulama Denetimi bu uygulamayı engelledi" | Program kod imzalama sertifikası olmadan dağıtılıyor; Windows her yeni sürümü ayrıca değerlendirir ve bazen engelleyebilir. Bir önceki sürümü kullanın ve durumu [Issues](https://github.com/RedRiveRR/zapret-win-turkey/issues) sayfasından bildirin. Akıllı Uygulama Denetimi'ni **kapatmanızı önermiyoruz**: Windows sıfırlanmadan geri açılamaz. |
+| "Akıllı Uygulama Denetimi bu uygulamayı (ya da bir parçasını) engelledi" | Program kod imzalama sertifikası olmadan dağıtılıyor; Windows her yeni sürümü ayrıca değerlendirir ve bazen engeller. **Windows Güvenliği → Uygulama ve tarayıcı denetimi → Akıllı Uygulama Denetimi ayarları** bölümünden denetimi **Kapalı** yapıp programı yeniden açın. Güncel Windows 11'de (24H2/25H2, Nisan 2026 güncellemesi ve sonrası) aynı yerden istediğiniz zaman yeniden açabilirsiniz; daha eski sürümlerde kapattıktan sonra geri açmak için Windows'u sıfırlamak gerekir. Kapatmak istemezseniz bir önceki sürümü kullanın ve durumu [Issues](https://github.com/RedRiveRR/zapret-win-turkey/issues) sayfasından bildirin. |
 | Sesli görüşme çalışmıyor | Puan sesi ölçmez; *Tüm sonuçlar*dan başka bir stratejiyi *Seçileni Kullan* ile deneyin. |
 | GoodbyeDPI / başka zapret çalışıyor | Program açılışta çakışan araçları (GoodbyeDPI, ByeDPI, başka klasördeki winws) tespit eder ve onayınızla kapatır. |
 | Konsol "internete bağlanılamıyor" diyor | Paylaşımın açık olduğunu kontrol edin. DNS olarak ağ geçidini (172.24.2.1) değil, `1.1.1.1` / `8.8.8.8` yazın. PS5/Switch'te MTU'yu sayfadaki değerle (ör. 1478) elle girin; olmazsa 1400 deneyin. Bilgisayarda VPN açıksa kapatın. |
