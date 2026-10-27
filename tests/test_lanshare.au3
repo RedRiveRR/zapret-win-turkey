@@ -92,4 +92,55 @@ Func _TestLanShare()
     _AssertEq(_LanErrorReason("başka bir şey"), "", "bilinmeyen hata")
     _AssertEq(_LanErrorReason('time=x level=INFO msg="Using ethernet interface" interface=Ethernet'), "", "normal açılış satırı hata sayılmaz")
     _AssertTrue(StringInStr(_LanErrorReason('time=x level=ERROR msg="Failed to setup PCAP capture"'), "ağ kartı") > 0, "hata satırındaki kart sorunu")
+
+    ; --- Bağlı cihazlar (go-pcap2socks satır biçimi; değerler uydurma) ---
+    _AssertEq(_LanLogTime('time=2026-01-05T09:15:30.123+03:00 level=INFO msg="x"'), "2026/01/05 09:15:30", "zaman damgası")
+    _AssertEq(_LanLogTime("zamansız satır"), "", "zaman yoksa boş")
+    Local $aDev[0][4]
+    Local $sOut = 'time=2026-01-05T09:15:30.100+03:00 level=INFO msg="Using ethernet interface" interface=Ethernet mac=02:00:00:00:00:aa' & @CRLF & _
+            'time=2026-01-05T09:15:30.400+03:00 level=INFO msg="Device 172.24.2.50 (02:00:00:00:00:01) joined the network"' & @CRLF & _
+            'time=2026-01-05T09:15:31.000+03:00 level=INFO msg="[TCP] Connection" source=172.24.2.50:50000 dest=203.0.113.10:443' & @CRLF & _
+            'time=2026-01-05T09:15:32.000+03:00 level=INFO msg="[UDP] Connection" source=172.24.2.50:50001 dest=1.1.1.1:53' & @CRLF
+    _AssertEq(_LanDevicesUpdate($aDev, $sOut), 1, "bir cihaz katıldı")
+    _AssertEq(UBound($aDev), 1, "kart satırı cihaz sayılmaz")
+    _AssertEq($aDev[0][0], "172.24.2.50", "cihaz IP'si")
+    _AssertEq($aDev[0][1], "2026/01/05 09:15:30", "ilk görülme")
+    _AssertEq($aDev[0][2], "2026/01/05 09:15:32", "son etkinlik")
+    _AssertEq($aDev[0][3], 2, "bağlantı sayısı (katılma satırı sayılmaz)")
+    _AssertEq(_LanDevicesUpdate($aDev, 'time=2026-01-05T09:20:00.000+03:00 level=INFO msg="[TCP] Connection" source=172.24.2.51:40000 dest=203.0.113.11:443'), 1, _
+            "katılma satırı olmadan bağlanan cihaz da görünür")
+    _AssertEq(_LanDevicesUpdate($aDev, 'time=2026-01-05T09:21:00.000+03:00 level=INFO msg="[TCP] Connection" source=172.24.2.50:50002 dest=203.0.113.10:443'), 0, _
+            "bilinen cihaz yeni sayılmaz")
+    _AssertEq($aDev[0][2], "2026/01/05 09:21:00", "son etkinlik güncellenir")
+    _AssertFalse(StringInStr(_WebLanDevicesJson($aDev, "2026/01/05 09:21:30"), "02:00:00") > 0, "MAC adresi JSON'a girmez")
+    _AssertEq(_LanDeviceAgo("2026/01/05 09:21:00", "2026/01/05 09:21:30"), "Etkin", "yakın zamanda etkin")
+    _AssertEq(_LanDeviceAgo("2026/01/05 09:21:00", "2026/01/05 09:26:10"), "5 dk önce", "dakika önce")
+    _AssertEq(_LanDeviceAgo("2026/01/05 09:21:00", "2026/01/05 11:00:00"), "09:21'de", "bir saatten eski")
+    _AssertEq(_LanDeviceAgo("", "2026/01/05 11:00:00"), "", "zaman yoksa boş")
+    Local $sJ = _WebLanDevicesJson($aDev, "2026/01/05 09:21:30")
+    _AssertEq(_WebJsonGet(StringRegExpReplace($sJ, "^\[|,\{.*$", ""), "ip"), "172.24.2.50", "JSON ilk cihaz")
+    _AssertTrue(StringInStr($sJ, '"etkin":true') > 0, "etkin bayrağı")
+    Local $aBos[0][4]
+    _AssertEq(_WebLanDevicesJson($aBos, "2026/01/05 09:21:30"), "[]", "cihaz yoksa boş dizi")
+
+    ; --- Artımlı okuma: yalnız yeni kısım, yarım satır bekletilir, dosya yenilenince sıfırlanır ---
+    Local $sRoot = @TempDir & "\zwt-lan-dev-" & @MSEC
+    DirCreate($sRoot & "\logs")
+    Local $sLog = $sRoot & $LAN_LOG_REL
+    _LanDevicesReset()
+    _AssertEq(_LanDevicesPoll($sRoot), 0, "log yokken")
+    FileWrite($sLog, 'time=2026-01-05T09:15:30.400+03:00 level=INFO msg="Device 172.24.2.50 (02:00:00:00:00:01) joined the network"' & @LF & _
+            'time=2026-01-05T09:15:31.000+03:00 level=INFO msg="[TCP] Connection" source=172.24.2.5')
+    _AssertEq(_LanDevicesPoll($sRoot), 1, "ilk cihaz okundu")
+    _AssertEq($__g_aLanDevices[0][3], 0, "yarım satır henüz işlenmedi")
+    FileWrite($sLog, '0:50000 dest=203.0.113.10:443' & @LF)
+    _AssertEq(_LanDevicesPoll($sRoot), 0, "tamamlanan satır yeni cihaz değil")
+    _AssertEq($__g_aLanDevices[0][3], 1, "tamamlanan satır işlendi")
+    _AssertEq(_LanDevicesPoll($sRoot), 0, "değişiklik yoksa okuma yok")
+    FileDelete($sLog)
+    FileWrite($sLog, 'time=2026-01-05T10:00:00.000+03:00 level=INFO msg="Device 172.24.2.52 (02:00:00:00:00:03) joined the network"' & @LF)
+    _AssertEq(_LanDevicesPoll($sRoot), 1, "yeniden başlayan logda yeni oturum")
+    _AssertEq(UBound($__g_aLanDevices), 1, "eski oturumun cihazları silindi")
+    _LanDevicesReset()
+    DirRemove($sRoot, 1)
 EndFunc

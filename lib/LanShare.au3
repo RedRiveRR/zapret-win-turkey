@@ -1,6 +1,8 @@
 ﻿#include-once
 #include <AutoItConstants.au3>
 #include <FileConstants.au3>
+#include <StringConstants.au3>
+#include <Date.au3>
 #include "Log.au3"
 #include "Network.au3"
 #include "Process.au3"
@@ -407,4 +409,93 @@ EndFunc
 
 Func _LanDnsProxyRunning()
     Return $__g_iLanDnsPid > 0 And ProcessExists($__g_iLanDnsPid) <> 0
+EndFunc
+
+; =========================================================================
+; --- BAĞLI CİHAZLAR (go-pcap2socks çıktısından) ---
+; go-pcap2socks bir cihaz katılınca  msg="Device <IP> (<MAC>) joined the network"  ve her bağlantıda
+; msg="[TCP] Connection" source=<IP>:<port>  yazar. Çıktı (logs\paylasim.log) her saniye yalnız yeni
+; eklenen kısmından okunur. MAC adresi tutulmaz ve gösterilmez.
+; Tablo: [n][4] = IP, ilk görülme, son etkinlik ("YYYY/MM/DD HH:MM:SS"), bağlantı sayısı.
+; =========================================================================
+Global $__g_aLanDevices[0][4]
+Global $__g_iLanLogPos = 0, $__g_sLanLogRest = ""
+
+; go-pcap2socks zaman damgası -> _DateDiff biçimi: time=2026-10-27T02:21:48.426+03:00 -> 2026/10/27 02:21:48
+Func _LanLogTime($sLine)
+    Local $a = StringRegExp($sLine, "time=(\d{4})-(\d\d)-(\d\d)T(\d\d:\d\d:\d\d)", 1)
+    If @error Then Return ""
+    Return $a[0] & "/" & $a[1] & "/" & $a[2] & " " & $a[3]
+EndFunc
+
+Func __LanDeviceIndex(ByRef $aDev, $sIP)
+    For $i = 0 To UBound($aDev) - 1
+        If $aDev[$i][0] = $sIP Then Return $i
+    Next
+    Return -1
+EndFunc
+
+; Çıktı satırlarını cihaz tablosuna işler (saf). Dönüş: tabloya yeni eklenen cihaz sayısı.
+Func _LanDevicesUpdate(ByRef $aDev, $sText)
+    Local $iNew = 0
+    For $sLine In StringSplit(StringStripCR($sText), @LF, 2)
+        Local $bConn = False
+        Local $m = StringRegExp($sLine, 'msg="Device (\d{1,3}(?:\.\d{1,3}){3}) ', 1)
+        If @error Then
+            $m = StringRegExp($sLine, 'Connection" source=(\d{1,3}(?:\.\d{1,3}){3}):', 1)
+            If @error Then ContinueLoop
+            $bConn = True
+        EndIf
+        Local $sT = _LanLogTime($sLine)
+        Local $i = __LanDeviceIndex($aDev, $m[0])
+        If $i < 0 Then
+            $i = UBound($aDev)
+            ReDim $aDev[$i + 1][4]
+            $aDev[$i][0] = $m[0]
+            $aDev[$i][1] = $sT
+            $aDev[$i][2] = $sT
+            $aDev[$i][3] = 0
+            $iNew += 1
+        ElseIf $sT <> "" Then
+            $aDev[$i][2] = $sT
+        EndIf
+        If $bConn Then $aDev[$i][3] += 1
+    Next
+    Return $iNew
+EndFunc
+
+; Son etkinliğe göre kısa durum (saf): 90 sn içinde "Etkin", bir saat içinde "N dk önce", sonra "HH:MM'de".
+Func _LanDeviceAgo($sLast, $sNow)
+    If $sLast = "" Then Return ""
+    Local $iSec = _DateDiff("s", $sLast, $sNow)
+    If @error Then Return ""
+    If $iSec < 90 Then Return "Etkin"
+    If $iSec < 3600 Then Return Int($iSec / 60) & " dk önce"
+    Return StringMid($sLast, 12, 5) & "'de"
+EndFunc
+
+Func _LanDevicesReset()
+    ReDim $__g_aLanDevices[0][4]
+    $__g_iLanLogPos = 0
+    $__g_sLanLogRest = ""
+EndFunc
+
+; Paylaşım çıktısının yeni kısmını okuyup tabloya işler. Dönüş: yeni bağlanan cihaz sayısı.
+Func _LanDevicesPoll($sRoot)
+    Local $sLog = $sRoot & $LAN_LOG_REL
+    Local $iSize = FileGetSize($sLog)
+    If @error Then Return 0
+    If $iSize < $__g_iLanLogPos Then _LanDevicesReset() ; dosya yeniden başladı
+    If $iSize = $__g_iLanLogPos Then Return 0
+    Local $h = FileOpen($sLog, $FO_READ + $FO_BINARY)
+    If $h = -1 Then Return 0
+    FileSetPos($h, $__g_iLanLogPos, $FILE_BEGIN)
+    Local $bData = FileRead($h, $iSize - $__g_iLanLogPos)
+    FileClose($h)
+    $__g_iLanLogPos += BinaryLen($bData)
+    ; Yarım kalan son satır bir sonraki okumaya bırakılır.
+    Local $sText = $__g_sLanLogRest & BinaryToString($bData, $SB_UTF8)
+    Local $iCut = StringInStr($sText, @LF, 0, -1)
+    $__g_sLanLogRest = StringMid($sText, $iCut + 1)
+    Return _LanDevicesUpdate($__g_aLanDevices, StringLeft($sText, $iCut))
 EndFunc

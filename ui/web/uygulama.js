@@ -16,7 +16,8 @@
 //   {tip:"dnsYenile"} (DNS sekmesi açılınca), {tip:"komut", ad:"dns", mod}
 //   {tip:"diger", paylasim, paylasimAcik, guncelleme, hakkinda, temizleAcik}
 //   {tip:"komut", ad:"tanilama|kayitlar|ayarlar|temizle"}, {tip:"ayar", ad:"guncelleme", deger:bool}
-//   {tip:"paylasim", durum:"acik|kapali|hata", hata, npcap:"var|uyumsuz|yok|", baslatilabilir, kart, wifi, ip, ip2, maske, gecit, mtu, bitti}
+//   {tip:"paylasim", durum:"acik|kapali|hata", hata, npcap:"var|uyumsuz|yok|", baslatilabilir, kart, wifi, ip, ip2, maske, gecit, mtu, bitti,
+//    cihazlar:[{ip, durum:"Etkin|N dk önce|HH:MM'de", etkin, baglanti, ilk:"HH:MM"}]}
 //   {tip:"komut", ad:"paylasimBaslat|paylasimDurdur|paylasimYenile|npcap"} (bitti: başlat/durdur/yenile işlendi), {tip:"kopyala", metin}
 //   {tip:"bildirim", metin}   (program -> sayfa, birkaç saniye görünür)
 //   {tip:"komut", ad:"servisKur|servisKaldir|servisAyarlar"}, {tip:"ayar", ad:"onarim|yenidenBaslat", deger:bool}
@@ -308,6 +309,31 @@ function paylasimUygula(m) {
   dy.textContent = acik ? ({ sistem: 'DNSCrypt servisi', paylasim: 'Şifreli (paylaşıma özel)', sifresiz: 'Şifresiz' }[m.dnsYolu] || '—') : '—';
   dy.classList.toggle('uyari-metin', acik && m.dnsYolu === 'sifresiz');
   if (acik && m.dnsYoluMetin) $('paylasim-dnsyolu-not').textContent = m.dnsYoluMetin + '.';
+  cihazlarUygula(acik, m.cihazlar || []);
+}
+
+// Paylaşım açıkken bu bilgisayar üzerinden çıkan cihazlar (go-pcap2socks çıktısından).
+function cihazlarUygula(acik, liste) {
+  $('paylasim-cihazlar').hidden = !acik;
+  const kutu = $('paylasim-cihaz-liste');
+  kutu.replaceChildren(...liste.map((c) => {
+    const satir = document.createElement('div');
+    satir.className = 'satir';
+    const ad = document.createElement('span');
+    ad.className = 'ad';
+    const b = document.createElement('b');
+    b.textContent = c.ip;
+    const k = document.createElement('span');
+    k.className = 'kucuk';
+    k.textContent = c.ilk ? `İlk bağlantı ${c.ilk}, ${c.baglanti || 0} bağlantı` : '';
+    ad.append(b, k);
+    const d = document.createElement('span');
+    d.className = 'cihaz-durum' + (c.etkin ? ' etkin' : '');
+    d.textContent = c.durum || '';
+    satir.append(ad, d);
+    return satir;
+  }));
+  $('paylasim-cihaz-bos').hidden = liste.length > 0;
 }
 
 // --- Bildirim ---

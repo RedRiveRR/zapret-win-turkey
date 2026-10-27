@@ -139,6 +139,9 @@ button.satir:disabled{opacity:.5;cursor:default}
 .sayfabaslik.geri h1{margin:0}
 .deger.kod{font-family:Consolas,'Cascadia Mono',monospace;color:var(--text);font-size:14px}
 #paylasim-ayar .satir{gap:10px}
+.cihaz-bos{margin:0;padding:10px 0 14px;font-size:13px;color:var(--muted);line-height:1.45}
+.cihaz-durum{font-size:13px;color:var(--muted);white-space:nowrap}
+.cihaz-durum.etkin{color:var(--okText);font-weight:600}
 .servisdurum[data-durum="acik"]{--t:var(--ok);--tt:var(--onAccent);background:var(--okTint)}
 .rehber{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
 .rehber .kucuk{margin:0}

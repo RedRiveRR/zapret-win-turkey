@@ -1666,6 +1666,7 @@ Func _LanShareStart($bInteractive)
     EndIf
     $g_sLanError = ""
     $g_sLanNpcap = "var"
+    _LanDevicesReset()
     $g_sLanMtu = _LanParseMtu(_LanLogTail(@ScriptDir & $LAN_LOG_REL, 40))
     GUICtrlSetData($btnLanShare, "[ ✓ ] Paylaşım Aktif / Durdur")
     If $bInteractive And $g_bWebUi Then
@@ -1686,6 +1687,7 @@ EndFunc
 Func _LanShareStop()
     _LanStop($pcapPID, @ScriptDir)
     $pcapPID = 0
+    _LanDevicesReset()
     GUICtrlSetData($btnLanShare, "Ağdaki Cihazlarla Paylaş")
 EndFunc
 
@@ -1695,6 +1697,13 @@ Func _LanShareWatch()
     If GUICtrlRead($btnLanShare) <> "[ ✓ ] Paylaşım Aktif / Durdur" Then Return
     If _LanIsRunning($pcapPID) Then
         If $g_sLanMtu = "" Then $g_sLanMtu = _LanParseMtu(_LanLogTail(@ScriptDir & $LAN_LOG_REL, 40))
+        Local $nDev = UBound($__g_aLanDevices)
+        If _LanDevicesPoll(@ScriptDir) > 0 Then
+            For $i = $nDev To UBound($__g_aLanDevices) - 1
+                _LogInfo("Ağ paylaşımı: cihaz bağlandı " & $__g_aLanDevices[$i][0])
+            Next
+            _LanShareNotify("Cihaz bağlandı", $__g_aLanDevices[UBound($__g_aLanDevices) - 1][0] & " bu bilgisayar üzerinden internete çıkıyor.", False)
+        EndIf
         Return
     EndIf
     Local $sReason = _LanErrorReason(_LanLogTail(@ScriptDir & $LAN_LOG_REL))
@@ -1988,7 +1997,8 @@ Func _WebUiSyncAll()
         $sPrefix = _LanPickPrefix($g_aLanAdapter[2])
     EndIf
     Local $sLan = _WebLanJson(_LanIsRunning($pcapPID), BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) <> 0, $g_sLanError, _
-            $g_sLanNpcap, $g_aLanAdapter[0], $g_aLanAdapter[3], $sPrefix, $g_sLanMtu, _LanDnsModeCurrent())
+            $g_sLanNpcap, $g_aLanAdapter[0], $g_aLanAdapter[3], $sPrefix, $g_sLanMtu, _LanDnsModeCurrent(), _
+            _WebLanDevicesJson($__g_aLanDevices, _NowCalc()))
     If $g_bWebLanDone Then
         $g_bWebLanDone = False
         $g_sWebLastLanJson = $sLan

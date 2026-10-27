@@ -266,7 +266,20 @@ EndFunc
 ; Ağ paylaşımı sayfası mesajı.
 ;   $bOn: paylaşım açık, $bCanStart: başlatılabilir mi (zapret çalışıyor), $sError: son hata ("" = yok)
 ;   $sNpcap: "var" | "yok" | "" (bilinmiyor), $sAdapter: kart adı, $bWifi, $sPrefix: ağ öneki ("" = bilinmiyor)
-Func _WebLanJson($bOn, $bCanStart, $sError, $sNpcap, $sAdapter, $bWifi, $sPrefix, $sMtu = "", $sDnsMode = "")
+; Bağlı cihazlar listesi (JSON dizisi): [{"ip","durum","etkin","baglanti","ilk"}]. $sNow: _NowCalc() biçimi.
+Func _WebLanDevicesJson(ByRef $aDev, $sNow)
+    Local $s = "["
+    For $i = 0 To UBound($aDev) - 1
+        Local $sAgo = _LanDeviceAgo($aDev[$i][2], $sNow)
+        Local $o = _WebJsonObj("ip", $aDev[$i][0], "durum", $sAgo, "etkin", $sAgo = "Etkin")
+        $o = _WebJsonAdd($o, "baglanti", $aDev[$i][3])
+        $o = _WebJsonAdd($o, "ilk", StringMid($aDev[$i][1], 12, 5))
+        $s &= ($i > 0 ? "," : "") & $o
+    Next
+    Return $s & "]"
+EndFunc
+
+Func _WebLanJson($bOn, $bCanStart, $sError, $sNpcap, $sAdapter, $bWifi, $sPrefix, $sMtu = "", $sDnsMode = "", $sDevicesJson = "[]")
     Local $sDurum = $bOn ? "acik" : ($sError <> "" ? "hata" : "kapali")
     Local $s = _WebJsonObj("tip", "paylasim", "durum", $sDurum, "hata", $sError, "npcap", $sNpcap)
     $s = _WebJsonAdd($s, "baslatilabilir", $bCanStart = True)
@@ -282,5 +295,6 @@ Func _WebLanJson($bOn, $bCanStart, $sError, $sNpcap, $sAdapter, $bWifi, $sPrefix
     $s = _WebJsonAdd($s, "mtu", $sMtu)
     $s = _WebJsonAdd($s, "dnsYolu", $sDnsMode)
     $s = _WebJsonAdd($s, "dnsYoluMetin", _LanDnsModeText($sDnsMode))
+    $s = _WebJsonAddRaw($s, "cihazlar", $bOn ? $sDevicesJson : "[]")
     Return $s
 EndFunc
