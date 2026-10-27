@@ -12,11 +12,41 @@ public struct SocksState: Codable, Equatable {
 public enum SystemProxy {
     public static let networksetup = "/usr/sbin/networksetup"
 
-    public static func parseServices(_ listAllOutput: String) -> [String] { [] }
+    /// `networksetup -listallnetworkservices`: ilk satır açıklama; '*' ile başlayanlar devre dışı.
+    public static func parseServices(_ listAllOutput: String) -> [String] {
+        listAllOutput.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty && !$0.hasPrefix("*") && !$0.hasPrefix("An asterisk") }
+    }
 
-    public static func parseSocks(_ getOutput: String) -> SocksState { SocksState(enabled: false, server: "x", port: -1) }
+    /// `networksetup -getsocksfirewallproxy <hizmet>` çıktısı.
+    public static func parseSocks(_ getOutput: String) -> SocksState {
+        var enabled = false, server = "", port = 0
+        for line in getOutput.components(separatedBy: .newlines) {
+            let parts = line.split(separator: ":", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
+            guard parts.count == 2 else { continue }
+            switch parts[0] {
+            case "Enabled": enabled = parts[1].lowercased() == "yes"
+            case "Server": server = parts[1]
+            case "Port": port = Int(parts[1]) ?? 0
+            default: break
+            }
+        }
+        return SocksState(enabled: enabled, server: server, port: port)
+    }
 
-    public static func enableCommands(service: String, port: Int) -> [[String]] { [] }
+    /// Hizmetin SOCKS proxy'sini yerel tpws'e yönlendirir (adres her zaman 127.0.0.1).
+    public static func enableCommands(service: String, port: Int) -> [[String]] {
+        [[networksetup, "-setsocksfirewallproxy", service, "127.0.0.1", String(port)],
+         [networksetup, "-setsocksfirewallproxystate", service, "on"]]
+    }
 
-    public static func restoreCommands(service: String, previous: SocksState) -> [[String]] { [] }
+    /// Hizmeti önceki hâline döndürür (kullanıcının kendi proxy'si varsa aynen geri yüklenir).
+    public static func restoreCommands(service: String, previous: SocksState) -> [[String]] {
+        if previous.enabled && !previous.server.isEmpty {
+            return [[networksetup, "-setsocksfirewallproxy", service, previous.server, String(previous.port)],
+                    [networksetup, "-setsocksfirewallproxystate", service, "on"]]
+        }
+        return [[networksetup, "-setsocksfirewallproxystate", service, "off"]]
+    }
 }
