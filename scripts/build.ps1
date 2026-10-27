@@ -87,17 +87,27 @@ try {
     $liteExeName = 'RedRiveRR Zapret Lite.exe'
 
     . (Join-Path $PSScriptRoot 'set-version.ps1')
+    . (Join-Path $PSScriptRoot 'sac-check.ps1')
 
     function Invoke-Compile([string]$name, [string]$exeName, [string]$description) {
         $in = Join-Path $src "$name.au3"
         $out = Join-Path $src $exeName
-        # /nopack: UPX ile sıkıştırılmış exe'ler antivirüslerde daha sık yanlış alarm veriyor.
-        $p = Start-Process -FilePath $aut2exe -ArgumentList '/in', "`"$in`"", '/out', "`"$out`"", '/icon', "`"$icon`"", '/x64', '/nopack' -Wait -PassThru -NoNewWindow
-        if (-not (Test-Path $out)) { throw "$name derlenemedi (Aut2Exe çıkış kodu $($p.ExitCode))" }
-        # Ürün adı/açıklama/sürüm: boş kimlikli imzasız exe Akıllı Uygulama Denetimi'nde daha kolay engelleniyor (H25).
-        Set-ExeVersionInfo -Path $out -Version $version -Description $description -OriginalName $exeName
-        Write-Host ("derlendi {0} ({1:N0} bayt, sürüm {2})" -f $exeName, (Get-Item $out).Length, (Get-Item $out).VersionInfo.FileVersion)
-        return $out
+        # Akıllı Uygulama Denetimi zorunlu olan bilgisayarda exe yoklanır; engellenirse yeniden derlenir
+        # (Aut2Exe her derlemede farklı exe üretir, Windows her birini ayrı değerlendirir; H25).
+        for ($try = 1; $try -le 3; $try++) {
+            if (Test-Path $out) { Remove-Item $out }
+            # /nopack: UPX ile sıkıştırılmış exe'ler antivirüslerde daha sık yanlış alarm veriyor.
+            $p = Start-Process -FilePath $aut2exe -ArgumentList '/in', "`"$in`"", '/out', "`"$out`"", '/icon', "`"$icon`"", '/x64', '/nopack' -Wait -PassThru -NoNewWindow
+            if (-not (Test-Path $out)) { throw "$name derlenemedi (Aut2Exe çıkış kodu $($p.ExitCode))" }
+            # Ürün adı/açıklama/sürüm: boş kimlikli imzasız exe Akıllı Uygulama Denetimi'nde daha kolay engelleniyor (H25).
+            Set-ExeVersionInfo -Path $out -Version $version -Description $description -OriginalName $exeName
+            $sac = Test-SacAllowed $out
+            $sacText = if ($null -eq $sac) { 'Akıllı Uygulama Denetimi yoklanmadı' } elseif ($sac) { 'Akıllı Uygulama Denetimi: geçti' } else { 'Akıllı Uygulama Denetimi: ENGELLENİYOR' }
+            Write-Host ("derlendi {0} ({1:N0} bayt, sürüm {2}; {3})" -f $exeName, (Get-Item $out).Length, (Get-Item $out).VersionInfo.FileVersion, $sacText)
+            if ($sac -ne $false) { return $out }
+            if ($try -lt 3) { Write-Host "  yeniden derleniyor ($($try + 1)/3)" -ForegroundColor Yellow }
+        }
+        throw "$exeName üç derlemede de Akıllı Uygulama Denetimi'nde engellendi; daha sonra yeniden deneyin (Windows'un kararı zamanla değişebiliyor)."
     }
     $mainExe = Invoke-Compile 'zapret-win-turkey' $mainExeName 'RedRiveRR Zapret'
     $liteExe = Invoke-Compile 'zapret-win-turkey-lite' $liteExeName 'RedRiveRR Zapret Lite'
