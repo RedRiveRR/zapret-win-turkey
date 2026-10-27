@@ -1,0 +1,3760 @@
+﻿# Bağlı cihazlar için üretici tablosu (scripts\make-vendors.ps1 ile üretilir; elle düzenlemeyin).
+# Kaynak: Wireshark manuf (IEEE OUI). Biçim: OUI<TAB>Etiket
+0000DD	TCL
+0000F0	Samsung
+00014A	Sony
+000393	Apple
+0003FF	Microsoft (Xbox)
+00041F	PlayStation
+000502	Apple
+0007AB	Samsung
+0009BF	Nintendo
+0009DF	Vestel
+000A27	Apple
+000A95	Apple
+000AD9	Sony
+000D3A	Microsoft (Xbox)
+000D4B	Roku
+000D93	Apple
+000E07	Sony
+000E1F	TCL
+000FDE	Sony
+0010FA	Apple
+001124	Apple
+0011E1	Arçelik / Beko
+001247	Samsung
+00125A	Microsoft (Xbox)
+0012EE	Sony
+0012FB	Samsung
+001315	PlayStation
+001377	Samsung
+0013A9	Sony
+001451	Apple
+00155D	Microsoft (Xbox)
+001599	Samsung
+0015B9	Samsung
+0015C1	PlayStation
+001620	Sony
+001632	Samsung
+001656	Nintendo
+00166B	Samsung
+00166C	Samsung
+0016B8	Sony
+0016CB	Apple
+0016DB	Samsung
+0017AB	Nintendo
+0017C9	Samsung
+0017D5	Samsung
+0017F2	Apple
+0017FA	Microsoft (Xbox)
+001813	Sony
+0018AF	Samsung
+00191D	Nintendo
+001963	Sony
+0019C5	PlayStation
+0019E3	Apple
+0019FD	Nintendo
+001A11	Google (Chromecast)
+001A75	Sony
+001A80	Sony
+001A8A	Samsung
+001A95	Hisense
+001AE9	Nintendo
+001B59	Sony
+001B63	Apple
+001B7A	Nintendo
+001B98	Samsung
+001BEA	Nintendo
+001C43	Samsung
+001C50	TCL
+001C62	LG
+001CA4	Sony
+001CB3	Apple
+001CBE	Nintendo
+001D0D	PlayStation
+001D25	Samsung
+001D28	Sony
+001D4F	Apple
+001DBA	Sony
+001DBC	Nintendo
+001DD8	Microsoft (Xbox)
+001DF6	Samsung
+001E35	Nintendo
+001E45	Sony
+001E52	Apple
+001E75	LG
+001E7D	Samsung
+001EA9	Nintendo
+001EC2	Apple
+001EDC	Sony
+001EE1	Samsung
+001EE2	Samsung
+001F32	Nintendo
+001F5B	Apple
+001F6B	LG
+001FA7	PlayStation
+001FC5	Nintendo
+001FCC	Samsung
+001FCD	Samsung
+001FE3	LG
+001FE4	Sony
+001FF3	Apple
+002147	Nintendo
+00214C	Samsung
+00219E	Sony
+0021BD	Nintendo
+0021D1	Samsung
+0021D2	Samsung
+0021E9	Apple
+0021FB	LG
+002241	Apple
+002248	Microsoft (Xbox)
+00224C	Nintendo
+002298	Sony
+0022A9	LG
+0022AA	Nintendo
+0022D7	Nintendo
+002312	Apple
+002331	Nintendo
+002332	Apple
+002339	Samsung
+00233A	Samsung
+002345	Sony
+00236C	Apple
+002399	Samsung
+0023C2	Samsung
+0023CC	Nintendo
+0023D6	Samsung
+0023D7	Samsung
+0023DF	Apple
+0023F1	Sony
+00241E	Nintendo
+002436	Apple
+002444	Nintendo
+002454	Samsung
+002483	LG
+00248D	PlayStation
+002490	Samsung
+002491	Samsung
+0024BE	Sony
+0024E9	Samsung
+0024EF	Sony
+0024F3	Nintendo
+002500	Apple
+002538	Samsung
+00254B	Apple
+002566	Samsung
+002567	Samsung
+0025A0	Nintendo
+0025AE	Microsoft (Xbox)
+0025BC	Apple
+0025E5	LG
+0025E7	Sony
+002608	Apple
+00264A	Apple
+002659	Nintendo
+00265D	Samsung
+00265F	Samsung
+0026B0	Apple
+0026BB	Apple
+0026E2	LG
+002709	Nintendo
+002B70	Samsung
+003065	Apple
+0034DA	LG
+003DE8	LG
+003EE1	Apple
+0050E4	Apple
+0050F2	Microsoft (Xbox)
+0056CD	Apple
+0057C1	LG
+005B94	Apple
+006171	Apple
+0066DC	Apple
+006D52	Apple
+006F64	Samsung
+007147	Amazon (Fire TV)
+007204	Samsung
+0073E0	Samsung
+007C2D	Samsung
+007D3B	Samsung
+007D60	Apple
+00812A	Apple
+008621	Amazon (Fire TV)
+008701	Samsung
+008865	Apple
+008A76	Apple
+009235	Apple
+0097F1	Apple
+009EC8	Xiaomi
+00A040	Apple
+00A159	LG
+00AA70	LG
+00B362	Apple
+00B5D0	Samsung
+00BB3A	Amazon (Fire TV)
+00BF61	Samsung
+00C30A	Xiaomi
+00C3F4	Samsung
+00C585	Apple
+00C610	Apple
+00CDFE	Apple
+00D9D1	PlayStation
+00DB70	Apple
+00E064	Samsung
+00E091	LG
+00E3B2	Samsung
+00E421	PlayStation
+00EB2D	Sony
+00EC0A	Xiaomi
+00F361	Amazon (Fire TV)
+00F39F	Apple
+00F46F	Samsung
+00F4B9	Apple
+00F620	Google (Chromecast)
+00F76F	Apple
+00FA21	Samsung
+00FC8B	Amazon (Fire TV)
+04006E	Google (Chromecast)
+0403D6	Nintendo
+040CCE	Apple
+04106B	Xiaomi
+04137A	Apple
+041552	Apple
+04180F	Samsung
+041B6D	LG
+041BBA	Samsung
+041E64	Apple
+042665	Apple
+042728	Microsoft (Xbox)
+04292E	Samsung
+042EC1	Apple
+0434CF	Apple
+0441A5	Apple
+04489A	Apple
+044BED	Apple
+0452F3	Apple
+045453	Apple
+045D4B	Sony
+046761	Xiaomi
+046865	Apple
+0469F8	Apple
+046F00	LG
+047295	Apple
+0472EF	Apple
+047A0B	Xiaomi
+0499B9	Apple
+0499BB	Apple
+049D05	Apple
+04AE47	Xiaomi
+04B167	Xiaomi
+04B1A1	Samsung
+04B429	Samsung
+04B5B2	Apple
+04B9E3	Samsung
+04BA8D	Samsung
+04BC6D	Apple
+04BDBF	Samsung
+04BFD5	Apple
+04C807	Xiaomi
+04C8B0	Google (Chromecast)
+04CB01	Samsung
+04CF8C	Xiaomi
+04D13A	Xiaomi
+04D3CF	Apple
+04DB56	Apple
+04E4B6	Samsung
+04E536	Apple
+04E598	Xiaomi
+04F13E	Apple
+04F778	PlayStation
+04F7E4	Apple
+04FE31	Samsung
+080007	Apple
+080046	Sony
+08023C	Samsung
+080581	Roku
+0808C2	Samsung
+081093	Samsung
+0812A5	Amazon (Fire TV)
+08152F	Samsung
+081C6E	Xiaomi
+0821EF	Samsung
+08240B	Apple
+082525	Xiaomi
+082573	Apple
+082CB6	Apple
+08357D	Microsoft (Xbox)
+08373D	Samsung
+083D88	Samsung
+0857FB	Amazon (Fire TV)
+085D53	Apple
+086202	Apple
+086518	Apple
+086698	Apple
+08674E	Hisense
+086AE5	Amazon (Fire TV)
+086D41	Apple
+087045	Apple
+087402	Apple
+087808	Samsung
+087B0F	Amazon (Fire TV)
+087C39	Amazon (Fire TV)
+08849D	Amazon (Fire TV)
+0887C7	Apple
+088BC8	Google (Chromecast)
+088C2C	Samsung
+088EDC	Apple
+089115	Amazon (Fire TV)
+0891A3	Amazon (Fire TV)
+089542	Apple
+089E08	Google (Chromecast)
+08A5DF	Samsung
+08A6BC	Amazon (Fire TV)
+08AED6	Samsung
+08B339	Xiaomi
+08B4B1	Google (Chromecast)
+08BFA0	Samsung
+08C224	Amazon (Fire TV)
+08C3B3	TCL
+08C729	Apple
+08C7B5	Apple
+08D42B	Samsung
+08D46A	LG
+08E64B	Apple
+08E689	Apple
+08ECA9	Samsung
+08EE8B	Samsung
+08F4AB	Apple
+08F69C	Apple
+08F78C	Nintendo
+08F8BC	Apple
+08FC88	Samsung
+08FD0E	Samsung
+08FF44	Apple
+0C02BD	Samsung
+0C07DF	Xiaomi
+0C1420	Samsung
+0C1539	Apple
+0C1563	Apple
+0C19F8	Apple
+0C1B7B	Microsoft (Xbox)
+0C1DAF	Xiaomi
+0C2D71	Apple
+0C2FB0	Samsung
+0C3021	Apple
+0C323A	Samsung
+0C3526	Microsoft (Xbox)
+0C3B50	Apple
+0C3E9F	Apple
+0C413E	Microsoft (Xbox)
+0C43F9	Amazon (Fire TV)
+0C47C9	Amazon (Fire TV)
+0C4885	LG
+0C4DE9	Apple
+0C5101	Apple
+0C517E	Apple
+0C53B7	Apple
+0C6AC4	Apple
+0C6F8B	Apple
+0C7043	PlayStation
+0C715D	Samsung
+0C74C2	Apple
+0C771A	Apple
+0C85E1	Apple
+0C8910	Samsung
+0C8DCA	Samsung
+0C9838	Xiaomi
+0CA3B2	Apple
+0CA8A7	Samsung
+0CB319	Samsung
+0CBC9F	Apple
+0CC413	Google (Chromecast)
+0CC56C	Apple
+0CC6FD	Xiaomi
+0CCC5D	Apple
+0CCE6B	Apple
+0CD746	Apple
+0CDBEA	Apple
+0CDC91	Amazon (Fire TV)
+0CDFA4	Samsung
+0CE0DC	Samsung
+0CE441	Apple
+0CE5A1	Apple
+0CE725	Microsoft (Xbox)
+0CEDC8	Xiaomi
+0CEE99	Amazon (Fire TV)
+0CF346	Xiaomi
+0CFBCF	Apple
+0CFE45	PlayStation
+100020	Apple
+1007B6	Samsung
+1009F9	Amazon (Fire TV)
+101C0C	Apple
+101DC0	Samsung
+102959	Apple
+1029AB	Samsung
+102AB3	Xiaomi
+102B41	Samsung
+102F6B	Microsoft (Xbox)
+102FCA	Apple
+103025	Apple
+103047	Samsung
+103917	Samsung
+10394E	Hisense
+103B59	Samsung
+103F44	Xiaomi
+1040F3	Apple
+10417F	Apple
+104210	Apple
+104FA8	Sony
+105932	Roku
+10683F	LG
+1077B1	Samsung
+107A2A	Microsoft (Xbox)
+107DC8	Apple
+1089FB	Samsung
+108EE0	Samsung
+109266	Samsung
+1093E9	Apple
+1094BB	Apple
+109693	Amazon (Fire TV)
+109ADD	Apple
+109E6B	Apple
+109F41	Apple
+10A1DA	Apple
+10A2D3	Apple
+10A4C9	Apple
+10ABC9	Samsung
+10AE60	Amazon (Fire TV)
+10B588	Apple
+10B9C4	Apple
+10BD3A	Apple
+10BF67	Amazon (Fire TV)
+10C197	Xiaomi
+10C735	Microsoft (Xbox)
+10CE02	Amazon (Fire TV)
+10CEE9	Apple
+10CF0F	Apple
+10D38A	Samsung
+10D542	Samsung
+10D9A2	Google (Chromecast)
+10DA63	Apple
+10DDB1	Apple
+10E2C9	Apple
+10E4C2	Samsung
+10EC81	Samsung
+10F1F2	LG
+10F96F	LG
+140152	Samsung
+140498	Apple
+140AC5	Amazon (Fire TV)
+140B9E	Samsung
+14109F	Apple
+14147D	Apple
+141A97	Apple
+141BA0	Apple
+141F78	Samsung
+14205E	Apple
+14223B	Google (Chromecast)
+142876	Apple
+142D4D	Apple
+142E43	Hisense
+1432D1	Samsung
+1435B7	Apple
+143FA6	Sony
+1449D4	Xiaomi
+14568E	Samsung
+145A05	Apple
+1460CB	Apple
+147AE4	Apple
+147DDA	Apple
+147FCE	Apple
+148509	Apple
+14876A	Apple
+1488E6	Apple
+1489FD	Samsung
+148F79	Apple
+148FC6	Apple
+14907A	Xiaomi
+149138	Amazon (Fire TV)
+14946C	Apple
+1495CE	Apple
+1496E5	Samsung
+149877	Apple
+14993E	Xiaomi
+1499E2	Apple
+149A10	Microsoft (Xbox)
+149D99	Apple
+149F3C	Samsung
+14A364	Samsung
+14A6B9	Samsung
+14B484	Samsung
+14B653	Apple
+14BB6E	Samsung
+14BD61	Apple
+14C14E	Google (Chromecast)
+14C213	Apple
+14C88B	Apple
+14C913	LG
+14CB65	Microsoft (Xbox)
+14D00D	Apple
+14D19E	Apple
+14D55C	Apple
+14D881	Xiaomi
+14E01D	Samsung
+14F287	Apple
+14F42A	Samsung
+14F65A	Xiaomi
+18002D	Sony
+1801F1	Xiaomi
+180B1B	Amazon (Fire TV)
+1816C9	Samsung
+1819D6	Samsung
+181EB0	Samsung
+182032	Apple
+182195	Samsung
+18227E	Samsung
+182654	Samsung
+182666	Samsung
+182A7B	Nintendo
+18300C	Hisense
+1832DE	Apple
+183451	Apple
+183A2D	Samsung
+183EEF	Apple
+183F47	Samsung
+183F70	Apple
+184617	Samsung
+1848BE	Amazon (Fire TV)
+184A53	Apple
+184E16	Samsung
+184ECB	Samsung
+1854CF	Samsung
+1855E3	Apple
+1856C3	Apple
+185936	Xiaomi
+185BB3	Samsung
+186590	Apple
+1867B0	Samsung
+1869D4	Samsung
+18742E	Amazon (Fire TV)
+187EB9	Apple
+18810E	Apple
+188331	Samsung
+188740	Xiaomi
+18895B	Samsung
+188ED5	Philips TV
+189EFC	Apple
+18A084	Apple
+18AB1D	Samsung
+18ACC2	TCL
+18AF61	Apple
+18AF8F	Apple
+18B83D	Samsung
+18B842	Apple
+18BFB3	Samsung
+18CE94	Samsung
+18E2C2	Samsung
+18E671	Apple
+18E7B0	Apple
+18E7F4	Apple
+18EE69	Apple
+18F0E4	Xiaomi
+18F1D8	Apple
+18F643	Apple
+18FAB7	Apple
+1C0D7D	Apple
+1C0EC2	Apple
+1C12B0	Amazon (Fire TV)
+1C1AC0	Apple
+1C1ADF	Microsoft (Xbox)
+1C1DD3	Apple
+1C232C	Samsung
+1C2575	Xiaomi
+1C2AB0	Xiaomi
+1C3576	Samsung
+1C36BB	Apple
+1C3ADE	Samsung
+1C3C78	Apple
+1C4586	Nintendo
+1C4D66	Amazon (Fire TV)
+1C53F9	Google (Chromecast)
+1C57DC	Apple
+1C5A3E	Samsung
+1C5CF2	Apple
+1C61BF	Apple
+1C62B8	Samsung
+1C66AA	Samsung
+1C6932	Hisense
+1C6A76	Apple
+1C7125	Apple
+1C76F2	Samsung
+1C7754	Apple
+1C7B21	Sony
+1C8682	Apple
+1C869A	Samsung
+1C8BEF	Xiaomi
+1C8E2A	Apple
+1C8F0C	Microsoft (Xbox)
+1C9148	Apple
+1C9180	Apple
+1C93C4	Amazon (Fire TV)
+1C9E46	Apple
+1CABA7	Apple
+1CAF05	Samsung
+1CAF4A	Samsung
+1CB3C9	Apple
+1CCCD6	Xiaomi
+1CE209	Apple
+1CE57F	Samsung
+1CE61D	Samsung
+1CE62B	Apple
+1CEAAC	Xiaomi
+1CF29A	Google (Chromecast)
+1CF64C	Apple
+1CF8D0	Samsung
+1CF9D5	Apple
+1CFE2B	Amazon (Fire TV)
+200484	Apple
+200BCF	Nintendo
+200E2B	Apple
+2010B1	Amazon (Fire TV)
+2013E0	Samsung
+201582	Apple
+2015DE	Samsung
+201642	Microsoft (Xbox)
+201742	LG
+201A94	Apple
+201C3A	Nintendo
+201F3B	Google (Chromecast)
+2021A5	LG
+2025CC	Xiaomi
+202680	Samsung
+202D07	Samsung
+202DF6	Apple
+20326C	Samsung
+2032C6	Apple
+203389	Google (Chromecast)
+203462	Xiaomi
+2034FB	Xiaomi
+2037A5	Apple
+203B34	Xiaomi
+203B67	Samsung
+203CAE	Apple
+20463A	Apple
+2047DA	Xiaomi
+20521D	Apple
+205476	Sony
+205531	Samsung
+205EF7	Samsung
+206274	Microsoft (Xbox)
+206980	Apple
+206E9C	Samsung
+2072A9	Xiaomi
+20768F	Apple
+2078CD	Apple
+2078F0	Apple
+207D74	Apple
+2082C0	Xiaomi
+20845F	Apple
+208C0A	Apple
+2091DF	Apple
+209952	Xiaomi
+209BCD	Apple
+20A171	Amazon (Fire TV)
+20A2E4	Apple
+20A5CB	Apple
+20A60C	Xiaomi
+20A99B	Microsoft (Xbox)
+20AB37	Apple
+20BEB4	Hisense
+20BEB8	Amazon (Fire TV)
+20C9D0	Apple
+20CC73	Samsung
+20D390	Samsung
+20D476	Amazon (Fire TV)
+20D5BF	Samsung
+20DBAB	Samsung
+20DFB9	Google (Chromecast)
+20E2A8	Apple
+20E874	Apple
+20EE28	Apple
+20EFBD	Roku
+20F094	Google (Chromecast)
+20F478	Xiaomi
+20F4D4	Apple
+20FA85	Apple
+20FE00	Amazon (Fire TV)
+240588	Google (Chromecast)
+240935	Samsung
+240A3F	Samsung
+241145	Xiaomi
+241153	Samsung
+241B7A	Apple
+241EEB	Apple
+2421AB	Sony
+24240E	Apple
+2424B7	Samsung
+242934	Google (Chromecast)
+242AEA	Apple
+244B03	Samsung
+244B81	Samsung
+244CE3	Amazon (Fire TV)
+24559A	Apple
+245AB5	Samsung
+245BA7	Apple
+245E48	Apple
+2460B3	Samsung
+246477	Xiaomi
+246800	Samsung
+2468B0	Samsung
+246D10	Apple
+24920E	Samsung
+24952F	Google (Chromecast)
+24A074	Apple
+24A2E1	Apple
+24A452	Samsung
+24AB81	Apple
+24B339	Apple
+24C613	Samsung
+24C696	Samsung
+24CE33	Amazon (Fire TV)
+24CF24	Xiaomi
+24D0DF	Apple
+24D337	Xiaomi
+24DBED	Samsung
+24E314	Apple
+24E50F	Google (Chromecast)
+24F094	Apple
+24F0D3	Samsung
+24F40A	Samsung
+24F5AA	Samsung
+24F677	Apple
+24FCE5	Samsung
+28022E	Apple
+280244	Apple
+2802D8	Samsung
+280708	Samsung
+280B5C	Apple
+280DFC	PlayStation
+28167F	Xiaomi
+2816A8	Microsoft (Xbox)
+281878	Microsoft (Xbox)
+2824C9	Amazon (Fire TV)
+2827BF	Samsung
+282D7F	Apple
+2834FF	Apple
+283737	Apple
+28395E	Samsung
+283DC2	Samsung
+283F69	Sony
+2840DD	PlayStation
+2849E9	Apple
+284B54	Apple
+28575D	Apple
+285923	Xiaomi
+285AEB	Apple
+286AB8	Apple
+286ABA	Apple
+286C07	Xiaomi
+2872C6	Samsung
+2873F6	Amazon (Fire TV)
+2877F1	Apple
+288335	Samsung
+2883C9	Apple
+288EEC	Apple
+288FF6	Apple
+28987B	Samsung
+289F04	Samsung
+28A02B	Apple
+28AF42	Samsung
+28BAB5	Samsung
+28BD89	Google (Chromecast)
+28C1A0	Apple
+28C538	Apple
+28C709	Apple
+28CC01	Samsung
+28CF51	Nintendo
+28CFDA	Apple
+28CFE9	Apple
+28D127	Xiaomi
+28D5B1	Apple
+28DE1C	Samsung
+28E02C	Apple
+28E14C	Apple
+28E31F	Xiaomi
+28E6A9	Samsung
+28E7CF	Apple
+28EA0B	Microsoft (Xbox)
+28EA2D	Apple
+28EC95	Apple
+28ED6A	Apple
+28EF01	Amazon (Fire TV)
+28F033	Apple
+28F076	Apple
+28FF3C	Apple
+2C0B97	Xiaomi
+2C0DCF	Xiaomi
+2C10C1	Nintendo
+2C15BF	Samsung
+2C1809	Apple
+2C195C	Xiaomi
+2C1CF7	Apple
+2C1F23	Apple
+2C200B	Apple
+2C2997	Microsoft (Xbox)
+2C326A	Apple
+2C3361	Apple
+2C4053	Samsung
+2C4401	Samsung
+2C5491	Microsoft (Xbox)
+2C54CF	LG
+2C57CE	Apple
+2C598A	LG
+2C61F6	Apple
+2C71FF	Amazon (Fire TV)
+2C7600	Apple
+2C7CF2	Apple
+2C81BF	Apple
+2C8217	Apple
+2C9520	Apple
+2C9975	Samsung
+2C9E00	PlayStation
+2CAE2B	Samsung
+2CB43A	Apple
+2CBABA	Samsung
+2CBC87	Apple
+2CBE08	Apple
+2CC253	Apple
+2CCA16	Apple
+2CCC44	PlayStation
+2CD066	Xiaomi
+2CDA46	Samsung
+2CDF68	Apple
+2CE032	TCL
+2CF0A2	Apple
+2CF0EE	Apple
+2CFE4F	Xiaomi
+3007EB	Xiaomi
+300916	Apple
+300D43	Microsoft (Xbox)
+300E43	Apple
+300EB8	LG
+3010E4	Apple
+3017C8	Sony
+301966	Samsung
+3035AD	Apple
+303926	Sony
+303B7C	Apple
+304D1F	Amazon (Fire TV)
+3050CE	Xiaomi
+305714	Apple
+3059B7	Microsoft (Xbox)
+306222	Samsung
+30636B	Apple
+306A4F	Roku
+306A85	Samsung
+307467	Samsung
+307512	Sony
+30766F	LG
+307AD2	Apple
+308216	Apple
+3089EC	Nintendo
+309048	Apple
+3090AB	Apple
+3096FB	Samsung
+30A033	Apple
+30A7F5	Apple
+30A8DB	Sony
+30B4B8	LG
+30C0AE	Apple
+30C7AE	Samsung
+30C9CC	Samsung
+30CBF8	Samsung
+30CDA7	Samsung
+30D53E	Apple
+30D587	Samsung
+30D6C9	Samsung
+30D7A1	Apple
+30D875	Apple
+30D9D9	Apple
+30DE52	Samsung
+30E044	Google (Chromecast)
+30E04F	Apple
+30E226	Apple
+30F7C5	Apple
+30F9ED	Sony
+30FCEB	LG
+30FD38	Google (Chromecast)
+30FE6C	Apple
+3408BC	Apple
+340E22	Apple
+3410BE	Apple
+341298	Apple
+34145F	Samsung
+34159E	Apple
+341CF0	Xiaomi
+3425BE	Amazon (Fire TV)
+342840	Apple
+342B6E	Apple
+342D0D	Samsung
+342FBD	Nintendo
+343111	Samsung
+34318F	Apple
+34363B	Apple
+343916	Google (Chromecast)
+343932	Xiaomi
+344262	Apple
+344DF7	LG
+345180	TCL
+3451C9	Apple
+345ABA	TCL
+345E08	Roku
+346691	Apple
+347C25	Apple
+3480B3	Xiaomi
+348296	Apple
+3482C5	Samsung
+348A7B	Samsung
+348C5E	Apple
+34A395	Apple
+34A8EB	Apple
+34AA8B	Samsung
+34AB37	Apple
+34AF2C	Nintendo
+34AFB3	Amazon (Fire TV)
+34B1EB	Apple
+34B98D	Xiaomi
+34BE00	Samsung
+34C059	Apple
+34C232	Samsung
+34C386	Apple
+34C3AC	Samsung
+34C7E9	Google (Chromecast)
+34CE00	Xiaomi
+34D270	Amazon (Fire TV)
+34DAA1	Apple
+34DDCC	Google (Chromecast)
+34E2FD	Apple
+34E3FB	Samsung
+34E8CB	Apple
+34EE16	Apple
+34F015	Xiaomi
+34F043	Samsung
+34F084	Samsung
+34F68D	Apple
+34F8DD	Apple
+34FA1C	Xiaomi
+34FCEF	LG
+34FD6A	Apple
+34FE77	Apple
+380195	Samsung
+380484	Apple
+3809FB	Apple
+380A94	Samsung
+380B40	Samsung
+380F4A	Apple
+3816D1	Samsung
+38184C	Sony
+38256B	Microsoft (Xbox)
+382656	TCL
+382DD1	Samsung
+382DE8	Samsung
+3830F9	LG
+3833C5	Microsoft (Xbox)
+38484C	Apple
+384A80	Samsung
+38539C	Apple
+38563D	Microsoft (Xbox)
+386233	Apple
+3865B2	Apple
+3866F0	Apple
+3868A4	Samsung
+386A77	Samsung
+386FF4	Amazon (Fire TV)
+387035	Nintendo
+3871DE	Apple
+387862	Sony
+387F8B	Apple
+3886F7	Google (Chromecast)
+3888A4	Apple
+38892C	Apple
+388A06	Samsung
+388B59	Google (Chromecast)
+388C50	LG
+388CEF	Samsung
+388F30	Samsung
+389496	Samsung
+389AF6	Samsung
+389CB2	Apple
+38A4ED	Xiaomi
+38B54D	Apple
+38C1ED	Xiaomi
+38C43A	Apple
+38C6BD	Xiaomi
+38C6CE	Nintendo
+38C986	Apple
+38CADA	Apple
+38D40B	Samsung
+38E13D	Apple
+38E60A	Xiaomi
+38EC0D	Apple
+38ECE4	Samsung
+38F23E	Microsoft (Xbox)
+38F554	Hisense
+38F73D	Amazon (Fire TV)
+38F9D3	Apple
+3C01EF	Sony
+3C0518	Samsung
+3C0630	Apple
+3C0754	Apple
+3C0771	Sony
+3C07D7	Apple
+3C0A7A	Samsung
+3C135A	Xiaomi
+3C15C2	Apple
+3C195E	Samsung
+3C1EB5	Apple
+3C20F6	Samsung
+3C22FB	Apple
+3C286D	Google (Chromecast)
+3C2983	Samsung
+3C2CA6	Xiaomi
+3C2CCD	Apple
+3C2EF9	Apple
+3C2EFF	Apple
+3C3174	Google (Chromecast)
+3C318A	Samsung
+3C3464	Apple
+3C3824	Xiaomi
+3C38F4	Sony
+3C39C8	Apple
+3C3B77	Apple
+3C4DBE	Apple
+3C5002	Apple
+3C576C	Samsung
+3C591E	TCL
+3C5A37	Samsung
+3C5AB4	Google (Chromecast)
+3C5CC4	Amazon (Fire TV)
+3C6200	Samsung
+3C6D89	Apple
+3C7D0A	Apple
+3C7F6E	Xiaomi
+3C8375	Microsoft (Xbox)
+3C8BFE	Samsung
+3C8D20	Google (Chromecast)
+3CA10D	Samsung
+3CA6F6	Apple
+3CA9AB	Nintendo
+3CAB8E	Apple
+3CAFB7	Xiaomi
+3CBBFD	Samsung
+3CBD3E	Xiaomi
+3CBDD8	LG
+3CBF60	Apple
+3CBFD7	Apple
+3CCD36	Apple
+3CCD40	Apple
+3CCD57	Xiaomi
+3CCD93	LG
+3CD0F8	Apple
+3CDCBC	Samsung
+3CDD57	Apple
+3CE072	Apple
+3CE441	Amazon (Fire TV)
+3CF7A4	Samsung
+3CFA06	Microsoft (Xbox)
+3CFB02	Apple
+400877	Xiaomi
+4011C3	Samsung
+401277	Microsoft (Xbox)
+40163B	Samsung
+402619	Apple
+402BA1	Sony
+402F53	Apple
+403004	Apple
+40313C	Xiaomi
+40331A	Apple
+4035E6	Samsung
+403CFC	Apple
+4040A7	Sony
+4044F7	Nintendo
+404D7F	Apple
+404E9E	Apple
+40538C	LG
+405EF6	Samsung
+406C8F	Apple
+4070F5	Apple
+407911	Apple
+40831D	Apple
+4089C2	Apple
+4089C6	Amazon (Fire TV)
+408BF6	TCL
+408E2C	Microsoft (Xbox)
+40921A	Apple
+4098AD	Apple
+409C28	Apple
+40A2DB	Amazon (Fire TV)
+40A44A	Google (Chromecast)
+40A6D9	Apple
+40A9CF	Amazon (Fire TV)
+40B0FA	LG
+40B395	Apple
+40B3FA	Apple
+40B4CD	Amazon (Fire TV)
+40B837	Sony
+40BC60	Apple
+40C711	Apple
+40CBC0	Apple
+40D160	Apple
+40D28A	Nintendo
+40D32D	Apple
+40D3AE	Samsung
+40DA5C	Apple
+40DE24	Samsung
+40E64B	Apple
+40EDCF	Apple
+40F407	Nintendo
+40F6BC	Amazon (Fire TV)
+40F946	Apple
+440010	Apple
+440049	Amazon (Fire TV)
+44070B	Google (Chromecast)
+4409DA	Apple
+441030	Google (Chromecast)
+441622	Microsoft (Xbox)
+4416FA	Samsung
+4418FD	Apple
+441B88	Apple
+441EB0	Apple
+44237C	Xiaomi
+4425F4	Apple
+442A60	Apple
+443583	Apple
+443D54	Amazon (Fire TV)
+444201	Amazon (Fire TV)
+444A37	Xiaomi
+444ADB	Apple
+444C0C	Apple
+444E1A	Samsung
+44552B	Samsung
+44579F	Xiaomi
+445CE9	Samsung
+4463B6	Apple
+44650D	Amazon (Fire TV)
+446D6C	Samsung
+446D7F	Amazon (Fire TV)
+447147	Xiaomi
+44746C	Sony
+44783E	Samsung
+447B45	Amazon (Fire TV)
+448F17	Samsung
+4490BB	Apple
+449D76	Apple
+449E8B	Apple
+44A10E	Apple
+44A7F4	Apple
+44A8FC	Apple
+44B4B2	Amazon (Fire TV)
+44BB3B	Google (Chromecast)
+44BDC8	Xiaomi
+44C63C	Samsung
+44C65D	Apple
+44CBAD	Xiaomi
+44D4E0	Sony
+44D5CC	Amazon (Fire TV)
+44D884	Apple
+44DA30	Apple
+44DF65	Xiaomi
+44E213	Xiaomi
+44E66E	Apple
+44E853	Apple
+44EA30	Samsung
+44F09E	Apple
+44F21B	Apple
+44F459	Samsung
+44F770	Xiaomi
+44FB42	Apple
+480A28	Apple
+48137E	Samsung
+48262C	Apple
+4827EA	Samsung
+482B75	Apple
+482CA0	Xiaomi
+483177	Nintendo
+48352B	Apple
+4835AB	Apple
+483B38	Apple
+483F72	Samsung
+48437C	Apple
+4843DD	Amazon (Fire TV)
+4844F7	Samsung
+4849C7	Samsung
+484BAA	Apple
+485073	Microsoft (Xbox)
+485169	Samsung
+485929	LG
+485F2D	Amazon (Fire TV)
+48605F	LG
+4860BC	Apple
+4861EE	Samsung
+486DBB	Vestel
+48746E	Apple
+48785E	Amazon (Fire TV)
+48794D	Samsung
+487B2F	Microsoft (Xbox)
+4886E8	Microsoft (Xbox)
+488759	Xiaomi
+4887B8	TCL
+48902F	LG
+489A58	Samsung
+489DD1	Samsung
+48A195	Apple
+48A5E7	Nintendo
+48A91C	Apple
+48B423	Amazon (Fire TV)
+48B8A3	Apple
+48BCE1	Samsung
+48BF6B	Apple
+48C796	Samsung
+48CA68	Apple
+48D6D5	Google (Chromecast)
+48D705	Apple
+48E15C	Apple
+48E1CA	Apple
+48E9F1	Apple
+48EF1C	Samsung
+48F1EB	Nintendo
+48FDA3	Xiaomi
+4A688D	TCL
+4C0220	Xiaomi
+4C091B	Apple
+4C0BBE	Microsoft (Xbox)
+4C14A3	TCL
+4C1744	Amazon (Fire TV)
+4C20B8	Apple
+4C21D0	Sony
+4C2E5E	Samsung
+4C2EB4	Apple
+4C306A	Nintendo
+4C3275	Apple
+4C3946	Samsung
+4C3BDF	Microsoft (Xbox)
+4C3C16	Samsung
+4C4929	TCL
+4C49E3	Xiaomi
+4C53FD	Amazon (Fire TV)
+4C55B2	Xiaomi
+4C569D	Apple
+4C5739	Samsung
+4C57CA	Apple
+4C5D6A	Apple
+4C60AD	Amazon (Fire TV)
+4C6371	Xiaomi
+4C66A6	Samsung
+4C6BE8	Apple
+4C74BF	Apple
+4C7975	Apple
+4C7C5F	Apple
+4C7CD9	Apple
+4C80FB	Google (Chromecast)
+4C820C	Apple
+4C8D79	Apple
+4C8E19	Xiaomi
+4C97CC	Apple
+4C9FF1	Apple
+4CA56D	Samsung
+4CAB4F	Apple
+4CAD35	Apple
+4CB199	Apple
+4CB910	Apple
+4CBCA5	Samsung
+4CC64C	Xiaomi
+4CC95E	Samsung
+4CCDB6	Apple
+4CD012	Apple
+4CDD31	Samsung
+4CE0DB	Xiaomi
+4CE20F	Xiaomi
+4CE650	Apple
+4CE6C0	Apple
+4CEBB0	Samsung
+4CECEE	Samsung
+4CEFC0	Amazon (Fire TV)
+4CF202	Xiaomi
+5001BB	Samsung
+5006F5	Roku
+5007C3	Amazon (Fire TV)
+50125C	Sony
+501AC5	Microsoft (Xbox)
+501FC6	Apple
+50236D	Nintendo
+5023A2	Apple
+503237	Apple
+503275	Samsung
+503B70	Apple
+503DA1	Samsung
+503DC6	Xiaomi
+5049B0	Samsung
+504F3B	Xiaomi
+5050A4	Samsung
+505527	LG
+5056BF	Samsung
+50578A	Apple
+50642B	Xiaomi
+507705	Samsung
+507A55	Apple
+507AC5	Apple
+508114	Apple
+5082D5	Apple
+508569	Samsung
+508811	Xiaomi
+508E49	Xiaomi
+508F4C	Xiaomi
+50926A	Xiaomi
+5092B9	Samsung
+509839	Xiaomi
+50995A	Amazon (Fire TV)
+509EA7	Samsung
+50A009	Xiaomi
+50A4C8	Samsung
+50A67F	Apple
+50A6D8	Apple
+50B03B	PlayStation
+50B127	Apple
+50B7C3	Samsung
+50BC96	Apple
+50C8E5	Samsung
+50D2F5	Xiaomi
+50D45C	Amazon (Fire TV)
+50DAD6	Xiaomi
+50DCE7	Amazon (Fire TV)
+50DDAB	Samsung
+50DE06	Apple
+50EAD6	Apple
+50EC50	Xiaomi
+50ED3C	Apple
+50F0D3	Samsung
+50F265	Apple
+50F351	Apple
+50F4EB	Apple
+50F520	Samsung
+50F5DA	Amazon (Fire TV)
+50FC9F	Samsung
+50FE39	Xiaomi
+540910	Apple
+54104F	Samsung
+54219D	Samsung
+54263D	Sony
+542696	Apple
+542906	Apple
+542A43	Apple
+542B1C	Amazon (Fire TV)
+542B8D	Apple
+5432C7	Apple
+5433CB	Apple
+543AD6	Samsung
+5440AD	Samsung
+544249	Sony
+5444A3	Samsung
+5448E6	Xiaomi
+544C8A	Microsoft (Xbox)
+544E90	Apple
+544EF0	Roku
+5453ED	Sony
+546009	Google (Chromecast)
+5462E2	Apple
+546749	Google (Chromecast)
+54724F	Apple
+5492BE	Samsung
+549963	Apple
+549B12	Samsung
+549F13	Apple
+54AE27	Apple
+54B802	Samsung
+54B8DB	Apple
+54BD79	Samsung
+54D17D	Samsung
+54DD4F	Samsung
+54DF1B	Vestel
+54E43A	Apple
+54E61B	Apple
+54E6FD	PlayStation
+54EAA8	Apple
+54EBE9	Apple
+54F201	Samsung
+54FA3E	Samsung
+54FCF0	Samsung
+580987	Amazon (Fire TV)
+580AD4	Apple
+580FA5	Apple
+58170C	Sony
+581862	Sony
+581FAA	Apple
+582059	Xiaomi
+582071	Samsung
+582429	Google (Chromecast)
+582A93	Apple
+582F40	Nintendo
+583653	Apple
+583F54	LG
+58404E	Apple
+584498	Xiaomi
+584822	Sony
+5851A3	Apple
+585595	Apple
+5855CA	Apple
+5856AA	Apple
+5864C4	Apple
+58666D	Apple
+586B14	Apple
+5873D8	Apple
+587961	Microsoft (Xbox)
+5879E0	Samsung
+587F57	Apple
+5882A8	Microsoft (Xbox)
+5893E8	Apple
+58960A	LG
+589A3E	Amazon (Fire TV)
+58A2B5	LG
+58A639	Samsung
+58A8E8	Amazon (Fire TV)
+58AD12	Apple
+58B035	Apple
+58B03E	Nintendo
+58B10F	Samsung
+58B623	Xiaomi
+58B965	Apple
+58BDA3	Nintendo
+58C38B	Samsung
+58C5CB	Samsung
+58CB52	Google (Chromecast)
+58D349	Apple
+58E28F	Apple
+58E488	Amazon (Fire TV)
+58E6BA	Apple
+58EA1F	Xiaomi
+58FDB1	LG
+5C0214	Xiaomi
+5C0947	Apple
+5C0CE6	Nintendo
+5C10C5	Samsung
+5C13AC	Apple
+5C13CC	Apple
+5C1BF4	Apple
+5C1DD9	Apple
+5C23C2	Apple
+5C2E59	Samsung
+5C337B	Google (Chromecast)
+5C3400	Hisense
+5C36B8	TCL
+5C3C27	Samsung
+5C3E1B	Apple
+5C4071	Xiaomi
+5C497D	Samsung
+5C50D9	Apple
+5C5136	Samsung
+5C5181	Samsung
+5C521E	Nintendo
+5C5230	Apple
+5C5284	Apple
+5C5948	Apple
+5C5E0A	Samsung
+5C7017	Apple
+5C70A3	LG
+5C843C	PlayStation
+5C865C	Samsung
+5C8730	Apple
+5C89BC	Apple
+5C8B6B	Amazon (Fire TV)
+5C8D4E	Apple
+5C9175	Apple
+5C95AE	Apple
+5C9666	PlayStation
+5C969D	Apple
+5C97F3	Apple
+5C9960	Samsung
+5C9977	Apple
+5C9BA6	Apple
+5CA12E	Apple
+5CAC3D	Samsung
+5CAD76	TCL
+5CADBA	Apple
+5CADCF	Apple
+5CAF06	LG
+5CB524	Sony
+5CB8B7	Apple
+5CBA37	Microsoft (Xbox)
+5CC1D7	Samsung
+5CCA1A	Microsoft (Xbox)
+5CCB99	Samsung
+5CD06E	Xiaomi
+5CD33D	Samsung
+5CDC49	Samsung
+5CE50C	Xiaomi
+5CE8EB	Samsung
+5CE91E	Apple
+5CEDF4	Samsung
+5CF5DA	Apple
+5CF6DC	Samsung
+5CF7E6	Apple
+5CF938	Apple
+600308	Apple
+6006E3	Apple
+600F6B	Apple
+601AC7	Nintendo
+602ED5	Apple
+6030D4	Apple
+60334B	Apple
+603AAF	Samsung
+603CEE	LG
+603E5F	Apple
+6045BD	Microsoft (Xbox)
+6057C8	Apple
+606525	Apple
+60684E	Samsung
+606944	Apple
+606BBD	Samsung
+606BFF	Nintendo
+606EE8	Xiaomi
+60706C	Google (Chromecast)
+6070C0	Apple
+60756C	LG
+6077E2	Samsung
+607EC9	Apple
+607EDD	Microsoft (Xbox)
+607FCB	Samsung
+608110	Apple
+608246	Apple
+608373	Apple
+608B0E	Apple
+608C4A	Apple
+608E08	Samsung
+608F5C	Samsung
+609217	Apple
+6092C8	Roku
+609316	Apple
+609578	Samsung
+6095BD	Apple
+609AC1	Apple
+60A10A	Samsung
+60A37D	Apple
+60A4D0	Samsung
+60AB67	Xiaomi
+60AF6D	Samsung
+60B4A2	Samsung
+60B76E	Google (Chromecast)
+60BEC4	Apple
+60C547	Apple
+60C5AD	Samsung
+60C807	Apple
+60CA3A	Apple
+60D039	Apple
+60D0A9	Samsung
+60D9C7	Apple
+60DD70	Apple
+60DE18	Apple
+60E3AC	LG
+60F445	Apple
+60F549	Apple
+60F723	Xiaomi
+60F81D	Apple
+60FACD	Apple
+60FB42	Apple
+60FDA6	Apple
+60FEC5	Apple
+60FF12	Samsung
+64037F	Samsung
+6407F6	Samsung
+640980	Xiaomi
+640BD7	Apple
+640C91	Apple
+640D22	LG
+6417CD	Samsung
+641B2F	Samsung
+641CAE	Samsung
+641CB0	Samsung
+64200C	Apple
+643135	Apple
+6441E6	Apple
+644842	Apple
+6456B5	Samsung
+645A36	Apple
+645AED	Apple
+645DF4	Samsung
+646306	Xiaomi
+64644A	Xiaomi
+6466D8	Samsung
+646CB2	Samsung
+646D2F	Apple
+647033	Apple
+6476BA	Apple
+647791	Samsung
+647BCE	Samsung
+64899A	LG
+6489F1	Samsung
+6490C1	Xiaomi
+64956C	LG
+649ABE	Apple
+649D38	Google (Chromecast)
+649E31	Xiaomi
+64A200	Xiaomi
+64A3CB	Apple
+64A5C3	Apple
+64ACE0	Samsung
+64B0A6	Apple
+64B310	Samsung
+64B473	Xiaomi
+64B5C6	Nintendo
+64B5F2	Samsung
+64B853	Samsung
+64B9E8	Apple
+64BC0C	LG
+64BD6D	Apple
+64C045	Apple
+64C2DE	LG
+64C753	Apple
+64C905	Apple
+64C9F1	Amazon (Fire TV)
+64CC2E	Xiaomi
+64CDC2	Amazon (Fire TV)
+64D0D6	Samsung
+64D2C4	Apple
+64D81B	Vestel
+64DDE9	Xiaomi
+64E4A5	LG
+64E682	Apple
+64E7D8	Samsung
+64E815	Arçelik / Beko
+680125	Amazon (Fire TV)
+680571	Samsung
+680927	Apple
+6813F3	Amazon (Fire TV)
+681A47	Apple
+682737	Samsung
+68286C	PlayStation
+682F67	Apple
+683036	Apple
+6837E9	Amazon (Fire TV)
+683B09	Apple
+683EC0	Apple
+684465	Apple
+6845CC	Apple
+684898	Samsung
+684A5F	Apple
+684AE9	Samsung
+684DB6	Xiaomi
+6854FD	Amazon (Fire TV)
+685ACF	Samsung
+685B35	Apple
+685EDD	Apple
+68644B	Apple
+686CE6	Microsoft (Xbox)
+6872C3	Samsung
+68764F	Sony
+687D6B	Samsung
+687DAC	Samsung
+6883CB	Apple
+68967B	Apple
+689A87	Amazon (Fire TV)
+689C70	Apple
+689FD4	Amazon (Fire TV)
+68A593	Apple
+68A729	Apple
+68A86D	Apple
+68AB1E	Apple
+68ABBC	Xiaomi
+68AE20	Apple
+68B691	Amazon (Fire TV)
+68B8BB	Xiaomi
+68BFC4	Samsung
+68C44C	Xiaomi
+68CAC4	Apple
+68D93C	Apple
+68DBCA	Apple
+68DBF5	Amazon (Fire TV)
+68DFDD	Xiaomi
+68DFE4	Samsung
+68E580	Apple
+68E7C2	Samsung
+68EBAE	Samsung
+68EF43	Apple
+68EFDC	Apple
+68F63B	Amazon (Fire TV)
+68F7D8	Microsoft (Xbox)
+68FB7E	Apple
+68FCCA	Samsung
+68FEF7	Apple
+6C006B	Samsung
+6C0699	Xiaomi
+6C0C9A	Amazon (Fire TV)
+6C0DC4	Xiaomi
+6C0E0D	Sony
+6C1270	Apple
+6C1544	Microsoft (Xbox)
+6C19C0	Apple
+6C1F8A	Apple
+6C23B9	Sony
+6C2483	Microsoft (Xbox)
+6C2779	Microsoft (Xbox)
+6C2F2C	Samsung
+6C2F8A	Samsung
+6C3AFF	Apple
+6C3E6D	Apple
+6C4008	Apple
+6C483F	Xiaomi
+6C4A85	Apple
+6C4D73	Apple
+6C5563	Samsung
+6C55B1	Amazon (Fire TV)
+6C5697	Amazon (Fire TV)
+6C5AB5	TCL
+6C5D3A	Microsoft (Xbox)
+6C688A	Amazon (Fire TV)
+6C709F	Apple
+6C70CB	Samsung
+6C72E7	Apple
+6C7E67	Apple
+6C8336	Samsung
+6C8DC1	Apple
+6C8FB5	Microsoft (Xbox)
+6C94F8	Apple
+6C96CF	Apple
+6C999D	Amazon (Fire TV)
+6CAB31	Apple
+6CACC2	Samsung
+6CB133	Apple
+6CB7F4	Samsung
+6CC26B	Apple
+6CD032	LG
+6CD68A	LG
+6CDDBC	Samsung
+6CE5C9	Apple
+6CE85C	Apple
+6CF373	Samsung
+6CF784	Xiaomi
+700514	LG
+700971	Samsung
+701124	Apple
+701384	Apple
+7014A6	Apple
+701F3C	Samsung
+70217F	Xiaomi
+7022FE	Apple
+702605	Sony
+70287D	Google (Chromecast)
+70288B	Samsung
+702AD5	Samsung
+702C09	Nintendo
+70317F	Apple
+703A51	Xiaomi
+703ACB	Google (Chromecast)
+703C69	Apple
+703EAC	Apple
+70480F	Apple
+7048F7	Nintendo
+704CA2	Apple
+704EE0	Samsung
+7054B4	Vestel
+705681	Apple
+705AAC	Samsung
+705FA3	Xiaomi
+7062CB	Apple
+70662A	PlayStation
+70700D	Apple
+7070AA	Amazon (Fire TV)
+7072FE	Apple
+7073CB	Apple
+7081EB	Apple
+708CF2	Apple
+709684	Apple
+709751	Xiaomi
+709E29	PlayStation
+70A2B3	Apple
+70A8A5	Microsoft (Xbox)
+70AE2A	Apple
+70AED5	Apple
+70AF24	Philips TV
+70B13D	Samsung
+70B306	Apple
+70BB5B	Apple
+70BBE9	Xiaomi
+70BC10	Microsoft (Xbox)
+70CD60	Apple
+70CE8C	Samsung
+70DEE2	Apple
+70E72C	Apple
+70EA5A	Apple
+70ECE4	Apple
+70EF00	Apple
+70F087	Apple
+70F088	Nintendo
+70F8AE	Microsoft (Xbox)
+70F927	Samsung
+70F94A	Apple
+70FD46	Samsung
+740EA4	Apple
+7414D0	Apple
+741575	Xiaomi
+7415F5	Apple
+74190A	Samsung
+741BB2	Apple
+741EB1	Samsung
+742344	Xiaomi
+742917	Apple
+742959	Apple
+743174	Apple
+743822	Xiaomi
+743F8E	Apple
+744218	Apple
+74428B	Apple
+74458A	Samsung
+7451BA	Xiaomi
+7458F3	Amazon (Fire TV)
+74650C	Apple
+746DFA	Samsung
+74718B	Apple
+7473B4	Apple
+747446	Google (Chromecast)
+747548	Amazon (Fire TV)
+74761F	Microsoft (Xbox)
+747786	Apple
+748114	Apple
+748469	Nintendo
+748B23	Samsung
+748D08	Apple
+748F3C	Apple
+749EAF	Apple
+749EF5	Samsung
+74A6CD	Apple
+74A722	LG
+74A7EA	Amazon (Fire TV)
+74B587	Apple
+74C17E	LG
+74C246	Amazon (Fire TV)
+74C412	Microsoft (Xbox)
+74CC40	Apple
+74D082	Hisense
+74D423	Amazon (Fire TV)
+74D5E8	Apple
+74D637	Amazon (Fire TV)
+74D809	Microsoft (Xbox)
+74E1B6	Apple
+74E20C	Amazon (Fire TV)
+74E28C	Microsoft (Xbox)
+74E2F5	Apple
+74E517	Microsoft (Xbox)
+74E6B8	LG
+74E987	Apple
+74EB80	Samsung
+74ECB2	Amazon (Fire TV)
+74F2FA	Xiaomi
+74F441	Samsung
+74F67A	Samsung
+74F9CA	Nintendo
+78009E	Samsung
+78028B	Apple
+7802F8	Xiaomi
+7811DC	Xiaomi
+781FDB	Samsung
+7820A5	Nintendo
+782327	Samsung
+7825AD	Samsung
+7831C1	Apple
+7833C6	Samsung
+783716	Samsung
+783A84	Apple
+783F4D	Apple
+7840E4	Samsung
+7846D4	Samsung
+78471D	Samsung
+7849D7	Samsung
+784F43	Apple
+78521A	Samsung
+785333	Xiaomi
+78595E	Samsung
+785DC8	LG
+785ECC	Apple
+786089	Samsung
+7864C0	Apple
+7867D7	Apple
+786C1C	Apple
+786C84	Amazon (Fire TV)
+78753E	Apple
+787984	Apple
+787B8A	Apple
+787E61	Apple
+78818C	Nintendo
+78843C	Sony
+78862E	Microsoft (Xbox)
+78886D	Apple
+78960D	Apple
+789987	Xiaomi
+789ED0	Samsung
+789F70	Apple
+78A03F	Amazon (Fire TV)
+78A2A0	Nintendo
+78A3E4	Apple
+78A7C7	Apple
+78A873	Samsung
+78ABBB	Samsung
+78B6FE	Samsung
+78BDBC	Samsung
+78C11D	Samsung
+78C3E9	Samsung
+78C881	PlayStation
+78CA39	Apple
+78D162	Apple
+78D75F	Apple
+78D840	Xiaomi
+78E0C5	Samsung
+78E103	Amazon (Fire TV)
+78E3DE	Apple
+78F238	Samsung
+78F7BE	Samsung
+78F882	LG
+78FBD8	Apple
+78FD94	Apple
+7C0191	Apple
+7C035E	Xiaomi
+7C03AB	Xiaomi
+7C04D0	Apple
+7C0A3F	Samsung
+7C0BC6	Samsung
+7C0CF1	Xiaomi
+7C11BE	Apple
+7C19E3	Google (Chromecast)
+7C1C68	Samsung
+7C1DD9	Xiaomi
+7C1E52	Microsoft (Xbox)
+7C2302	Samsung
+7C2499	Apple
+7C296F	Apple
+7C2ACA	Apple
+7C2ADB	Xiaomi
+7C2EBD	Google (Chromecast)
+7C2EDD	Samsung
+7C38AD	Samsung
+7C3B2D	Apple
+7C49EB	Xiaomi
+7C4B26	Apple
+7C4FCD	Apple
+7C5049	Apple
+7C59B1	Apple
+7C6130	Apple
+7C6166	Amazon (Fire TV)
+7C6305	Amazon (Fire TV)
+7C6456	Samsung
+7C646C	LG
+7C67AB	Roku
+7C6D12	Microsoft (Xbox)
+7C6D62	Apple
+7C6DF8	Apple
+7C752D	Samsung
+7C787E	Samsung
+7C7BBF	Samsung
+7C8956	Samsung
+7C8BB5	Samsung
+7C9122	Samsung
+7C9A1D	Apple
+7CA1AE	Apple
+7CA449	Xiaomi
+7CAB60	Apple
+7CBB8A	Nintendo
+7CC06F	Apple
+7CC0AA	Microsoft (Xbox)
+7CC180	Apple
+7CC225	Samsung
+7CC294	Xiaomi
+7CC3A1	Apple
+7CC537	Apple
+7CC8DF	Apple
+7CD1AD	Apple
+7CD1C3	Apple
+7CD2DA	Apple
+7CD566	Amazon (Fire TV)
+7CD62C	Apple
+7CD661	Xiaomi
+7CD95C	Google (Chromecast)
+7CECB1	Apple
+7CED8D	Microsoft (Xbox)
+7CEDC6	Amazon (Fire TV)
+7CF05F	Apple
+7CF31B	LG
+7CF34D	Apple
+7CF854	Samsung
+7CF90E	Samsung
+7CFADF	Apple
+7CFC16	Apple
+7CFD6B	Xiaomi
+80006E	Apple
+80045F	Apple
+800794	Samsung
+800C67	Apple
+800CF9	Amazon (Fire TV)
+800D3F	Samsung
+800EA9	TCL
+801242	Apple
+8018A7	Samsung
+801970	Samsung
+801D39	Apple
+8020FD	Samsung
+8031F0	Samsung
+8035C1	Xiaomi
+80398C	Samsung
+803FD4	Apple
+804715	Apple
+804786	Samsung
+804971	Apple
+804A14	Apple
+804E70	Samsung
+804E81	Samsung
+80542D	Samsung
+80549C	Samsung
+8054E3	Apple
+805719	Samsung
+805A04	LG
+805FC5	Apple
+80656D	Samsung
+80657C	Apple
+806D71	Amazon (Fire TV)
+8075BF	Samsung
+807B3E	Samsung
+808223	Apple
+8083F6	Apple
+8086D9	Samsung
+808943	Samsung
+808ABD	Samsung
+808F97	Xiaomi
+80929F	Apple
+80953A	Apple
+809698	Apple
+8099E7	Sony
+809FF5	Samsung
+80A63C	Amazon (Fire TV)
+80A997	Apple
+80AD16	Xiaomi
+80AF19	Apple
+80B03D	Apple
+80B989	Apple
+80BE05	Apple
+80C327	Apple
+80C5E6	Microsoft (Xbox)
+80CEB9	Samsung
+80D1CE	Apple
+80D2E5	Nintendo
+80D605	Apple
+80E63C	Xiaomi
+80E650	Apple
+80EA96	Apple
+80ED2C	Apple
+8400D2	Sony
+840511	Apple
+840F4C	Apple
+84119E	Samsung
+841985	Samsung
+842289	Samsung
+842519	Samsung
+8425DB	Samsung
+842789	Apple
+842859	Amazon (Fire TV)
+842999	Apple
+842E27	Samsung
+842F57	Apple
+8437D5	Samsung
+843835	Apple
+844167	Apple
+844693	Xiaomi
+844880	Amazon (Fire TV)
+845181	Samsung
+8455A5	Samsung
+845733	Microsoft (Xbox)
+845F04	Samsung
+8463D6	Microsoft (Xbox)
+846878	Apple
+84788B	Apple
+848506	Apple
+8488E1	Apple
+8489AD	Apple
+848C8D	Apple
+848E0C	Apple
+848EDF	Sony
+849437	Apple
+849866	Samsung
+84A134	Apple
+84A466	Samsung
+84A824	Google (Chromecast)
+84AB1A	Apple
+84AC16	Apple
+84AD8D	Apple
+84AEDE	Xiaomi
+84B153	Apple
+84B1E2	Microsoft (Xbox)
+84B1E4	Apple
+84B541	Samsung
+84C065	Nintendo
+84C0EF	Samsung
+84C7EA	Sony
+84D328	Apple
+84D6D0	Amazon (Fire TV)
+84E657	PlayStation
+84EAED	Roku
+84EEE4	Samsung
+84FCAC	Apple
+84FCFE	Apple
+88039E	Apple
+88074B	LG
+881032	Apple
+8817A8	Apple
+881908	Apple
+881E5A	Apple
+881FA1	Apple
+88200D	Apple
+88299C	Samsung
+8829BF	Amazon (Fire TV)
+882C31	Apple
+882F92	Xiaomi
+88365F	LG
+883D24	Google (Chromecast)
+884604	Xiaomi
+884D7C	Apple
+8851F2	Apple
+8852EB	Xiaomi
+885395	Apple
+88541F	Google (Chromecast)
+885E54	Samsung
+8863DF	Apple
+886440	Apple
+88665A	Apple
+8866A5	Apple
+886B6E	Apple
+886BDB	Apple
+886C60	Xiaomi
+887015	Apple
+8871E5	Amazon (Fire TV)
+887598	Samsung
+887E9B	Apple
+888322	Samsung
+889B39	Samsung
+889F6F	Samsung
+88A303	Samsung
+88A479	Apple
+88A9B7	Apple
+88ADD2	Samsung
+88AE07	Apple
+88B291	Apple
+88B7EB	Apple
+88B863	Hisense
+88B945	Apple
+88B951	Xiaomi
+88BD45	Samsung
+88C08B	Apple
+88C344	Google (Chromecast)
+88C397	Xiaomi
+88C663	Apple
+88C9D0	LG
+88C9E8	Sony
+88CB87	Apple
+88D546	Apple
+88DEA9	Roku
+88E87F	Apple
+88E9FE	Apple
+88F2CE	Apple
+8AC72E	Roku
+8C006D	Apple
+8C08AA	Apple
+8C0F7E	TCL
+8C1952	Amazon (Fire TV)
+8C1ABF	Samsung
+8C26AA	Apple
+8C2937	Apple
+8C2A85	Amazon (Fire TV)
+8C2DAA	Apple
+8C2E72	Samsung
+8C3396	Apple
+8C3AE3	LG
+8C4962	Roku
+8C4EBB	Amazon (Fire TV)
+8C53C3	Xiaomi
+8C5646	LG
+8C56C5	Nintendo
+8C5877	Apple
+8C5AF8	Xiaomi
+8C6422	Sony
+8C6A3B	Samsung
+8C71F8	Samsung
+8C7712	Samsung
+8C79F5	Samsung
+8C7A3D	Xiaomi
+8C7AAA	Apple
+8C7B9D	Apple
+8C7C92	Apple
+8C8283	Apple
+8C83E1	Samsung
+8C8590	Apple
+8C861E	Apple
+8C8EF2	Apple
+8C8FE9	Apple
+8C91A4	Apple
+8C986B	Apple
+8C9885	Samsung
+8CA3EC	Samsung
+8CAACE	Xiaomi
+8CB0E9	Samsung
+8CBEBE	Xiaomi
+8CBFA6	Samsung
+8CC246	Apple
+8CC5D0	Samsung
+8CC8CD	Samsung
+8CCDE8	Nintendo
+8CD0B2	Xiaomi
+8CD9D6	Xiaomi
+8CDEE6	Samsung
+8CDEF9	Xiaomi
+8CE5C0	Samsung
+8CEA48	Samsung
+8CEC7B	Apple
+8CF4F5	Apple
+8CFABA	Apple
+8CFE57	Apple
+9000DB	Samsung
+900628	Samsung
+900A48	Samsung
+900CC8	Google (Chromecast)
+901195	Amazon (Fire TV)
+9020D7	Microsoft (Xbox)
+90235B	Amazon (Fire TV)
+9027E4	Apple
+902AEE	Xiaomi
+902C09	Apple
+9035A2	Apple
+90395F	Amazon (Fire TV)
+903C1D	Hisense
+903C92	Apple
+904528	Nintendo
+904748	PlayStation
+904CC5	Apple
+904DE2	Apple
+905F7A	Apple
+9060F1	Apple
+90623F	Apple
+90633B	Samsung
+906989	Samsung
+906AEB	Microsoft (Xbox)
+907240	Apple
+9078B2	Xiaomi
+90812A	Apple
+908158	Apple
+908175	Samsung
+90840D	Apple
+908C43	Apple
+908D6C	Apple
+9097F3	Samsung
+909877	Vestel
+909B6F	Apple
+909C4A	Apple
+90A25B	Apple
+90A822	Amazon (Fire TV)
+90AC6D	Apple
+90B0ED	Apple
+90B144	Samsung
+90B21F	Apple
+90B622	Samsung
+90B790	Apple
+90B931	Apple
+90C115	Sony
+90C1C6	Apple
+90CAFA	Google (Chromecast)
+90CDE8	Apple
+90DD5D	Apple
+90E17B	Apple
+90ECEA	Apple
+90EEC7	Samsung
+90F1AA	Samsung
+90F80C	Samsung
+90F82E	Amazon (Fire TV)
+90FB5D	Xiaomi
+90FD61	Apple
+9401C2	Samsung
+940BCD	Apple
+940C98	Apple
+940E5F	Apple
+941625	Apple
+941700	Xiaomi
+941DD4	Google (Chromecast)
+942157	Apple
+942B68	Apple
+942DDC	Samsung
+94350A	Samsung
+943A91	Amazon (Fire TV)
+943FD6	Apple
+944560	Google (Chromecast)
+945103	Samsung
+945244	Samsung
+9458CB	Nintendo
+945915	Amazon (Fire TV)
+945AFC	Amazon (Fire TV)
+945C9A	Apple
+94626D	Xiaomi
+9463D1	Samsung
+9476B7	Samsung
+947BAE	Xiaomi
+947BE7	Samsung
+9487E0	Xiaomi
+948978	Apple
+948B93	Xiaomi
+948BC1	Samsung
+948E6D	Nintendo
+949426	Apple
+9495A0	Google (Chromecast)
+949AA9	Microsoft (Xbox)
+94AD23	Apple
+94B01F	Apple
+94B10A	Samsung
+94B43A	Samsung
+94BF2D	Apple
+94CE2C	Sony
+94D331	Xiaomi
+94D771	Samsung
+94DB56	Sony
+94E129	Samsung
+94E6BA	Samsung
+94E96A	Apple
+94EA32	Apple
+94EB2C	Google (Chromecast)
+94F6A3	Apple
+94F6D6	Apple
+9800C6	Apple
+9801A7	Apple
+9803D8	Apple
+98063C	Samsung
+98076A	Apple
+980D6F	Samsung
+980DAF	Apple
+9810E8	Apple
+9812E0	Xiaomi
+98171A	Xiaomi
+981CA2	Apple
+981DFA	Samsung
+98226E	Amazon (Fire TV)
+982D68	Samsung
+98398E	Samsung
+983A1F	Google (Chromecast)
+983C8C	Apple
+983FE8	Samsung
+98415C	Nintendo
+9842F5	Apple
+98460A	Apple
+984E8A	Samsung
+98502E	Apple
+9852B1	Samsung
+985AEB	Apple
+985FD3	Microsoft (Xbox)
+9860CA	Apple
+98698A	Apple
+987552	Xiaomi
+987A14	Microsoft (Xbox)
+987A9B	TCL
+9880EE	Samsung
+988389	Samsung
+9893CC	LG
+9898FB	Google (Chromecast)
+989E63	Apple
+98A5F9	Apple
+98B08B	Samsung
+98B379	Apple
+98B6E9	Nintendo
+98B8BA	LG
+98B8BC	Samsung
+98B8E3	Apple
+98CA33	Apple
+98CAB5	Apple
+98CCF3	Amazon (Fire TV)
+98CF7D	Apple
+98D293	Google (Chromecast)
+98D6BB	Apple
+98D6F7	LG
+98D742	Samsung
+98DD60	Apple
+98E081	Xiaomi
+98E0D9	Apple
+98E255	Nintendo
+98E859	Apple
+98E8FA	Nintendo
+98EE94	Xiaomi
+98F0AB	Apple
+98F621	Xiaomi
+98FA2E	PlayStation
+98FAE3	Xiaomi
+98FB27	Samsung
+98FE94	Apple
+98FEE1	Apple
+9C0298	Samsung
+9C04EB	Apple
+9C1A25	Apple
+9C207B	Apple
+9C2595	Samsung
+9C28B3	Apple
+9C28F7	Xiaomi
+9C293F	Apple
+9C2A83	Samsung
+9C2E7A	Samsung
+9C2EA1	Xiaomi
+9C35EB	Apple
+9C37CB	PlayStation
+9C3928	Samsung
+9C3AAF	Samsung
+9C3E53	Apple
+9C4F5F	Google (Chromecast)
+9C4FDA	Apple
+9C583C	Apple
+9C5884	Apple
+9C5A81	Xiaomi
+9C5CF9	Sony
+9C5FB0	Samsung
+9C6076	Apple
+9C648B	Apple
+9C65B0	Samsung
+9C6C15	Microsoft (Xbox)
+9C73B1	Samsung
+9C760E	Apple
+9C79E3	Apple
+9C8306	Samsung
+9C84BF	Apple
+9C8BA0	Apple
+9C8C6E	Samsung
+9C924F	Apple
+9C99A0	Xiaomi
+9C9D7E	Xiaomi
+9C9ED5	Xiaomi
+9CA513	Samsung
+9CA9C5	Apple
+9CAA1B	Microsoft (Xbox)
+9CBCF0	Xiaomi
+9CC394	Apple
+9CC8E9	Amazon (Fire TV)
+9CD35B	Samsung
+9CDAA8	Apple
+9CE063	Samsung
+9CE33F	Apple
+9CE635	Nintendo
+9CE65E	Apple
+9CE6E7	Samsung
+9CF1D4	Roku
+9CF27E	Samsung
+9CF387	Apple
+9CF3AC	Apple
+9CF48E	Apple
+9CFA76	Apple
+9CFC01	Apple
+9CFC28	Apple
+A0004C	Hisense
+A002DC	Amazon (Fire TV)
+A00798	Samsung
+A01081	Samsung
+A01828	Apple
+A01B9E	Samsung
+A02195	Samsung
+A027B6	Samsung
+A039F7	LG
+A03BE3	Apple
+A04A5E	Microsoft (Xbox)
+A04EA7	Apple
+A04ECF	Apple
+A04F85	LG
+A05272	Apple
+A0562C	Samsung
+A056F3	Apple
+A06090	Samsung
+A062FB	Hisense
+A07591	Samsung
+A07817	Apple
+A0782D	Apple
+A07D9C	Samsung
+A0821F	Samsung
+A085FC	Microsoft (Xbox)
+A086C6	Xiaomi
+A087BE	Apple
+A09169	LG
+A0999B	Apple
+A09A8E	Apple
+A09D22	Apple
+A0A309	Apple
+A0AC69	Samsung
+A0B0BD	Samsung
+A0B15C	Google (Chromecast)
+A0B40F	Apple
+A0B4A5	Samsung
+A0C1C5	Apple
+A0CBFD	Samsung
+A0D05B	Samsung
+A0D0DC	Amazon (Fire TV)
+A0D1B3	Apple
+A0D2B1	Amazon (Fire TV)
+A0D722	Samsung
+A0D795	Apple
+A0D7F3	Samsung
+A0E390	Apple
+A0E453	Sony
+A0EDCD	Apple
+A0EE1A	Apple
+A0FBC5	Apple
+A402B7	Amazon (Fire TV)
+A407B6	Samsung
+A40801	Amazon (Fire TV)
+A40987	Apple
+A416C0	Apple
+A4307A	Samsung
+A43135	Apple
+A438CC	Nintendo
+A439B3	Xiaomi
+A44280	Apple
+A44519	Xiaomi
+A44BD5	Xiaomi
+A45046	Xiaomi
+A4516F	Microsoft (Xbox)
+A45590	Xiaomi
+A45C27	Nintendo
+A45E60	Apple
+A46706	Apple
+A46CF1	Samsung
+A475B9	Samsung
+A47733	Google (Chromecast)
+A477F3	Apple
+A483E7	Apple
+A48431	Samsung
+A49A58	Samsung
+A49DDD	Samsung
+A49FE7	Samsung
+A4A490	Samsung
+A4A930	Xiaomi
+A4B197	Apple
+A4B805	Apple
+A4BA70	Xiaomi
+A4C0E1	Nintendo
+A4C1E8	Nintendo
+A4C337	Apple
+A4C361	Apple
+A4C3BE	Xiaomi
+A4C69A	Samsung
+A4C6F0	Apple
+A4C788	Xiaomi
+A4CCB3	Xiaomi
+A4CF99	Apple
+A4D18C	Apple
+A4D1D2	Apple
+A4D23E	Apple
+A4D931	Apple
+A4D990	Samsung
+A4E287	Xiaomi
+A4E975	Apple
+A4EBD3	Samsung
+A4F1E8	Apple
+A4F6E6	Apple
+A4F6E8	Apple
+A4F841	Apple
+A4F921	Apple
+A4FC14	Apple
+A4FF9F	Xiaomi
+A80600	Samsung
+A808CF	Vestel
+A816B2	LG
+A816D0	Samsung
+A81AF1	Apple
+A82066	Apple
+A823FE	LG
+A82BB9	Samsung
+A82BD5	Xiaomi
+A82C89	Apple
+A830BC	Samsung
+A8346A	Samsung
+A84A28	Apple
+A84B4D	Samsung
+A8515B	Samsung
+A851AB	Apple
+A85B78	Apple
+A85BB7	Apple
+A85C2C	Apple
+A85F61	Apple
+A860B6	Apple
+A8667F	Apple
+A86A86	Xiaomi
+A87650	Samsung
+A8798D	Samsung
+A87C01	Samsung
+A87CF8	Apple
+A8817E	Apple
+A88195	Samsung
+A88200	Hisense
+A886DD	Apple
+A887B3	Samsung
+A88808	Apple
+A88C3E	Microsoft (Xbox)
+A88E24	Apple
+A88FD9	Apple
+A8913D	Apple
+A8922C	LG
+A8968A	Apple
+A89C78	Apple
+A89CED	Xiaomi
+A89FBA	Samsung
+A8ABB5	Apple
+A8B57C	Roku
+A8B86E	LG
+A8BA69	Samsung
+A8BB56	Apple
+A8BBCF	Apple
+A8BE27	Apple
+A8CA77	Amazon (Fire TV)
+A8D162	Samsung
+A8E3EE	PlayStation
+A8E621	Amazon (Fire TV)
+A8EE67	Samsung
+A8F274	Samsung
+A8FAD8	Apple
+A8FB45	Google (Chromecast)
+A8FE9D	Apple
+AC007A	Apple
+AC0775	Apple
+AC0D1B	LG
+AC15F4	Apple
+AC1615	Apple
+AC1D06	Apple
+AC1E92	Samsung
+AC1E9E	Xiaomi
+AC1F74	Apple
+AC293A	Apple
+AC3613	Samsung
+AC3A7A	Roku
+AC3C0B	Apple
+AC3EB1	Google (Chromecast)
+AC416A	Amazon (Fire TV)
+AC4500	Apple
+AC49DB	Apple
+AC4AFE	Hisense
+AC5322	Samsung
+AC5A14	Samsung
+AC5AF0	LG
+AC5C2C	Apple
+AC61EA	Apple
+AC63BE	Amazon (Fire TV)
+AC6784	Google (Chromecast)
+AC6C90	Samsung
+AC7F3E	Apple
+AC800A	Sony
+AC80FB	Samsung
+AC82F0	Apple
+AC86A3	Apple
+AC87A3	Apple
+AC88FD	Apple
+AC8C46	Xiaomi
+AC8EBD	Microsoft (Xbox)
+AC9085	Apple
+AC9738	Apple
+AC9B0A	Sony
+ACAE19	Roku
+ACAFB9	Samsung
+ACBC32	Apple
+ACBCB5	Apple
+ACC1EE	Xiaomi
+ACC33A	Samsung
+ACC906	Apple
+ACCCFC	Amazon (Fire TV)
+ACCF5C	Apple
+ACDFA1	Apple
+ACE4B5	Apple
+ACE4D8	Xiaomi
+ACE6BB	Google (Chromecast)
+ACE6FB	Apple
+ACEE9E	Samsung
+ACF6F7	LG
+ACF7F3	Xiaomi
+ACFAE4	Nintendo
+ACFDEC	Apple
+B00BE2	Xiaomi
+B01831	Apple
+B019C6	Apple
+B02A43	Google (Chromecast)
+B03495	Apple
+B035B5	Apple
+B03795	LG
+B03F64	Apple
+B047BF	Samsung
+B0481A	Apple
+B04A6A	Samsung
+B05476	Samsung
+B064E0	Samsung
+B065BD	Apple
+B067B5	Apple
+B06A41	Google (Chromecast)
+B06FE0	Samsung
+B0702D	Apple
+B07219	Apple
+B0739C	Amazon (Fire TV)
+B08BA8	Amazon (Fire TV)
+B08C75	Apple
+B09200	Apple
+B099D7	Samsung
+B09C63	Xiaomi
+B09CB2	Google (Chromecast)
+B09FBA	Apple
+B0A737	Roku
+B0BBA9	Apple
+B0BE83	Apple
+B0C4E7	Samsung
+B0C559	Samsung
+B0CA68	Apple
+B0CFCB	Amazon (Fire TV)
+B0D09C	Samsung
+B0D576	Apple
+B0D5FB	Google (Chromecast)
+B0DE28	Apple
+B0DE31	Samsung
+B0DF3A	Samsung
+B0E235	Xiaomi
+B0E45C	Samsung
+B0E4D5	Google (Chromecast)
+B0E5EF	Apple
+B0E5F9	Apple
+B0EC69	Apple
+B0EC71	Samsung
+B0EE7B	Roku
+B0F1D8	Apple
+B0F2F6	Samsung
+B0F7C4	Amazon (Fire TV)
+B0FC0D	Amazon (Fire TV)
+B405A1	Xiaomi
+B40AD8	PlayStation
+B40B1D	Samsung
+B4107A	Amazon (Fire TV)
+B41324	Google (Chromecast)
+B41584	Samsung
+B418D1	Apple
+B41974	Apple
+B41A1D	Samsung
+B41BB0	Apple
+B41F4D	PlayStation
+B423A2	Google (Chromecast)
+B43A28	Samsung
+B440A4	Apple
+B440DC	Samsung
+B44BD2	Apple
+B4527D	Sony
+B4527E	Sony
+B45575	Apple
+B456E3	Apple
+B45976	Apple
+B460ED	Xiaomi
+B46293	Samsung
+B47064	Samsung
+B47443	Samsung
+B47C9C	Amazon (Fire TV)
+B47E9F	Xiaomi
+B485E1	Apple
+B48B19	Apple
+B496A5	Apple
+B49CDF	Apple
+B49D02	Samsung
+B4AE2B	Microsoft (Xbox)
+B4AEC1	Apple
+B4B291	LG
+B4B742	Amazon (Fire TV)
+B4BFF6	Samsung
+B4C4FC	Xiaomi
+B4CE40	Samsung
+B4D5E5	Samsung
+B4E1C4	Microsoft (Xbox)
+B4E3D0	LG
+B4E454	Amazon (Fire TV)
+B4EF39	Samsung
+B4F0AB	Apple
+B4F1DA	LG
+B4F61C	Apple
+B4F7A1	LG
+B4FA48	Apple
+B8011F	Apple
+B80533	Apple
+B8098A	Apple
+B8144D	Apple
+B817C2	Apple
+B81DAA	LG
+B8211C	Apple
+B8220C	Apple
+B82AA9	Apple
+B831B5	Microsoft (Xbox)
+B8374A	Apple
+B83BCC	Xiaomi
+B83C28	Apple
+B83E59	Roku
+B841A4	Apple
+B844D9	Apple
+B845EB	Apple
+B8496D	Apple
+B84DEE	Hisense
+B84FA7	Apple
+B84FD5	Microsoft (Xbox)
+B850D8	Xiaomi
+B852E0	Xiaomi
+B85384	Xiaomi
+B853AC	Apple
+B857D8	Samsung
+B85A73	Samsung
+B85C5C	Microsoft (Xbox)
+B85D0A	Apple
+B85E7B	Samsung
+B85F98	Amazon (Fire TV)
+B8634D	Apple
+B86870	Nintendo
+B86CE8	Samsung
+B87826	Nintendo
+B8782E	Apple
+B87BC5	Apple
+B87BD4	Google (Chromecast)
+B881FA	Apple
+B88AEC	Nintendo
+B88D12	Apple
+B89047	Apple
+B894E7	Xiaomi
+B8A0B8	Samsung
+B8A175	Roku
+B8A825	Samsung
+B8AE6E	Nintendo
+B8B2F8	Apple
+B8B409	Samsung
+B8BA66	Microsoft (Xbox)
+B8BBAF	Samsung
+B8BC5B	Samsung
+B8C111	Apple
+B8C68E	Samsung
+B8C75D	Apple
+B8D9CE	Samsung
+B8DB38	Google (Chromecast)
+B8E60C	Apple
+B8E856	Apple
+B8EA98	Xiaomi
+B8F12A	Apple
+B8F4A4	Google (Chromecast)
+B8F6B1	Apple
+B8F934	Sony
+B8FE96	Amazon (Fire TV)
+B8FF61	Apple
+BC0963	Apple
+BC0EAB	Samsung
+BC107B	Samsung
+BC1485	Samsung
+BC1827	Apple
+BC20A4	Samsung
+BC277A	Samsung
+BC2A51	Apple
+BC32B2	Samsung
+BC3329	PlayStation
+BC37D3	Apple
+BC3BAF	Apple
+BC4486	Samsung
+BC455B	Samsung
+BC4760	Samsung
+BC4CC4	Apple
+BC4F2D	Apple
+BC5274	Samsung
+BC52B7	Apple
+BC5436	Apple
+BC5451	Samsung
+BC60A7	PlayStation
+BC6193	Xiaomi
+BC6778	Apple
+BC6AD1	Xiaomi
+BC6C21	Apple
+BC6E64	Sony
+BC72B1	Samsung
+BC744B	Nintendo
+BC74EA	Apple
+BC765E	Samsung
+BC79AD	Samsung
+BC7ABF	Samsung
+BC7E8B	Samsung
+BC7FA4	Xiaomi
+BC804E	Apple
+BC8385	Microsoft (Xbox)
+BC851F	Samsung
+BC89A6	Nintendo
+BC89A7	Apple
+BC89C1	Apple
+BC926B	Apple
+BC9307	Samsung
+BC9EBB	Nintendo
+BC9F58	Apple
+BC9FEF	Apple
+BCA080	Samsung
+BCA58B	Samsung
+BCA5A9	Apple
+BCA920	Apple
+BCB1F3	Samsung
+BCB2CC	Samsung
+BCB863	Apple
+BCBB58	Apple
+BCCE25	Nintendo
+BCD074	Apple
+BCD11F	Samsung
+BCD7D4	Roku
+BCDF58	Google (Chromecast)
+BCE143	Apple
+BCE63F	Samsung
+BCEBE8	Samsung
+BCEC5D	Apple
+BCF5AC	LG
+BCF730	Samsung
+BCFED9	Apple
+C00195	Amazon (Fire TV)
+C01173	Samsung
+C0151B	PlayStation
+C01693	Xiaomi
+C0174D	Samsung
+C01754	Apple
+C01ADA	Apple
+C01C6A	Google (Chromecast)
+C0238D	Samsung
+C02C5C	Apple
+C0335E	Microsoft (Xbox)
+C03D03	Samsung
+C041F6	LG
+C04442	Apple
+C048E6	Samsung
+C05B44	Xiaomi
+C06394	Apple
+C06599	Samsung
+C06C0C	Apple
+C07982	TCL
+C07AD6	Samsung
+C0847A	Apple
+C087EB	Samsung
+C08997	Samsung
+C08D51	Amazon (Fire TV)
+C091B9	Amazon (Fire TV)
+C0956D	Apple
+C095CF	Amazon (Fire TV)
+C09AD0	Apple
+C09F42	Apple
+C0A4CF	Nintendo
+C0A53E	Apple
+C0A600	Apple
+C0B22F	Apple
+C0B658	Apple
+C0BDC8	Samsung
+C0C7DB	Apple
+C0CCF8	Apple
+C0CECD	Apple
+C0D012	Apple
+C0D2DD	Samsung
+C0D3C0	Samsung
+C0D5E2	Samsung
+C0D6D5	Microsoft (Xbox)
+C0DCDA	Samsung
+C0E862	Apple
+C0F2FB	Apple
+C40826	Hisense
+C40B31	Apple
+C40BCB	Xiaomi
+C41234	Apple
+C41411	Apple
+C4168F	Apple
+C418E9	Samsung
+C41C07	Samsung
+C42AD0	Apple
+C42C03	Apple
+C435D9	Apple
+C43ABE	Sony
+C44202	Samsung
+C4438F	LG
+C4491B	Apple
+C45006	Samsung
+C4524F	Apple
+C4576E	Samsung
+C45BAC	Apple
+C45D83	Samsung
+C4618B	Apple
+C461C7	Microsoft (Xbox)
+C462EA	Samsung
+C46940	Xiaomi
+C46AB7	Xiaomi
+C4710F	Xiaomi
+C4731E	Samsung
+C47764	Samsung
+C47D9F	Samsung
+C48466	Apple
+C484FC	Apple
+C488E5	Samsung
+C48ACE	Hisense
+C4910C	Apple
+C493BB	Xiaomi
+C493D9	Samsung
+C49500	Amazon (Fire TV)
+C4969F	Amazon (Fire TV)
+C49880	Apple
+C49A02	LG
+C49DED	Microsoft (Xbox)
+C4ACAA	Apple
+C4AE12	Samsung
+C4B301	Apple
+C4B349	Apple
+C4C00A	Microsoft (Xbox)
+C4C17D	Apple
+C4C36B	Apple
+C4CB76	Microsoft (Xbox)
+C4EB81	Apple
+C4EF3D	Samsung
+C4F445	Apple
+C4F7C1	Apple
+C808E9	LG
+C8120B	Samsung
+C81479	Samsung
+C819F7	Samsung
+C81EE7	Apple
+C81FE8	Apple
+C82832	Xiaomi
+C82A14	Apple
+C82ADD	Google (Chromecast)
+C8334B	Apple
+C83870	Samsung
+C83A6B	Roku
+C83C85	Apple
+C83DDC	Xiaomi
+C83F26	Microsoft (Xbox)
+C8418A	Samsung
+C84805	Nintendo
+C84AA0	PlayStation
+C85142	Samsung
+C85CCC	Xiaomi
+C863F1	PlayStation
+C869CD	Apple
+C86C3D	Amazon (Fire TV)
+C86F1D	Apple
+C875DD	LG
+C87E75	Samsung
+C87EA1	TCL
+C8806D	Apple
+C88550	Apple
+C889F3	Apple
+C8908A	Samsung
+C89143	Nintendo
+C89665	Microsoft (Xbox)
+C8A6EF	Samsung
+C8A823	Samsung
+C8B1CD	Apple
+C8B5B7	Apple
+C8BCC8	Apple
+C8BD4D	Samsung
+C8BD69	Samsung
+C8BF4C	Xiaomi
+C8C9B2	Amazon (Fire TV)
+C8D083	Apple
+C8D7B0	Samsung
+C8E0EB	Apple
+C8F319	LG
+C8F650	Apple
+CA125C	Microsoft (Xbox)
+CC033D	Xiaomi
+CC051B	Samsung
+CC07AB	Samsung
+CC088D	Apple
+CC08E0	Apple
+CC08FA	Apple
+CC0DCB	Microsoft (Xbox)
+CC115A	Apple
+CC1228	Hisense
+CC20AC	Samsung
+CC20E8	Apple
+CC2119	Samsung
+CC2293	Amazon (Fire TV)
+CC22FE	Apple
+CC25EF	Apple
+CC2746	Apple
+CC29F5	Apple
+CC2D8C	LG
+CC2DB7	Apple
+CC3F36	Apple
+CC4210	Xiaomi
+CC4463	Apple
+CC464E	Samsung
+CC4B04	Apple
+CC4D75	Xiaomi
+CC5B31	Nintendo
+CC6023	Apple
+CC60C8	Microsoft (Xbox)
+CC660A	Apple
+CC68E0	Apple
+CC69FA	Apple
+CC6DA0	Roku
+CC6EA4	Samsung
+CC722A	Apple
+CC7645	Microsoft (Xbox)
+CC785F	Apple
+CC808F	Apple
+CC817D	Apple
+CC988B	Sony
+CC9E00	Nintendo
+CC9EA2	Amazon (Fire TV)
+CCA12B	TCL
+CCA7C1	Google (Chromecast)
+CCAA00	Microsoft (Xbox)
+CCAFE3	Amazon (Fire TV)
+CCB0B3	Microsoft (Xbox)
+CCB11A	Samsung
+CCB5D1	Xiaomi
+CCBE61	Apple
+CCC760	Apple
+CCC95D	Apple
+CCD281	Apple
+CCD3C1	Vestel
+CCD843	Xiaomi
+CCDA20	Xiaomi
+CCE686	Samsung
+CCE9FA	Samsung
+CCEB5E	Xiaomi
+CCF411	Google (Chromecast)
+CCF735	Amazon (Fire TV)
+CCF826	Samsung
+CCF9E8	Samsung
+CCF9F0	Samsung
+CCFA00	LG
+CCFB65	Nintendo
+CCFE3C	Samsung
+D0034B	Apple
+D003DF	Samsung
+D004B0	Samsung
+D011E5	Apple
+D013FD	LG
+D0176A	Samsung
+D01B49	Samsung
+D023DB	Apple
+D02598	Apple
+D02B20	Apple
+D03169	Samsung
+D03311	Apple
+D039FA	Samsung
+D03E07	Apple
+D03FAA	Apple
+D04D2C	Roku
+D04D86	Apple
+D04F7E	Apple
+D05162	Sony
+D05509	Nintendo
+D056FB	Samsung
+D058A5	Apple
+D059E4	Samsung
+D06544	Apple
+D065B3	TCL
+D0667B	Samsung
+D06B78	Apple
+D07FA0	Samsung
+D0817A	Apple
+D087E2	Samsung
+D0880C	Apple
+D09282	Apple
+D0929E	Microsoft (Xbox)
+D09C7A	Xiaomi
+D0A637	Apple
+D0AE05	Xiaomi
+D0B128	Samsung
+D0B324	Apple
+D0C050	Apple
+D0C1B1	Samsung
+D0C1BF	Xiaomi
+D0C24E	Samsung
+D0C5F3	Apple
+D0CDBF	LG
+D0CEC0	Xiaomi
+D0D003	Samsung
+D0D23C	Apple
+D0D2B0	Apple
+D0D49F	Apple
+D0DAD7	Apple
+D0DFC7	Samsung
+D0E140	Apple
+D0E581	Apple
+D0FCCC	Samsung
+D40CFD	Apple
+D40F9E	Apple
+D411A3	Samsung
+D4126E	Apple
+D41761	Xiaomi
+D42CA6	Samsung
+D42DCC	Apple
+D42FCA	Apple
+D43538	Xiaomi
+D4389C	Sony
+D43A2C	Google (Chromecast)
+D440CF	Apple
+D4438A	Xiaomi
+D446E1	Apple
+D4532A	Xiaomi
+D45763	Apple
+D45EEC	Xiaomi
+D4619D	Apple
+D461DA	Apple
+D463C0	Apple
+D468AA	Apple
+D47AE2	Samsung
+D487D8	Samsung
+D48890	Samsung
+D48A39	Samsung
+D48E83	Apple
+D48F33	Microsoft (Xbox)
+D4909C	Apple
+D4910F	Amazon (Fire TV)
+D4970B	Xiaomi
+D49A20	Apple
+D49DC0	Samsung
+D4A33D	Apple
+D4A365	Xiaomi
+D4AE05	Samsung
+D4BEDC	Roku
+D4C9D7	Apple
+D4CE40	Apple
+D4DA21	Xiaomi
+D4DCCD	Apple
+D4E22F	Roku
+D4E6B7	Samsung
+D4E8B2	Samsung
+D4F057	Nintendo
+D4F0EA	Xiaomi
+D4F46F	Apple
+D4F547	Google (Chromecast)
+D4F7D5	PlayStation
+D4FB8E	Apple
+D4FF1A	Apple
+D8004D	Apple
+D80831	Samsung
+D80B9A	Samsung
+D814DF	TCL
+D81C79	Apple
+D81D72	Apple
+D83062	Apple
+D83134	Roku
+D831CF	Samsung
+D832E3	Xiaomi
+D846CE	Apple
+D84C90	Apple
+D84FB8	LG
+D85575	Samsung
+D857EF	Samsung
+D85B2A	Samsung
+D86375	Xiaomi
+D868A0	Samsung
+D868C3	Samsung
+D86B83	Nintendo
+D86BF7	Nintendo
+D86C63	Google (Chromecast)
+D87154	Samsung
+D87475	Apple
+D88C79	Google (Chromecast)
+D88F76	Apple
+D890E8	Samsung
+D893D4	Xiaomi
+D89695	Apple
+D89D13	Samsung
+D89E3F	Apple
+D8A25E	Apple
+D8A35C	Samsung
+D8B053	Xiaomi
+D8BB2C	Apple
+D8BE1F	Apple
+D8BE65	Amazon (Fire TV)
+D8C4E9	Samsung
+D8CE3A	Xiaomi
+D8CF9C	Apple
+D8D1CB	Apple
+D8D43C	Sony
+D8DC40	Apple
+D8DE3A	Apple
+D8E0E1	Samsung
+D8E2DF	Microsoft (Xbox)
+D8E374	Xiaomi
+D8E593	Apple
+D8EB46	Google (Chromecast)
+D8EDA8	Xiaomi
+D8FBD6	Amazon (Fire TV)
+DAA119	Google (Chromecast)
+DC080F	Apple
+DC0B34	LG
+DC0C5C	Apple
+DC1057	Apple
+DC2B2A	Apple
+DC2B61	Apple
+DC3714	Apple
+DC3A5E	Roku
+DC415F	Apple
+DC44B6	Samsung
+DC45B8	Apple
+DC5285	Apple
+DC5392	Apple
+DC54D7	Amazon (Fire TV)
+DC56E7	Apple
+DC6672	Samsung
+DC68EB	Nintendo
+DC69E2	Samsung
+DC6AE7	Xiaomi
+DC6DBC	Apple
+DC71D0	Apple
+DC74A8	Samsung
+DC8084	Apple
+DC86D8	Apple
+DC87F8	Samsung
+DC8983	Samsung
+DC91BF	Amazon (Fire TV)
+DC9396	Apple
+DC9566	Apple
+DC9840	Microsoft (Xbox)
+DC9A7D	Hisense
+DC9B9C	Apple
+DC9DED	Samsung
+DC9E8F	Apple
+DCA0D0	Amazon (Fire TV)
+DCA4CA	Apple
+DCA904	Apple
+DCB4C4	Microsoft (Xbox)
+DCB54F	Apple
+DCB72E	Xiaomi
+DCC49C	Samsung
+DCCCE6	Samsung
+DCCD18	Nintendo
+DCCF96	Samsung
+DCD3A2	Apple
+DCDCE2	Samsung
+DCE541	Apple
+DCE55B	Google (Chromecast)
+DCED83	Xiaomi
+DCF4CA	Apple
+DCF756	Samsung
+E0036B	Samsung
+E00C7F	Nintendo
+E01ADF	Google (Chromecast)
+E01F88	Xiaomi
+E02611	Apple
+E02B96	Apple
+E0319E	Valve (Steam Deck)
+E0338E	Apple
+E05F45	Apple
+E06267	Xiaomi
+E063E5	Sony
+E06678	Apple
+E06D17	Apple
+E0806B	Xiaomi
+E0897E	Apple
+E0925C	Apple
+E09971	Samsung
+E09D13	Samsung
+E0AA96	Samsung
+E0ACCB	Apple
+E0B52D	Apple
+E0B55F	Apple
+E0B655	Xiaomi
+E0B9BA	Apple
+E0BA78	Apple
+E0BDA0	Apple
+E0BFB2	Apple
+E0C377	Samsung
+E0C3EA	Apple
+E0C767	Apple
+E0C97A	Apple
+E0CB1D	Amazon (Fire TV)
+E0CBEE	Samsung
+E0CCF8	Xiaomi
+E0D083	Samsung
+E0DB10	Samsung
+E0DCFF	Xiaomi
+E0E751	Nintendo
+E0EB40	Apple
+E0EFBF	Nintendo
+E0F5C6	Apple
+E0F6B5	Nintendo
+E0F728	Amazon (Fire TV)
+E0F847	Apple
+E4013B	Apple
+E41088	Samsung
+E4121D	Samsung
+E41B43	Xiaomi
+E425E7	Apple
+E42AAC	Microsoft (Xbox)
+E42B34	Apple
+E42F37	Apple
+E432CB	Samsung
+E43BC9	Hisense
+E440E2	Samsung
+E44389	Apple
+E44519	Xiaomi
+E446DA	Xiaomi
+E450EB	Apple
+E45341	Apple
+E458B8	Samsung
+E458E7	Samsung
+E45D75	Samsung
+E45E1B	Google (Chromecast)
+E47010	Apple
+E47684	Apple
+E47CF9	Samsung
+E47DBD	Samsung
+E484D3	Xiaomi
+E48A93	Hisense
+E48B7F	Apple
+E490FD	Apple
+E49282	Samsung
+E492FB	Samsung
+E498D1	Microsoft (Xbox)
+E498D6	Apple
+E49A79	Apple
+E49ADC	Apple
+E49C67	Apple
+E49F7D	Samsung
+E4A430	Samsung
+E4AAE4	Xiaomi
+E4B021	Samsung
+E4B16C	Apple
+E4B2FB	Apple
+E4BCAA	Xiaomi
+E4C0FE	Apple
+E4C63D	Apple
+E4CE8F	Apple
+E4D398	Xiaomi
+E4DB6D	Xiaomi
+E4E0A6	Apple
+E4E0C5	Samsung
+E4E4AB	Apple
+E4ECE8	Samsung
+E4F042	Google (Chromecast)
+E4F3C4	Samsung
+E4F8EF	Samsung
+E4FADE	Microsoft (Xbox)
+E4FAED	Samsung
+E4FB1E	Microsoft (Xbox)
+E4FE43	Xiaomi
+E4FED4	Microsoft (Xbox)
+E8039A	Samsung
+E8040B	Apple
+E80688	Apple
+E81132	Samsung
+E81CD8	Apple
+E83617	Apple
+E83A12	Samsung
+E84A54	Xiaomi
+E84A78	Apple
+E84C4A	Amazon (Fire TV)
+E84E84	Samsung
+E84EBA	Google (Chromecast)
+E84ECE	Nintendo
+E85497	Samsung
+E85A8B	Xiaomi
+E85B5B	LG
+E85F02	Apple
+E85FB4	Xiaomi
+E86DCB	Samsung
+E86E3A	PlayStation
+E87865	Apple
+E87EEF	Xiaomi
+E87F6B	Samsung
+E87F95	Apple
+E8802E	Apple
+E88152	Apple
+E8854B	Apple
+E88843	Xiaomi
+E88D28	Apple
+E892A4	LG
+E89309	Samsung
+E89847	Xiaomi
+E898EE	Apple
+E8A0CD	Nintendo
+E8A72F	Microsoft (Xbox)
+E8A730	Apple
+E8AACB	Samsung
+E8B2AC	Apple
+E8B4C8	Samsung
+E8BA17	Xiaomi
+E8C386	Apple
+E8C913	Samsung
+E8D52B	Google (Chromecast)
+E8D87E	Amazon (Fire TV)
+E8DA20	Nintendo
+E8E5D6	Samsung
+E8F673	Microsoft (Xbox)
+E8F791	Xiaomi
+E8FBE9	Apple
+E8FEBE	Apple
+E8FFF4	Apple
+EC0D51	Apple
+EC0DE4	Amazon (Fire TV)
+EC1055	Xiaomi
+EC107B	Samsung
+EC2651	Apple
+EC28D3	Apple
+EC2BEB	Amazon (Fire TV)
+EC2C0D	Apple
+EC2C73	Apple
+EC2CE2	Apple
+EC30B3	Xiaomi
+EC315F	Amazon (Fire TV)
+EC3586	Apple
+EC4118	Xiaomi
+EC42CC	Apple
+EC4654	Apple
+EC4684	Microsoft (Xbox)
+EC4D3E	Xiaomi
+EC59E7	Microsoft (Xbox)
+EC7379	Apple
+EC748C	PlayStation
+EC7CB6	Samsung
+EC8150	Apple
+EC8350	Microsoft (Xbox)
+EC852F	Apple
+EC8AC4	Amazon (Fire TV)
+EC90C1	Samsung
+EC97A2	Apple
+EC9B75	Roku
+ECA138	Amazon (Fire TV)
+ECA907	Apple
+ECAA25	Samsung
+ECADB8	Apple
+ECB550	Samsung
+ECBE5F	Vestel
+ECC40D	Nintendo
+ECCED7	Apple
+ECD09F	Xiaomi
+ECD508	Apple
+ECDCAA	Apple
+ECE09B	Samsung
+ECE60E	Apple
+ECE9D2	Apple
+ECFA5C	Xiaomi
+ECFF3A	Apple
+F004E1	Apple
+F0051B	Samsung
+F008F1	Samsung
+F01898	Apple
+F01C13	LG
+F01DBC	Microsoft (Xbox)
+F01FC7	Apple
+F02475	Apple
+F0272D	Amazon (Fire TV)
+F027A0	Apple
+F02F4B	Apple
+F02F9E	Amazon (Fire TV)
+F02FBA	Apple
+F03965	Samsung
+F040D9	Apple
+F04F7C	Amazon (Fire TV)
+F05A09	Samsung
+F05B7B	Samsung
+F05C77	Google (Chromecast)
+F05CD5	Apple
+F065AE	Samsung
+F067B1	Samsung
+F06BCA	Samsung
+F06C5D	Xiaomi
+F06E0B	Microsoft (Xbox)
+F0704F	Samsung
+F0728C	Samsung
+F072EA	Google (Chromecast)
+F0766F	Apple
+F07807	Apple
+F07960	Apple
+F08173	Amazon (Fire TV)
+F08A76	Samsung
+F0989D	Apple
+F099B6	Apple
+F099BF	Apple
+F0A225	Amazon (Fire TV)
+F0A35A	Apple
+F0B0E7	Apple
+F0B3EC	Apple
+F0B429	Xiaomi
+F0B479	Apple
+F0BF97	Sony
+F0C1F1	Apple
+F0C371	Apple
+F0C725	Apple
+F0CBA1	Apple
+F0CD31	Samsung
+F0D1A9	Apple
+F0D2F1	Amazon (Fire TV)
+F0D31F	Apple
+F0D635	Apple
+F0D793	Apple
+F0DBE2	Apple
+F0DBF8	Apple
+F0DCE2	Apple
+F0E426	Samsung
+F0E77E	Samsung
+F0EE10	Samsung
+F0EE7A	Apple
+F0EF86	Google (Chromecast)
+F0F0A4	Amazon (Fire TV)
+F0F564	Samsung
+F0F61C	Apple
+F0F832	Google (Chromecast)
+F400A2	Samsung
+F40304	Google (Chromecast)
+F4032A	Amazon (Fire TV)
+F40616	Apple
+F40E01	Apple
+F40E22	Samsung
+F40F24	Apple
+F41A9C	Xiaomi
+F41BA1	Apple
+F421CA	Apple
+F42B8C	Samsung
+F4308B	Xiaomi
+F431C3	Apple
+F433B7	Apple
+F434F0	Apple
+F437B7	Apple
+F439A6	Apple
+F4428F	Samsung
+F45293	Apple
+F45C89	Apple
+F460E2	Xiaomi
+F46412	PlayStation
+F465A6	Apple
+F46AD7	Microsoft (Xbox)
+F47190	Samsung
+F478AC	Apple
+F47B5E	Samsung
+F47D8F	Google (Chromecast)
+F47DEF	Samsung
+F481C4	Apple
+F48B32	Xiaomi
+F49F54	Samsung
+F4A1A6	Apple
+F4A310	Apple
+F4AFE7	Apple
+F4B599	Apple
+F4BEEC	Apple
+F4C248	Samsung
+F4CBE7	Apple
+F4D488	Apple
+F4D9FB	Samsung
+F4DBE3	Apple
+F4DD06	Samsung
+F4E8C7	Apple
+F4F15A	Apple
+F4F309	Samsung
+F4F5D8	Google (Chromecast)
+F4F5DB	Xiaomi
+F4F5E8	Google (Chromecast)
+F4F951	Apple
+F4FE3E	Apple
+F4FEFB	Samsung
+F801B4	LG
+F80377	Apple
+F80CF3	LG
+F80FF9	Google (Chromecast)
+F81093	Apple
+F81A2B	Google (Chromecast)
+F81E49	Apple
+F81EDF	Apple
+F82793	Apple
+F82AE2	Apple
+F82D7C	Apple
+F83869	LG
+F83880	Apple
+F83F51	Samsung
+F84288	Apple
+F843EF	Xiaomi
+F8461C	PlayStation
+F84D89	Apple
+F84E17	Sony
+F84E58	Samsung
+F84E73	Apple
+F854B8	Amazon (Fire TV)
+F85B6E	Samsung
+F86214	Apple
+F8665A	Apple
+F86FC1	Apple
+F8710C	Xiaomi
+F871A6	Apple
+F873DF	Apple
+F877B8	Samsung
+F87D76	Apple
+F88306	Xiaomi
+F884F2	Samsung
+F887F1	Apple
+F88F07	Samsung
+F88FCA	Google (Chromecast)
+F895C7	LG
+F895EA	Apple
+F8A45F	Xiaomi
+F8A986	Microsoft (Xbox)
+F8A9D0	LG
+F8AB82	Xiaomi
+F8B1DD	Apple
+F8B22C	Roku
+F8C3CC	Apple
+F8CB15	Apple
+F8D0AC	PlayStation
+F8D0BD	Samsung
+F8D3F0	Apple
+F8E252	Apple
+F8E5CE	Apple
+F8E61A	Samsung
+F8E94E	Apple
+F8F1E6	Samsung
+F8F58C	Apple
+F8FCE1	Amazon (Fire TV)
+F8FFC2	Apple
+FA63E1	Samsung
+FC0296	Xiaomi
+FC039F	Samsung
+FC0F76	Amazon (Fire TV)
+FC0FE6	PlayStation
+FC183C	Apple
+FC1910	Samsung
+FC1999	Xiaomi
+FC1A46	Samsung
+FC1D43	Apple
+FC253F	Apple
+FC2A9C	Apple
+FC315D	Apple
+FC4116	Google (Chromecast)
+FC4203	Samsung
+FC4345	Xiaomi
+FC47D8	Apple
+FC492D	Amazon (Fire TV)
+FC4EA4	Apple
+FC5557	Apple
+FC5703	Hisense
+FC5B8C	Xiaomi
+FC643A	Samsung
+FC64BA	Xiaomi
+FC65DE	Amazon (Fire TV)
+FC66CF	Apple
+FC6E83	Samsung
+FC8827	Apple
+FC8C11	Microsoft (Xbox)
+FC8F90	Samsung
+FC915D	Google (Chromecast)
+FC936B	Samsung
+FC9CA7	Apple
+FC9DD2	Apple
+FCA13E	Samsung
+FCA183	Amazon (Fire TV)
+FCA5C8	Apple
+FCA621	Samsung
+FCA667	Amazon (Fire TV)
+FCA9F5	Xiaomi
+FCAA81	Apple
+FCAAB6	Samsung
+FCB214	Apple
+FCB6D8	Apple
+FCC17D	Xiaomi
+FCC734	Samsung
+FCCA40	PlayStation
+FCD749	Amazon (Fire TV)
+FCD848	Apple
+FCD908	Xiaomi
+FCDE90	Samsung
+FCE26C	Apple
+FCE5F0	Samsung
+FCE998	Apple
+FCE9D8	Amazon (Fire TV)
+FCF136	Samsung
+FCF152	Sony
+FCFC48	Apple
