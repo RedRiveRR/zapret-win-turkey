@@ -6,6 +6,8 @@ import Darwin
 /// Çözüm yoksa ad olduğu gibi tpws'e geçer (sistem DNS'i). Yalnız CONNECT; UDP/BIND desteklenmez.
 public final class DohSocksFront {
     public let port: Int
+    /// Her CONNECT denemesi için tek satır ("ad:kapı -> hedef [(DoH)] tamam|hata N"). Ziyaret geçmişi içerir; yalnız hata ayıklamada bağlanır.
+    public var onEvent: ((String) -> Void)?
     private let upstreamPort: Int
     private let resolve: (String) -> [String]
     private let lock = NSLock()
@@ -80,20 +82,24 @@ public final class DohSocksFront {
         guard let r = Socks5.parseRequest(req) else { Self.writeAll(c, Self.failure(1)); return }
         guard r.command == 1 else { Self.writeAll(c, Self.failure(7)); return }
 
-        var targets: [Socks5.Target] = [r.target]
+        var targets: [(target: Socks5.Target, doh: Bool)] = [(r.target, false)]
         if case .domain(let name) = r.target {
-            let ips = resolve(name).compactMap(Socks5.ipv4Bytes).prefix(3).map { Socks5.Target.ipv4($0) }
-            if !ips.isEmpty { targets = ips + [r.target] }
+            let ips = resolve(name).compactMap(Socks5.ipv4Bytes).prefix(3).map { (target: Socks5.Target.ipv4($0), doh: true) }
+            if !ips.isEmpty { targets = ips + [(r.target, false)] }
         }
+        let asked = "\(Self.describe(r.target)):\(r.port)"
         var last = Self.failure(4)
         for t in targets {
-            switch openUpstream(Socks5.encodeConnect(target: t, port: r.port)) {
+            let how = "\(asked) -> \(Self.describe(t.target))\(t.doh ? " (DoH)" : "")"
+            switch openUpstream(Socks5.encodeConnect(target: t.target, port: r.port)) {
             case .connected(let up, let reply):
+                onEvent?("\(how) tamam")
                 Self.writeAll(c, reply)
                 relay(c, up)
                 close(up)
                 return
             case .refused(let reply):
+                onEvent?("\(how) hata \(reply.count > 1 ? Int(reply[1]) : 1)")
                 last = reply
             }
         }
@@ -157,6 +163,14 @@ public final class DohSocksFront {
         }
         guard let n = Socks5.addressBytes(atyp: out[3], firstByte: first), let rest = readExact(fd, n) else { return nil }
         return out + rest
+    }
+
+    private static func describe(_ t: Socks5.Target) -> String {
+        switch t {
+        case .domain(let d): return d
+        case .ipv4(let a): return a.map(String.init).joined(separator: ".")
+        case .ipv6: return "ipv6"
+        }
     }
 
     private static func failure(_ code: UInt8) -> [UInt8] { [5, code, 0, 1, 0, 0, 0, 0, 0, 0] }

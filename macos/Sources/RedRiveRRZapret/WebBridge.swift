@@ -122,6 +122,8 @@ final class AppController: NSObject, WKScriptMessageHandler {
         let resolver = DohResolver()
         let f = DohSocksFront(port: TpwsArgs.defaultPort, upstreamPort: engine.port,
                               resolve: { HostMatcher.matches($0, hosts) ? resolver.resolve($0) : [] })
+        // config.ini'ye Ayrinti=1 yazılırsa her SOCKS isteği günlüğe düşer (ziyaret geçmişi içerir, varsayılan kapalı).
+        if readConfig()["Ayrinti"] == "1" { f.onEvent = { [weak self] in self?.log("socks \($0)") } }
         do { try f.start() } catch {
             engine.stop()
             return error.localizedDescription
@@ -214,7 +216,10 @@ final class AppController: NSObject, WKScriptMessageHandler {
         NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? "koyu" : "acik"
     }
 
+    private static let logLock = NSLock() // ön proxy iş parçacıkları da yazar
+
     func log(_ s: String) {
+        Self.logLock.lock(); defer { Self.logLock.unlock() }
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd HH:mm:ss"
         let line = "\(f.string(from: Date())) \(s)\n"
