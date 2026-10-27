@@ -168,7 +168,7 @@ Sorun sürerse **Diğer → Sorun bildirmek için paket oluştur** ile masaüst�
 ## Gizlilik
 - Program hiçbir veriyi bir sunucuya göndermez. Tek dış sorgu, açılıştaki **güncelleme kontrolüdür** (GitHub API; `[Settings] UpdateCheck=0` ile kapatılır). Hiçbir şey otomatik indirilmez.
 - `config\autohostlist.txt` *Auto* filtrede engellendiği anlaşılan siteleri tutar; yalnızca bilgisayarınızda kalır.
-- Tanılama paketine ziyaret ettiğiniz siteler, IP ve MAC adresleri **eklenmez**.
+- Tanılama paketine ziyaret ettiğiniz siteler ve paylaşım kaydı **eklenmez**; eklenen kayıtlarda ev ağı IP'leri, MAC adresleri ve Windows kullanıcı adınız maskelenir.
 
 ## Ayarlar dosyası ve komut satırı
 Ayarlar `config\config.ini` içindedir; çoğu arayüzden değiştirilir.

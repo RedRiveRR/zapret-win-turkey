@@ -8,8 +8,8 @@
 ; =========================================================================
 ; --- TANILAMA PAKETİ ---
 ; Destek için log, ayar ve servis durumunu tek ZIP dosyasında toplar.
-; Gizlilik: autohostlist.txt (ziyaret edilen siteler), IP ve MAC adresleri
-; pakete EKLENMEZ.
+; Gizlilik: autohostlist.txt (ziyaret edilen siteler) ve paylaşım kaydı pakete EKLENMEZ; eklenen
+; metinlerde ev ağı IP'leri, IPv6 ve MAC adresleri ile Windows kullanıcı adı maskelenir (_DiagRedact).
 ; =========================================================================
 
 ; Pakete eklenmeye aday dosyalar (programın köküne göre).
@@ -28,6 +28,24 @@ Func _DiagCandidateFiles($sRoot)
         EndIf
     Next
     Return $aOut
+EndFunc
+
+; Pakete giren metindeki kişisel bilgileri maskeler (saf):
+;   ev ağı IPv4 (10/8, 172.16/12, 192.168/16) -> ilk iki bölüm kalır: 192.168.x.x
+;   IPv6 -> <ipv6>, MAC -> xx:xx:xx:xx:xx:xx, "\Users\<ad>\" -> "\Users\<kullanıcı>\"
+; Genel adresler (1.1.1.1, Discord'un adresleri) hata ayıklamaya yaradığı için kalır.
+Func _DiagRedact($sText, $sUserName = @UserName)
+    Local $s = StringRegExpReplace($sText, "(?i)\b(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2}\b", "xx:xx:xx:xx:xx:xx")
+    ; IPv6: "::" ile kısaltılmış (fe80::1) ya da en az üç ':' içeren (saat "14:58:54" iki ':' içerir, korunur)
+    $s = StringRegExpReplace($s, "(?i)(?<![0-9a-z:.])[0-9a-f]{0,4}(?::[0-9a-f]{1,4})*::[0-9a-f:]*(?:%\w+)?(?![0-9a-z:.])", "<ipv6>")
+    $s = StringRegExpReplace($s, "(?i)(?<![0-9a-z:.])(?:[0-9a-f]{1,4}:){3,7}[0-9a-f]{1,4}(?:%\w+)?(?![0-9a-z:.])", "<ipv6>")
+    $s = StringRegExpReplace($s, "\b(10)\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", "$1.x.x.x")
+    $s = StringRegExpReplace($s, "\b(192\.168)\.\d{1,3}\.\d{1,3}\b", "$1.x.x")
+    $s = StringRegExpReplace($s, "\b(172\.(?:1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3}\b", "$1.x.x")
+    If $sUserName <> "" Then
+        $s = StringRegExpReplace($s, "(?i)(\\Users\\)\Q" & $sUserName & "\E(?=\\|$|[\s""'])", "$1<kullanıcı>")
+    EndIf
+    Return $s
 EndFunc
 
 ; PowerShell için tek tırnaklı, kaçışlı dizgi üretir.
@@ -70,12 +88,16 @@ Func _DiagCreateBundle($sRoot, $sOutZip)
 
     Local $aFiles = _DiagCandidateFiles($sRoot)
     For $sRel In $aFiles
-        FileCopy($sRoot & "\" & $sRel, $sWork & "\" & $sRel, $FC_OVERWRITE + $FC_CREATEPATH)
+        ; Hepsi metin dosyası: maskelenmiş kopya yazılır.
+        Local $h = FileOpen($sWork & "\" & $sRel, $FO_OVERWRITE + $FO_CREATEPATH + $FO_UTF8)
+        If $h = -1 Then ContinueLoop
+        FileWrite($h, _DiagRedact(FileRead($sRoot & "\" & $sRel)))
+        FileClose($h)
     Next
 
     Local $hInfo = FileOpen($sWork & "\sistem-bilgisi.txt", $FO_OVERWRITE + $FO_UTF8)
     If $hInfo <> -1 Then
-        FileWrite($hInfo, _DiagSystemInfo())
+        FileWrite($hInfo, _DiagRedact(_DiagSystemInfo()))
         FileClose($hInfo)
     EndIf
 
@@ -98,8 +120,8 @@ Func _DiagCreateFromTray()
     Local $sZip = @DesktopDir & "\zapret-tanilama-" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & ".zip"
     If _DiagCreateBundle(@ScriptDir, $sZip) Then
         MsgBox(64 + 8192, "Tanılama Paketi", "Tanılama paketi masaüstüne kaydedildi:" & @CRLF & $sZip & @CRLF & @CRLF & _
-                "Paylaşmadan önce içeriğini kontrol edebilirsiniz. Ziyaret ettiğiniz siteler (autohostlist), IP ve MAC adresleri pakete eklenmez; " & _
-                "dosya yollarında Windows kullanıcı adınız görünebilir.")
+                "Paylaşmadan önce içeriğini kontrol edebilirsiniz. Ziyaret ettiğiniz siteler (autohostlist) pakete eklenmez; " & _
+                "ev ağı IP'leri, MAC adresleri ve Windows kullanıcı adınız maskelenir.")
         ShellExecute(@DesktopDir)
     Else
         MsgBox(16 + 8192, "Tanılama Paketi", "Tanılama paketi oluşturulamadı.")
