@@ -483,12 +483,17 @@ EndFunc
 ; Paylaşım çıktısının yeni kısmını okuyup tabloya işler. Dönüş: yeni bağlanan cihaz sayısı.
 Func _LanDevicesPoll($sRoot)
     Local $sLog = $sRoot & $LAN_LOG_REL
-    Local $iSize = FileGetSize($sLog)
-    If @error Then Return 0
-    If $iSize < $__g_iLanLogPos Then _LanDevicesReset() ; dosya yeniden başladı
-    If $iSize = $__g_iLanLogPos Then Return 0
     Local $h = FileOpen($sLog, $FO_READ + $FO_BINARY)
     If $h = -1 Then Return 0
+    ; Boyut açık dosyadan ölçülür: go-pcap2socks dosyayı açık tutup yazarken klasör kaydındaki boyut
+    ; (FileGetSize) güncellenmiyor; ilk okumadan sonra hiç yeni satır görülmüyordu (2026-10-27, H29).
+    FileSetPos($h, 0, $FILE_END)
+    Local $iSize = FileGetPos($h)
+    If $iSize < $__g_iLanLogPos Then _LanDevicesReset() ; dosya yeniden başladı
+    If $iSize = $__g_iLanLogPos Then
+        FileClose($h)
+        Return 0
+    EndIf
     FileSetPos($h, $__g_iLanLogPos, $FILE_BEGIN)
     Local $bData = FileRead($h, $iSize - $__g_iLanLogPos)
     FileClose($h)
