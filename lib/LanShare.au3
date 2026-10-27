@@ -415,11 +415,14 @@ EndFunc
 ; --- BAĞLI CİHAZLAR (go-pcap2socks çıktısından) ---
 ; go-pcap2socks bir cihaz katılınca  msg="Device <IP> (<MAC>) joined the network"  ve her bağlantıda
 ; msg="[TCP] Connection" source=<IP>:<port>  yazar. Çıktı (logs\paylasim.log) her saniye yalnız yeni
-; eklenen kısmından okunur. MAC adresi tutulmaz ve gösterilmez.
-; Tablo: [n][4] = IP, ilk görülme, son etkinlik ("YYYY/MM/DD HH:MM:SS"), bağlantı sayısı.
+; eklenen kısmından okunur. MAC adresi tutulmaz ve gösterilmez: yalnız ilk üç baytından (OUI) üretici
+; etiketi bulunur (veri\cihaz-ureticileri.txt, scripts\make-vendors.ps1 ile üretilir).
+; Tablo: [n][5] = IP, ilk görülme, son etkinlik ("YYYY/MM/DD HH:MM:SS"), bağlantı sayısı, tür (üretici).
 ; =========================================================================
-Global $__g_aLanDevices[0][4]
-Global $__g_iLanLogPos = 0, $__g_sLanLogRest = ""
+Global Const $LAN_VENDORS_REL = "\veri\cihaz-ureticileri.txt"
+Global Const $LAN_ACTIVE_SEC = 60 ; son yeni bağlantı bu kadar saniye içindeyse "Etkin"
+Global $__g_aLanDevices[0][5]
+Global $__g_iLanLogPos = 0, $__g_sLanLogRest = "", $__g_sLanVendors = ""
 
 ; go-pcap2socks zaman damgası -> _DateDiff biçimi: time=2026-10-27T02:21:48.426+03:00 -> 2026/10/27 02:21:48
 Func _LanLogTime($sLine)
@@ -435,13 +438,27 @@ Func __LanDeviceIndex(ByRef $aDev, $sIP)
     Return -1
 EndFunc
 
+; MAC adresinden cihaz türü (saf). $sTable: "OUI<TAB>Etiket" satırları. Rastgele (yerel yönetilen) adresler
+; telefon/tabletlerin gizlilik özelliğidir; üretici bilinemez.
+Func _LanVendorFromMac($sMac, $sTable)
+    Local $sHex = StringUpper(StringRegExpReplace($sMac, "[^0-9A-Fa-f]", ""))
+    If StringLen($sHex) <> 12 Then Return ""
+    If BitAND(Dec(StringLeft($sHex, 2)), 2) Then Return "Gizli adres (telefon / tablet olabilir)"
+    Local $a = StringRegExp($sTable, "(?m)^" & StringLeft($sHex, 6) & "\t([^\r\n]+)", 1)
+    If @error Then Return ""
+    Return $a[0]
+EndFunc
+
 ; Çıktı satırlarını cihaz tablosuna işler (saf). Dönüş: tabloya yeni eklenen cihaz sayısı.
-Func _LanDevicesUpdate(ByRef $aDev, $sText)
+Func _LanDevicesUpdate(ByRef $aDev, $sText, $sVendors = "")
     Local $iNew = 0
     For $sLine In StringSplit(StringStripCR($sText), @LF, 2)
-        Local $bConn = False
+        Local $bConn = False, $sKind = ""
         Local $m = StringRegExp($sLine, 'msg="Device (\d{1,3}(?:\.\d{1,3}){3}) ', 1)
-        If @error Then
+        If Not @error Then
+            Local $mm = StringRegExp($sLine, 'msg="Device [\d.]+ \(([0-9A-Fa-f:-]{17})\)', 1)
+            If Not @error Then $sKind = _LanVendorFromMac($mm[0], $sVendors)
+        Else
             $m = StringRegExp($sLine, 'Connection" source=(\d{1,3}(?:\.\d{1,3}){3}):', 1)
             If @error Then ContinueLoop
             $bConn = True
@@ -450,32 +467,37 @@ Func _LanDevicesUpdate(ByRef $aDev, $sText)
         Local $i = __LanDeviceIndex($aDev, $m[0])
         If $i < 0 Then
             $i = UBound($aDev)
-            ReDim $aDev[$i + 1][4]
+            ReDim $aDev[$i + 1][5]
             $aDev[$i][0] = $m[0]
             $aDev[$i][1] = $sT
             $aDev[$i][2] = $sT
             $aDev[$i][3] = 0
+            $aDev[$i][4] = ""
             $iNew += 1
         ElseIf $sT <> "" Then
             $aDev[$i][2] = $sT
         EndIf
+        If $sKind <> "" Then $aDev[$i][4] = $sKind
         If $bConn Then $aDev[$i][3] += 1
     Next
     Return $iNew
 EndFunc
 
-; Son etkinliğe göre kısa durum (saf): 90 sn içinde "Etkin", bir saat içinde "N dk önce", sonra "HH:MM'de".
+; Son etkinliğe göre kısa durum (saf): $LAN_ACTIVE_SEC içinde "Etkin", bir saat içinde "N dk önce", sonra "HH:MM'de".
+; Not: çıktı yalnız YENİ bağlantıları yazar; ayrılan cihaz 1 dk içinde "Etkin" olmaktan çıkar, bağlı ama boşta
+; bekleyen cihaz da öyle görünebilir.
 Func _LanDeviceAgo($sLast, $sNow)
     If $sLast = "" Then Return ""
     Local $iSec = _DateDiff("s", $sLast, $sNow)
     If @error Then Return ""
-    If $iSec < 90 Then Return "Etkin"
+    If $iSec < $LAN_ACTIVE_SEC Then Return "Etkin"
+    If $iSec < 120 Then Return "1 dk önce"
     If $iSec < 3600 Then Return Int($iSec / 60) & " dk önce"
     Return StringMid($sLast, 12, 5) & "'de"
 EndFunc
 
 Func _LanDevicesReset()
-    ReDim $__g_aLanDevices[0][4]
+    ReDim $__g_aLanDevices[0][5]
     $__g_iLanLogPos = 0
     $__g_sLanLogRest = ""
 EndFunc
@@ -483,6 +505,7 @@ EndFunc
 ; Paylaşım çıktısının yeni kısmını okuyup tabloya işler. Dönüş: yeni bağlanan cihaz sayısı.
 Func _LanDevicesPoll($sRoot)
     Local $sLog = $sRoot & $LAN_LOG_REL
+    If $__g_sLanVendors = "" Then $__g_sLanVendors = FileRead($sRoot & $LAN_VENDORS_REL) ; yoksa "" (tür gösterilmez)
     Local $h = FileOpen($sLog, $FO_READ + $FO_BINARY)
     If $h = -1 Then Return 0
     ; Boyut açık dosyadan ölçülür: go-pcap2socks dosyayı açık tutup yazarken klasör kaydındaki boyut
@@ -502,5 +525,5 @@ Func _LanDevicesPoll($sRoot)
     Local $sText = $__g_sLanLogRest & BinaryToString($bData, $SB_UTF8)
     Local $iCut = StringInStr($sText, @LF, 0, -1)
     $__g_sLanLogRest = StringMid($sText, $iCut + 1)
-    Return _LanDevicesUpdate($__g_aLanDevices, StringLeft($sText, $iCut))
+    Return _LanDevicesUpdate($__g_aLanDevices, StringLeft($sText, $iCut), $__g_sLanVendors)
 EndFunc

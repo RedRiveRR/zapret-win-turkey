@@ -17,7 +17,7 @@
 //   {tip:"diger", paylasim, paylasimAcik, guncelleme, hakkinda, temizleAcik}
 //   {tip:"komut", ad:"tanilama|kayitlar|ayarlar|temizle"}, {tip:"ayar", ad:"guncelleme", deger:bool}
 //   {tip:"paylasim", durum:"acik|kapali|hata", hata, npcap:"var|uyumsuz|yok|", baslatilabilir, kart, wifi, ip, ip2, maske, gecit, mtu, bitti,
-//    cihazlar:[{ip, durum:"Etkin|N dk önce|HH:MM'de", etkin, baglanti, ilk:"HH:MM"}]}
+//    cihazlar:[{ip, tur:"PlayStation|Samsung|...|", durum:"Etkin|N dk önce|HH:MM'de", etkin, baglanti, ilk:"HH:MM"}]}
 //   {tip:"komut", ad:"paylasimBaslat|paylasimDurdur|paylasimYenile|npcap"} (bitti: başlat/durdur/yenile işlendi), {tip:"kopyala", metin}
 //   {tip:"bildirim", metin}   (program -> sayfa, birkaç saniye görünür)
 //   {tip:"komut", ad:"servisKur|servisKaldir|servisAyarlar"}, {tip:"ayar", ad:"onarim|yenidenBaslat", deger:bool}
@@ -322,10 +322,10 @@ function cihazlarUygula(acik, liste) {
     const ad = document.createElement('span');
     ad.className = 'ad';
     const b = document.createElement('b');
-    b.textContent = c.ip;
+    b.textContent = c.tur || 'Bilinmeyen cihaz';
     const k = document.createElement('span');
     k.className = 'kucuk';
-    k.textContent = c.ilk ? `İlk bağlantı ${c.ilk}, ${c.baglanti || 0} bağlantı` : '';
+    k.textContent = [c.ip, c.ilk ? `ilk bağlantı ${c.ilk}` : '', `${c.baglanti || 0} bağlantı`].filter(Boolean).join(', ');
     ad.append(b, k);
     const d = document.createElement('span');
     d.className = 'cihaz-durum' + (c.etkin ? ' etkin' : '');
@@ -334,6 +334,7 @@ function cihazlarUygula(acik, liste) {
     return satir;
   }));
   $('paylasim-cihaz-bos').hidden = liste.length > 0;
+  $('paylasim-cihaz-not').hidden = liste.length === 0;
 }
 
 // --- Bildirim ---

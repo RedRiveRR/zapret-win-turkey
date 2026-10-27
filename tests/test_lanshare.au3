@@ -96,7 +96,7 @@ Func _TestLanShare()
     ; --- Bağlı cihazlar (go-pcap2socks satır biçimi; değerler uydurma) ---
     _AssertEq(_LanLogTime('time=2026-01-05T09:15:30.123+03:00 level=INFO msg="x"'), "2026/01/05 09:15:30", "zaman damgası")
     _AssertEq(_LanLogTime("zamansız satır"), "", "zaman yoksa boş")
-    Local $aDev[0][4]
+    Local $aDev[0][5]
     Local $sOut = 'time=2026-01-05T09:15:30.100+03:00 level=INFO msg="Using ethernet interface" interface=Ethernet mac=02:00:00:00:00:aa' & @CRLF & _
             'time=2026-01-05T09:15:30.400+03:00 level=INFO msg="Device 172.24.2.50 (02:00:00:00:00:01) joined the network"' & @CRLF & _
             'time=2026-01-05T09:15:31.000+03:00 level=INFO msg="[TCP] Connection" source=172.24.2.50:50000 dest=203.0.113.10:443' & @CRLF & _
@@ -120,8 +120,27 @@ Func _TestLanShare()
     Local $sJ = _WebLanDevicesJson($aDev, "2026/01/05 09:21:30")
     _AssertEq(_WebJsonGet(StringRegExpReplace($sJ, "^\[|,\{.*$", ""), "ip"), "172.24.2.50", "JSON ilk cihaz")
     _AssertTrue(StringInStr($sJ, '"etkin":true') > 0, "etkin bayrağı")
-    Local $aBos[0][4]
+    Local $aBos[0][5]
     _AssertEq(_WebLanDevicesJson($aBos, "2026/01/05 09:21:30"), "[]", "cihaz yoksa boş dizi")
+
+    ; --- Cihaz türü (OUI tablosundan; MAC adresinin geri kalanı uydurma) ---
+    Local $sVendors = "# baslik" & @CRLF & "00041F" & @TAB & "PlayStation" & @CRLF & "0009BF" & @TAB & "Nintendo" & @CRLF
+    _AssertEq(_LanVendorFromMac("00:04:1f:00:00:01", $sVendors), "PlayStation", "OUI'den üretici")
+    _AssertEq(_LanVendorFromMac("00-09-BF-12-34-56", $sVendors), "Nintendo", "tireli yazım")
+    _AssertEq(_LanVendorFromMac("00:11:22:33:44:55", $sVendors), "", "tabloda olmayan üretici")
+    _AssertTrue(StringInStr(_LanVendorFromMac("02:00:00:00:00:01", $sVendors), "Gizli") = 1, "rastgele (yerel) MAC")
+    _AssertTrue(StringInStr(_LanVendorFromMac("DA:A1:19:00:00:01", $sVendors), "Gizli") = 1, "rastgele MAC (x2/x6/xA/xE)")
+    _AssertEq(_LanVendorFromMac("00:04:1F", $sVendors), "", "eksik MAC")
+    _AssertEq(_LanVendorFromMac("00:04:1f:00:00:01", ""), "", "tablo yoksa boş")
+    Local $aK[0][5]
+    _LanDevicesUpdate($aK, 'time=2026-01-05T09:15:30.400+03:00 level=INFO msg="Device 172.24.2.60 (00:04:1f:00:00:09) joined the network"', $sVendors)
+    _AssertEq($aK[0][4], "PlayStation", "katılma satırından tür")
+    _LanDevicesUpdate($aK, 'time=2026-01-05T09:15:40.000+03:00 level=INFO msg="[TCP] Connection" source=172.24.2.60:1 dest=203.0.113.1:443', $sVendors)
+    _AssertEq($aK[0][4], "PlayStation", "bağlantı satırı türü silmez")
+    _AssertTrue(StringInStr(_WebLanDevicesJson($aK, "2026/01/05 09:15:50"), '"tur":"PlayStation"') > 0, "JSON'da tür")
+    _AssertFalse(StringInStr(_WebLanDevicesJson($aK, "2026/01/05 09:15:50"), "00:04:1f") > 0, "MAC JSON'a girmez")
+    _AssertEq(_LanDeviceAgo("2026/01/05 09:21:00", "2026/01/05 09:21:59"), "Etkin", "60 sn içinde etkin")
+    _AssertEq(_LanDeviceAgo("2026/01/05 09:21:00", "2026/01/05 09:22:05"), "1 dk önce", "60 sn sonra etkin değil")
 
     ; --- Artımlı okuma: yalnız yeni kısım, yarım satır bekletilir, dosya yenilenince sıfırlanır ---
     Local $sRoot = @TempDir & "\zwt-lan-dev-" & @MSEC

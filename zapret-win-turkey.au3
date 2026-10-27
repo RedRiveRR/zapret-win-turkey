@@ -1640,9 +1640,11 @@ Func _LanShareWatch()
         Local $nDev = UBound($__g_aLanDevices)
         If _LanDevicesPoll(@ScriptDir) > 0 Then
             For $i = $nDev To UBound($__g_aLanDevices) - 1
-                _LogInfo("Ağ paylaşımı: cihaz bağlandı " & $__g_aLanDevices[$i][0])
+                _LogInfo("Ağ paylaşımı: cihaz bağlandı " & $__g_aLanDevices[$i][0] & ($__g_aLanDevices[$i][4] = "" ? "" : " (" & $__g_aLanDevices[$i][4] & ")"))
             Next
-            _LanShareNotify("Cihaz bağlandı", $__g_aLanDevices[UBound($__g_aLanDevices) - 1][0] & " bu bilgisayar üzerinden internete çıkıyor.", False)
+            Local $iLast = UBound($__g_aLanDevices) - 1
+            Local $sWho = ($__g_aLanDevices[$iLast][4] = "" ? "" : $__g_aLanDevices[$iLast][4] & " ") & "(" & $__g_aLanDevices[$iLast][0] & ")"
+            _LanShareNotify("Cihaz bağlandı", $sWho & " bu bilgisayar üzerinden internete çıkıyor.", False)
         EndIf
         Return
     EndIf

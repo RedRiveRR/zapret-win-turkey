@@ -137,6 +137,8 @@ try {
     Get-ChildItem (Join-Path $mainDir 'bin\zapret\blockcheck') -Filter '*.log' | Remove-Item
     Copy-Common $mainDir 'zapret-win-turkey'
     Copy-Item $mainExe $mainDir
+    # Ağ paylaşımındaki cihaz türleri (scripts\make-vendors.ps1 ile üretilir; lite'ta paylaşım yok)
+    Copy-Item (Join-Path $repo 'veri') (Join-Path $mainDir 'veri') -Recurse
     $wv2Dir = Join-Path $mainDir 'bin\webview2'
     New-Item -ItemType Directory -Force -Path $wv2Dir | Out-Null
     Copy-Item (Join-Path $wv2 'build\native\x64\WebView2Loader.dll') $wv2Dir

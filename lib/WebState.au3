@@ -266,7 +266,7 @@ EndFunc
 ; Ağ paylaşımı sayfası mesajı.
 ;   $bOn: paylaşım açık, $bCanStart: başlatılabilir mi (zapret çalışıyor), $sError: son hata ("" = yok)
 ;   $sNpcap: "var" | "yok" | "" (bilinmiyor), $sAdapter: kart adı, $bWifi, $sPrefix: ağ öneki ("" = bilinmiyor)
-; Bağlı cihazlar listesi (JSON dizisi): [{"ip","durum","etkin","baglanti","ilk"}]. $sNow: _NowCalc() biçimi.
+; Bağlı cihazlar listesi (JSON dizisi): [{"ip","tur","durum","etkin","baglanti","ilk"}]. $sNow: _NowCalc() biçimi.
 Func _WebLanDevicesJson(ByRef $aDev, $sNow)
     Local $s = "["
     For $i = 0 To UBound($aDev) - 1
@@ -274,6 +274,7 @@ Func _WebLanDevicesJson(ByRef $aDev, $sNow)
         Local $o = _WebJsonObj("ip", $aDev[$i][0], "durum", $sAgo, "etkin", $sAgo = "Etkin")
         $o = _WebJsonAdd($o, "baglanti", $aDev[$i][3])
         $o = _WebJsonAdd($o, "ilk", StringMid($aDev[$i][1], 12, 5))
+        If UBound($aDev, 2) > 4 Then $o = _WebJsonAdd($o, "tur", $aDev[$i][4])
         $s &= ($i > 0 ? "," : "") & $o
     Next
     Return $s & "]"

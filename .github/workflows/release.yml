@@ -11,6 +11,7 @@ on:
       - 'lib/**'
       - 'ui/**'
       - 'config/**'
+      - 'veri/**'
       - 'scripts/build.ps1'
       - 'scripts/set-version.ps1'
       - 'scripts/sac-check.ps1'
