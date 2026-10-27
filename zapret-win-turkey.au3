@@ -106,6 +106,8 @@ Local $exludelistPath = @ScriptDir & "\config\excludelist.txt"
 Global $strategiesIniPath = @ScriptDir & "\config\strategies.ini"
 ; Paketle gelen varsayılan site listeleri (config\varsayilan\) yalnız eksikse kopyalanır.
 _InstallEnsureConfigDefaults(@ScriptDir)
+; Önceki oturumdan (ör. çökme) kalmış paylaşım kaydındaki bağlantı satırları silinir.
+If Not ProcessExists("go-pcap2socks.exe") Then _LanLogCompactFile(@ScriptDir)
 Global $g_aStrategies = _StrategyDefaults("Zapret2")
 
 ; --- CONFIG DOSYASINDAN AYARLARI OKU ---
@@ -1637,6 +1639,14 @@ Func _LanShareWatch()
     If Not _StateLanOn() Then Return
     If _LanIsRunning($pcapPID) Then
         If $g_sLanMtu = "" Then $g_sLanMtu = _LanParseMtu(_LanLogTail(@ScriptDir & $LAN_LOG_REL, 40))
+        ; Kayıt sınırı (lib/LanShare.au3): çok uzun/yoğun oturumda paylaşım bir kez yeniden başlar, kayıt sıfırlanır.
+        If _LanLogSize(@ScriptDir) > $LAN_LOG_MAX_BYTES Then
+            _LogWarn("Ağ paylaşımı: kayıt " & Int($LAN_LOG_MAX_BYTES / 1048576) & " MB sınırını aştı; paylaşım yeniden başlatılıyor")
+            _LanShareStop()
+            If _LanShareStart(False) Then Return
+            _LanShareNotify("Ağ paylaşımı durdu", $g_sLanError, False)
+            Return
+        EndIf
         Local $nDev = UBound($__g_aLanDevices)
         If _LanDevicesPoll(@ScriptDir) > 0 Then
             For $i = $nDev To UBound($__g_aLanDevices) - 1

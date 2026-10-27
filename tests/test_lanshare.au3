@@ -142,6 +142,28 @@ Func _TestLanShare()
     _AssertEq(_LanDeviceAgo("2026/01/05 09:21:00", "2026/01/05 09:21:59"), "Etkin", "60 sn içinde etkin")
     _AssertEq(_LanDeviceAgo("2026/01/05 09:21:00", "2026/01/05 09:22:05"), "1 dk önce", "60 sn sonra etkin değil")
 
+    ; --- Kayıt küçültme: bağlantı satırları ve MAC adresleri kalıcı kayıtta kalmaz ---
+    Local $sRaw = 'time=2026-01-05T09:00:00.000+03:00 level=INFO msg="Using ethernet interface" interface=Ethernet mac=02:00:00:00:00:aa' & @CRLF & _
+            'time=2026-01-05T09:00:01.000+03:00 level=INFO msg="Device 172.24.2.50 (00:04:1f:00:00:01) joined the network"' & @CRLF & _
+            'time=2026-01-05T09:00:02.000+03:00 level=INFO msg="[TCP] Connection" source=172.24.2.50:50000 dest=203.0.113.10:443' & @CRLF & _
+            'time=2026-01-05T09:00:03.000+03:00 level=ERROR msg="Failed to setup PCAP capture"' & @CRLF
+    Local $sSmall = _LanLogCompact($sRaw)
+    _AssertFalse(StringInStr($sSmall, "203.0.113.10") > 0, "hedef adresler silinir")
+    _AssertFalse(StringInStr($sSmall, "00:04:1f") > 0, "cihaz MAC'i maskelenir")
+    _AssertFalse(StringInStr($sSmall, "02:00:00:00:00:aa") > 0, "kart MAC'i maskelenir")
+    _AssertTrue(StringInStr($sSmall, "Device 172.24.2.50") > 0, "katılma satırı kalır")
+    _AssertTrue(StringInStr($sSmall, "Failed to setup PCAP capture") > 0, "hata satırı kalır")
+    _AssertEq(_LanLogCompact(""), "", "boş kayıt")
+    Local $sCRoot = @TempDir & "\zwt-lan-kucult-" & @MSEC
+    DirCreate($sCRoot & "\logs")
+    FileWrite($sCRoot & $LAN_LOG_REL, $sRaw)
+    _AssertTrue(_LanLogCompactFile($sCRoot), "dosya küçültüldü")
+    _AssertFalse(StringInStr(FileRead($sCRoot & $LAN_LOG_REL), "Connection") > 0, "dosyada bağlantı satırı kalmadı")
+    _AssertFalse(_LanLogCompactFile($sCRoot), "ikinci kez değişmez")
+    _AssertEq(_LanLogSize($sCRoot), FileGetSize($sCRoot & $LAN_LOG_REL), "boyut (kapalı dosya)")
+    DirRemove($sCRoot, 1)
+    _AssertFalse(_LanLogCompactFile($sCRoot), "kayıt yoksa hata vermez")
+
     ; --- Artımlı okuma: yalnız yeni kısım, yarım satır bekletilir, dosya yenilenince sıfırlanır ---
     Local $sRoot = @TempDir & "\zwt-lan-dev-" & @MSEC
     DirCreate($sRoot & "\logs")

@@ -229,6 +229,7 @@ Func _LanStop($iPid, $sRoot)
     $__g_sLanDnsMode = ""
     ; Önceki oturumdan kalmış olabilir: yalnızca bu paketteki kopya hedeflenir.
     _KillProcessesUnderDir($sRoot & "\bin\go-pcap2socks")
+    _LanLogCompactFile($sRoot)
     _LogInfo("Ağ paylaşımı durduruldu")
 EndFunc
 
@@ -526,4 +527,48 @@ Func _LanDevicesPoll($sRoot)
     Local $iCut = StringInStr($sText, @LF, 0, -1)
     $__g_sLanLogRest = StringMid($sText, $iCut + 1)
     Return _LanDevicesUpdate($__g_aLanDevices, StringLeft($sText, $iCut), $__g_sLanVendors)
+EndFunc
+
+; =========================================================================
+; --- PAYLAŞIM KAYDI: boyut ve gizlilik ---
+; go-pcap2socks her yeni bağlantıyı (cihaz IP'si -> hedef adres) bir satır yazar: dakikada 20–700 satır.
+; Bu satırlar yalnız çalışırken (bağlı cihazlar listesi) gerekir. Paylaşım durunca ya da açılışta
+; kalmış kayıtta bağlantı satırları silinir, MAC adresleri maskelenir; başlık, katılma ve hata satırları
+; (sorun bildirmek için) kalır. Çalışırken $LAN_LOG_MAX_BYTES aşılırsa paylaşım yeniden başlatılır.
+; =========================================================================
+Global Const $LAN_LOG_MAX_BYTES = 64 * 1024 * 1024
+
+; Kaydı küçültür (saf): bağlantı satırları atılır, MAC adresleri maskelenir.
+Func _LanLogCompact($sText)
+    Local $s = ""
+    For $sLine In StringSplit(StringStripCR($sText), @LF, 2)
+        If $sLine = "" Or StringInStr($sLine, 'Connection" source=') Then ContinueLoop
+        $s &= StringRegExpReplace($sLine, "(?i)\b(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2}\b", "xx:xx:xx:xx:xx:xx") & @CRLF
+    Next
+    Return $s
+EndFunc
+
+; Paylaşım kaydını küçültür (paylaşım kapalıyken). Değiştiyse True.
+Func _LanLogCompactFile($sRoot)
+    Local $sLog = $sRoot & $LAN_LOG_REL
+    If Not FileExists($sLog) Then Return False
+    Local $sOld = FileRead($sLog)
+    If @error Then Return False
+    Local $sNew = _LanLogCompact($sOld)
+    If $sNew == StringReplace(StringStripCR($sOld), @LF, @CRLF) Then Return False
+    Local $h = FileOpen($sLog, $FO_OVERWRITE + $FO_UTF8_NOBOM)
+    If $h = -1 Then Return False
+    FileWrite($h, $sNew)
+    FileClose($h)
+    Return True
+EndFunc
+
+; Çalışan paylaşımın kayıt boyutu (açık dosyadan; klasör kaydındaki boyut yazılırken güncellenmiyor).
+Func _LanLogSize($sRoot)
+    Local $h = FileOpen($sRoot & $LAN_LOG_REL, $FO_READ + $FO_BINARY)
+    If $h = -1 Then Return 0
+    FileSetPos($h, 0, $FILE_END)
+    Local $i = FileGetPos($h)
+    FileClose($h)
+    Return $i
 EndFunc
