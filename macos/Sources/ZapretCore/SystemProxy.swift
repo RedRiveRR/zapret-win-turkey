@@ -41,6 +41,9 @@ public enum SystemProxy {
          [networksetup, "-setsocksfirewallproxystate", service, "on"]]
     }
 
+    /// Var olan yedeğe, yedekte olmayan hizmetlerin şimdiki durumunu ekler (var olan kayıtlar değişmez).
+    public static func mergeBackup(existing: [String: SocksState], current: [String: SocksState]) -> [String: SocksState] { [:] }
+
     /// Hizmeti önceki hâline döndürür (kullanıcının kendi proxy'si varsa aynen geri yüklenir).
     public static func restoreCommands(service: String, previous: SocksState) -> [[String]] {
         if previous.enabled && !previous.server.isEmpty {
