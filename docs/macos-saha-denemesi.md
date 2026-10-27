@@ -13,6 +13,7 @@ Plan: `docs/superpowers/plans/2026-10-27-macos-asama-0-1.md` (Task 7). Sonuçlar
 4. Pencere Windows'taki yeni arayüzle aynı görünmeli (Bağlantı, Strateji, Servis, DNS, Diğer). Diğer sayfasında "Klasik arayüze geç" satırı olmamalı.
 5. **Strateji** sekmesinden ilk stratejiyi seçin, **Bağlantı → Başlat**. İlk seferde macOS **yönetici parolası** ister (yardımcı bir kez kurulur).
 6. Durum "Discord'a yol açık" olunca **Discord uygulamasını** açın (açıksa tamamen kapatıp yeniden açın). Mesajlar yükleniyor mu? Bir **sesli kanala** girip konuşabiliyor musunuz?
+   - Not: Mac'te ses (UDP) tpws'ten ve sistem proxy'sinden geçmez, doğrudan gider. Mesajlar açılıp ses bağlanmıyorsa strateji değiştirmek işe yaramaz; bu yaklaşımın sınırıdır — tabloya "ses yok" yazmanız yeterli.
 7. Tarayıcıda Discord dışı birkaç site (ör. e-posta) açılıyor mu?
 8. Çalışmazsa **Durdur**, sonraki stratejiyi seçip 5–7'yi tekrarlayın. Dört stratejinin her biri için sonucu not edin.
 
