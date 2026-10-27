@@ -2,6 +2,16 @@
 
 Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-turkey) üzerine bu fork'ta (`gelistirme` dalı) yapılan değişiklikleri listeler. Temel: upstream `9eeac04` (v4.5 kaynakları).
 
+## [Yayınlanmamış]
+
+### Yeni
+- **Bağlı cihazlar listesi** (Ağ paylaşımı sayfası): bu bilgisayar üzerinden internete çıkan cihazlar; IP, ilk bağlantı saati, bağlantı sayısı, "Etkin" / "N dk önce". Yeni cihaz bağlanınca bildirim. MAC adresi tutulmaz.
+
+### Geliştirme
+- Kullanılmayan eski arayüz kodu silindi; paylaşım, DNSCrypt ve çalışma durumu artık düğme yazılarından okunmuyor.
+- `check.ps1` repoda bu bilgisayarın kişisel bilgilerini (kullanıcı adı, bilgisayar adı, yerel IP) arar.
+- README: SmartScreen ve Akıllı Uygulama Denetimi uyarıları için sorun giderme satırları.
+
 ## [v5.1.1] — 2026-10-27 — kararlı (düzeltme)
 
 ### Düzeltme
