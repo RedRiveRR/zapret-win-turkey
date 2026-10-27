@@ -3,8 +3,8 @@
 #AutoIt3Wrapper_Icon=ui\simge\kilit.ico
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Description=RedRiveRR Zapret Lite
-#AutoIt3Wrapper_Res_Fileversion=5.1.1.0
-#AutoIt3Wrapper_Res_ProductVersion=5.1.1
+#AutoIt3Wrapper_Res_Fileversion=5.2.0.0
+#AutoIt3Wrapper_Res_ProductVersion=5.2.0
 #AutoIt3Wrapper_Res_LegalCopyright=Ali Mali
 #AutoIt3Wrapper_Res_Language=1055
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****

@@ -45,8 +45,8 @@ Bu depo, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-t
 **Gereksinimler:** Windows 10 veya 11 (64 bit), yönetici yetkisi. Yeni arayüz Microsoft Edge **WebView2** kullanır; Windows 11'de yerleşiktir, Windows 10'da çoğunlukla Windows Update ile gelir. Bulunamazsa program klasik arayüzle açılır.
 
 1. [Releases](https://github.com/RedRiveRR/zapret-win-turkey/releases) sayfasından son sürümü indirin:
-   - `RedRiveRR-Zapret-v5.1.1.zip` — tam sürüm (önerilen).
-   - `RedRiveRR-Zapret-Lite-v5.1.1.zip` — yalnızca temel işlevler, küçük pencere.
+   - `RedRiveRR-Zapret-v5.2.0.zip` — tam sürüm (önerilen).
+   - `RedRiveRR-Zapret-Lite-v5.2.0.zip` — yalnızca temel işlevler, küçük pencere.
    - `SHA256SUMS.txt` ile indirdiğiniz dosyayı doğrulayabilirsiniz.
 2. ZIP'i bir klasöre çıkarın (ör. `Belgeler\RedRiveRR Zapret`). ZIP'in içinden çalıştırmayın.
 3. **`RedRiveRR Zapret.exe`** dosyasını çalıştırın; yönetici izni istenir.
@@ -58,7 +58,9 @@ Bu depo, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-t
 > [!NOTE]
 > Bazı antivirüsler, paket yakalama sürücüsü (WinDivert/Monkey) içerdiği için zapret dosyalarını yanlışlıkla şüpheli bulabilir. Dosyalar bol-van/zapret dağıtımındaki orijinal ikililerdir; özetleri [THIRD_PARTY.md](THIRD_PARTY.md) dosyasında.
 
-**Yeni sürüme güncelleme:**
+**Yeni sürüme güncelleme:** 5.2.0'dan itibaren program yeni sürümü kendisi bildirir ve kurar: **Diğer → Yeni sürüm: … (Güncelle)** ya da tepsi simgesi → **Yeni sürümü kur**. Onayınızdan sonra paket yalnızca bu deponun GitHub sürüm sayfasından indirilir, `SHA256SUMS.txt` ile doğrulanır, program kapanıp yeni sürümle açılır. Manuel modda çalışan Zapret ve ağ paylaşımı birkaç saniye durup kendiliğinden yeniden başlar. Ayarlarınız, site listeleriniz ve kayıtlarınız korunur; ayrıntı `logs\guncelleme.log`.
+
+Elle güncellemek isterseniz (ya da 5.2.0 öncesi bir sürümden):
 1. Programı tepsi simgesinden **Kapat** ile kapatın.
 2. Yeni ZIP'i programın bulunduğu klasöre (ör. `C:\Program Files\Zapret Windows Turkiye`) çıkarın; Windows sorarsa **Dosyaları değiştir**'i seçin.
 3. Servis kuruluysa Windows bazı motor dosyaları (ör. `winws2.exe`, `WinDivert64.sys`) için "dosya kullanımda" diyebilir; bunlar için **Atla** deyin. Motor dosyaları değişen bir sürüm olursa sürüm notunda ayrıca yazılır.

@@ -2,15 +2,23 @@
 
 Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-turkey) üzerine bu fork'ta (`gelistirme` dalı) yapılan değişiklikleri listeler. Temel: upstream `9eeac04` (v4.5 kaynakları).
 
-## [Yayınlanmamış]
+## [v5.2.0] — 2026-10-27 — kararlı
 
 ### Yeni
-- **Bağlı cihazlar listesi** (Ağ paylaşımı sayfası): bu bilgisayar üzerinden internete çıkan cihazlar; IP, ilk bağlantı saati, bağlantı sayısı, "Etkin" / "N dk önce". Yeni cihaz bağlanınca bildirim. MAC adresi tutulmaz.
+- **Program kendini günceller.** Yeni sürüm çıkınca Diğer sayfasında **Güncelle** düğmesi ve tepside **Yeni sürümü kur** seçeneği belirir. Onaydan sonra paket yalnızca bu deponun GitHub sürüm sayfasından indirilir, `SHA256SUMS.txt` ile doğrulanır; program kapanıp yeni sürümle açılır. Ayarlar, site listeleri ve kayıtlar korunur; çalışan servisin motor dosyalarına dokunulmaz. Manuel mod ve ağ paylaşımı açıksa yeni sürüm onları kendiliğinden yeniden başlatır. (Lite sürüm yeni sürümü bildirir, indirme sayfasını açar.)
+- **Bağlı cihazlar listesi** (Diğer → Ağ paylaşımı): bu bilgisayar üzerinden internete çıkan cihazlar ve türü (PlayStation, Xbox, Nintendo, Samsung, LG, Vestel...), IP, ilk bağlantı saati, bağlantı sayısı, "Etkin" / "N dk önce". Yeni cihaz bağlanınca bildirim. MAC adresi saklanmaz ve gösterilmez; telefonların rastgele adresleri "Gizli adres" olarak görünür.
+
+### Gizlilik
+- **Tanılama paketi:** pakete giren kayıtlarda ev ağı IP'leri, IPv6 ve MAC adresleri ile Windows kullanıcı adınız maskelenir (önce "IP ve MAC eklenmez" yazıyordu ama kayıtlarda ev ağı adresi vardı).
+- **Paylaşım kaydı:** paylaşım durunca (ve açılışta) konsolun bağlandığı adresleri tutan satırlar silinir, MAC adresleri maskelenir; çok uzun oturumlarda kayıt 64 MB'ı aşarsa paylaşım bir kez yeniden başlar.
+
+### Düzeltme
+- Bağlı cihazlar listesi canlı kayıtta boş kalıyordu (Windows açık dosyanın boyutunu güncellemiyor); ayrılan cihaz artık 1 dakika içinde "Etkin"den çıkar.
 
 ### Geliştirme
 - Kullanılmayan eski arayüz kodu silindi; paylaşım, DNSCrypt ve çalışma durumu artık düğme yazılarından okunmuyor.
-- `check.ps1` repoda bu bilgisayarın kişisel bilgilerini (kullanıcı adı, bilgisayar adı, yerel IP) arar.
-- README: SmartScreen ve Akıllı Uygulama Denetimi uyarıları için sorun giderme satırları.
+- Derleme her exe'yi Windows Defender ile tarar ve Akıllı Uygulama Denetimi açık bilgisayarda yoklar; `check.ps1` repoda bu bilgisayarın kişisel bilgilerini arar.
+- README: SmartScreen ve Akıllı Uygulama Denetimi için sorun giderme.
 
 ## [v5.1.1] — 2026-10-27 — kararlı (düzeltme)
 
