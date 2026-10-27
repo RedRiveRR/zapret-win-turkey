@@ -6,7 +6,11 @@ public enum TpwsArgs {
     public static let defaultPort = 1080
 
     /// hostlist verilirse atlatma yalnız o listedeki sitelere uygulanır (tpws --hostlist).
-    public static func build(tpwsPath: String, port: Int, strategy: TpwsStrategy, hostlist: String?) -> [String] { [] }
+    public static func build(tpwsPath: String, port: Int, strategy: TpwsStrategy, hostlist: String?) -> [String] {
+        var argv = [tpwsPath, "--socks", "--bind-addr=127.0.0.1", "--port=\(port)"]
+        if let h = hostlist { argv.append("--hostlist=\(h)") }
+        return argv + strategy.args
+    }
 
     /// 127.0.0.1:port bağlanmaya açık değilse (dinleyen yoksa) true. Yardımcı da tpws'in canlılığını bununla izler.
     public static func isPortFree(_ port: Int) -> Bool {
