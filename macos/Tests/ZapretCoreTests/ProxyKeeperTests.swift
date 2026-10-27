@@ -31,7 +31,7 @@ final class ProxyKeeperTests: XCTestCase {
         addr.sin_port = 0
         var len = socklen_t(MemoryLayout<sockaddr_in>.size)
         let bound = withUnsafeMutablePointer(to: &addr) {
-            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, len) == 0 && listen(fd, 1) == 0 && getsockname(fd, $0, &len) == 0 }
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.bind(fd, $0, len) == 0 && Darwin.listen(fd, 1) == 0 && Darwin.getsockname(fd, $0, &len) == 0 }
         }
         XCTAssertTrue(bound)
         let port = Int(UInt16(bigEndian: addr.sin_port))
