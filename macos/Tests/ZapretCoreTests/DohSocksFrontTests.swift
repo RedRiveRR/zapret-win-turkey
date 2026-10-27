@@ -7,7 +7,7 @@ final class DohSocksFrontTests: XCTestCase {
     private func freePort() -> Int {
         let fd = socket(AF_INET, SOCK_STREAM, 0); defer { close(fd) }
         var a = sockaddr_in(); a.sin_family = sa_family_t(AF_INET); a.sin_addr.s_addr = inet_addr("127.0.0.1"); a.sin_port = 0
-        _ = withUnsafePointer(to: &a) { $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size)) } }
+        _ = withUnsafePointer(to: &a) { $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size)) } }
         var l = socklen_t(MemoryLayout<sockaddr_in>.size)
         _ = withUnsafeMutablePointer(to: &a) { $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { getsockname(fd, $0, &l) } }
         return Int(UInt16(bigEndian: a.sin_port))
@@ -41,7 +41,7 @@ final class DohSocksFrontTests: XCTestCase {
         let ls = socket(AF_INET, SOCK_STREAM, 0)
         var one: Int32 = 1; setsockopt(ls, SOL_SOCKET, SO_REUSEADDR, &one, 4)
         var a = sockaddr_in(); a.sin_family = sa_family_t(AF_INET); a.sin_addr.s_addr = inet_addr("127.0.0.1"); a.sin_port = in_port_t(UInt16(port).bigEndian)
-        _ = withUnsafePointer(to: &a) { $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(ls, $0, socklen_t(MemoryLayout<sockaddr_in>.size)) } }
+        _ = withUnsafePointer(to: &a) { $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.bind(ls, $0, socklen_t(MemoryLayout<sockaddr_in>.size)) } }
         listen(ls, 4)
         Thread.detachNewThread {
             while true {
