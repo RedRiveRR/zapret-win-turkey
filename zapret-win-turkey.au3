@@ -247,6 +247,7 @@ GUICtrlSetFont(-1, 10, 600, 0, "Segoe UI")
 
 Local $sInitialDnscryptText = ($iniDnscryptInstalled == "1") ? "[ ✓ ] Dnscrypt-proxy Aktif / Kaldır" : "Dnscrypt-proxy servisi kur"
 Global $btnDnscrypt = GUICtrlCreateButton($sInitialDnscryptText, 50, 415, 300, 35)
+_StateSetCryptOn($iniDnscryptInstalled == "1") ; düğmenin ilk metniyle aynı başlangıç
 GUICtrlSetFont(-1, 10, 600, 0, "Segoe UI")
 
 Local $btnRemoveService = GUICtrlCreateButton("Servis ve Kalıntıları Temizle", 50, 460, 300, 35)
@@ -575,9 +576,7 @@ While 1
                 ContinueLoop
             EndIf
 
-            Local $btnText = GUICtrlRead($btnDnscrypt)
-
-            If StringInStr($btnText, "servisi kur") Then
+            If Not _StateCryptOn() Then
                 _SetStatus("DNSCRYPT KURULUYOR...")
                 _LogInfo("DNSCrypt servisi kuruluyor")
 
@@ -585,8 +584,7 @@ While 1
                 RunWait('"' & $sProxyPath & '" -service start', $sProxyDir, @SW_HIDE)
                 If Not _SetDNS_Localhost() Then MsgBox(48 + 8192, "Uyarı", $NET_MSG_NO_ADAPTER)
 
-                GUICtrlSetData($btnDnscrypt, "[ ✓ ] Dnscrypt-proxy Aktif / Kaldır")
-                IniWrite($iniPath, "Settings", "DnscryptInstalled", "1")
+                _DnscryptSetOn(True)
                 ;MsgBox(64 + 8192, "Başarılı", "DNSCrypt servisi kuruldu.")
             Else
                 _SetStatus("DNSCRYPT KALDIRILIYOR...")
@@ -596,8 +594,7 @@ While 1
                 RunWait('"' & $sProxyPath & '" -service uninstall', $sProxyDir, @SW_HIDE)
                 If Not _ResetSystemDNS() Then MsgBox(48 + 8192, "Uyarı", $NET_MSG_NO_ADAPTER)
 
-                GUICtrlSetData($btnDnscrypt, "Dnscrypt-proxy servisi kur")
-                IniWrite($iniPath, "Settings", "DnscryptInstalled", "0")
+                _DnscryptSetOn(False)
                 ;MsgBox(64 + 8192, "Bilgi", "DNSCrypt servisi kaldırıldı ve DNS otomatiğe (DHCP) alındı.")
             EndIf
 
@@ -619,8 +616,7 @@ While 1
                 RunWait('"' & $sProxyPath & '" -service stop', $sProxyDir, @SW_HIDE)
                 RunWait('"' & $sProxyPath & '" -service uninstall', $sProxyDir, @SW_HIDE)
             EndIf
-            GUICtrlSetData($btnDnscrypt, "Dnscrypt-proxy servisi kur")
-            IniWrite($iniPath, "Settings", "DnscryptInstalled", "0")
+            _DnscryptSetOn(False)
 
             ; --- YENİ EKLENEN ADIM: DNS'i Otomatiğe (DHCP) Al ---
             _SetStatus("SİSTEM SIFIRLANIYOR...")
@@ -721,7 +717,7 @@ Func _SaveConfig()
     EndIf
 
     ; Değişkeni burada 'Local' olarak tanımlıyoruz
-    Local $dnscryptVal = (StringInStr(GUICtrlRead($btnDnscrypt), "aktif")) ? "1" : "0"
+    Local $dnscryptVal = _StateCryptOn() ? "1" : "0"
 
     IniWrite($iniPath, "Settings", "ActiveEngine", $engineVal)
     IniWrite($iniPath, "Settings", "ActiveStrategy", $stratVal)
@@ -1622,6 +1618,13 @@ Func _LanShareStop()
     _LanShareSetOn(False)
 EndFunc
 
+; DNSCrypt durumu tek kaynaktan (lib/AppState); düğme metni yalnız görüntü, config.ini kalıcı kayıt.
+Func _DnscryptSetOn($bOn)
+    _StateSetCryptOn($bOn)
+    GUICtrlSetData($btnDnscrypt, $bOn ? "[ ✓ ] Dnscrypt-proxy Aktif / Kaldır" : "Dnscrypt-proxy servisi kur")
+    IniWrite($iniPath, "Settings", "DnscryptInstalled", $bOn ? "1" : "0")
+EndFunc
+
 ; Paylaşım durumu tek kaynaktan (lib/AppState); klasik penceredeki düğme metni yalnız görüntü.
 Func _LanShareSetOn($bOn)
     _StateSetLanOn($bOn)
@@ -1705,11 +1708,9 @@ Func _CheckDnscryptStatus()
     Local $sDnsOut = _GetActiveAdapterDnsServers()
 
     If StringInStr($sOutput, "RUNNING") And StringInStr($sDnsOut, "127.0.0.1") Then
-        GUICtrlSetData($btnDnscrypt, "[ ✓ ] Dnscrypt-proxy Aktif / Kaldır")
-        IniWrite($iniPath, "Settings", "DnscryptInstalled", "1")
+        _DnscryptSetOn(True)
     Else
-        GUICtrlSetData($btnDnscrypt, "Dnscrypt-proxy servisi kur")
-        IniWrite($iniPath, "Settings", "DnscryptInstalled", "0")
+        _DnscryptSetOn(False)
     EndIf
 
     ; Açılışta butonun disabled kalmaması için her kontrol bitiminde açıyoruz
@@ -1917,7 +1918,7 @@ Func _WebUiSyncAll()
         $g_sWebHealth = _HealthStatusFormat(StringInStr($sStatus, "SERVİS") > 0, IniRead($iniPath, "Health", "Enabled", "1"), _
                 IniRead($iniPath, "Health", "LastCheck", ""), IniRead($iniPath, "Health", "LastResult", ""), @YEAR & "/" & @MON & "/" & @MDAY)
     EndIf
-    Local $sJson = _WebStateJson($sStatus, GUICtrlRead($btnRunZapret), BitAND(GUICtrlGetState($btnRunZapret), $GUI_ENABLE) <> 0, _
+    Local $sJson = _WebStateJson($sStatus, $isZapretRunning, BitAND(GUICtrlGetState($btnRunZapret), $GUI_ENABLE) <> 0, _
             GUICtrlRead($cmbStrategy), GUICtrlRead($cmbEngine), GUICtrlRead($cmbFilter), $g_sWebHealth)
     If $sJson <> $g_sWebLastJson Then
         $g_sWebLastJson = $sJson
@@ -2048,8 +2049,7 @@ EndFunc
 Func _WebUiDnsCommand($sMode)
     If $bDnscryptBusy Or Not BitAND(GUICtrlGetState($btnDnscrypt), $GUI_ENABLE) Then Return 0
     If $sMode <> "sifreli" And $sMode <> "cloudflare" And $sMode <> "saglayici" Then Return 0
-    ; Eski düğmenin metni DNSCrypt'in durumunu taşır ("... servisi kur" = kurulu değil).
-    Local $bCryptOn = Not StringInStr(GUICtrlRead($btnDnscrypt), "servisi kur")
+    Local $bCryptOn = _StateCryptOn()
     If $sMode = "sifreli" Then Return $bCryptOn ? 0 : $btnDnscrypt
     If $bCryptOn Then Return $btnDnscrypt ; kaldırınca DNS otomatiğe döner
     If $g_sUiPreviewDir <> "" Then

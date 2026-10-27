@@ -36,10 +36,10 @@ EndFunc
 ; Yeni arayüze gönderilecek tam durum mesajı.
 ;   $sRunText: Başlat/Durdur düğmesinin metni, $bRunEnabled: düğme kullanılabilir mi
 ;   $sEngine: motor seçimi metni, $sFilter: filtre seçimi metni, $sHealth: onarım durumu ("" = servis yok)
-Func _WebStateJson($sStatus, $sRunText, $bRunEnabled, $sStrategy, $sEngine, $sFilter, $sHealth)
+Func _WebStateJson($sStatus, $bRunning, $bRunEnabled, $sStrategy, $sEngine, $sFilter, $sHealth)
     Local $a = _WebStatusParts($sStatus)
     Local $s = _WebJsonObj("tip", "durum", "durum", $a[0], "rozet", $a[1], "baslik", $a[2], "aciklama", $a[3])
-    $s = _WebJsonAdd($s, "calisiyor", StringInStr($sRunText, "Durdur") > 0)
+    $s = _WebJsonAdd($s, "calisiyor", $bRunning = True)
     $s = _WebJsonAdd($s, "dugme", $bRunEnabled = True)
     $s = _WebJsonAdd($s, "strateji", $sStrategy)
     Local $sDetail = (StringInStr($sEngine, "Zapret2") ? "Zapret2 motoru" : "Klasik motor")

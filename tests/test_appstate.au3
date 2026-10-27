@@ -20,4 +20,11 @@ Func _TestAppState()
     _AssertFalse(_StateLanOn(), "yalnız True/1 açık sayılır")
     _StateSetLanOn(False)
     _AssertFalse(_StateLanOn(), "paylaşım kapalı")
+
+    _AssertFalse(_StateCryptOn(), "DNSCrypt başlangıçta kapalı")
+    _StateSetCryptOn(True)
+    _AssertTrue(_StateCryptOn(), "DNSCrypt açık")
+    _StateSetCryptOn("x")
+    _AssertFalse(_StateCryptOn(), "metin açık sayılmaz")
+    _StateSetCryptOn(False)
 EndFunc

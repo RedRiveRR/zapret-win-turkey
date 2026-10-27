@@ -27,3 +27,15 @@ EndFunc
 Func _StateLanOn()
     Return $g_bStateLanOn
 EndFunc
+
+; DNSCrypt servisi kurulu ve etkin mi (Aşama 2.7; önceden DNSCrypt düğmesinin metninden okunuyordu:
+; "... servisi kur" = kurulu değil).
+Global $g_bStateCryptOn = False
+
+Func _StateSetCryptOn($bOn)
+    $g_bStateCryptOn = IsBool($bOn) ? $bOn : (Number($bOn) <> 0)
+EndFunc
+
+Func _StateCryptOn()
+    Return $g_bStateCryptOn
+EndFunc
