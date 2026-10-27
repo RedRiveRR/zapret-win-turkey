@@ -17,6 +17,9 @@ guard let uidText = argValue("--uid"), let allowedUid = uid_t(uidText) else {
     exit(2)
 }
 
+// İstemci yanıtı beklemeden kapanırsa write SIGPIPE ile yardımcıyı öldürmesin (gözden geçirme #4)
+signal(SIGPIPE, SIG_IGN)
+
 let keeper = ProxyKeeper()
 keeper.restoreLeftover() // önceki çökmeden kalan yedek varsa proxy'yi geri al
 

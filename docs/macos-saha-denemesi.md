@@ -6,6 +6,7 @@ Plan: `docs/superpowers/plans/2026-10-27-macos-asama-0-1.md` (Task 7). Sonuçlar
 ## Hazırlık
 1. GitHub'da depoya giriş yapmışken **Actions → macOS** iş akışının son başarılı çalıştırmasını açın; altta **Artifacts** bölümündeki `RedRiveRR-Zapret-macOS-…` dosyasını indirin. (İçinde bir zip daha var; ikisini de açın.)
 2. Çıkan **RedRiveRR Zapret.app**'e **sağ tıklayın → Aç** (imzasız olduğu için çift tıklama engellenir). "Yine de açmak istiyor musunuz?" → **Aç**.
+   - macOS 15 (Sequoia) ve sonrasında sağ tık → Aç seçeneği yok: önce çift tıklayın, uyarıyı kapatın, sonra **Sistem Ayarları → Gizlilik ve Güvenlik** en altındaki **Yine de Aç** düğmesine basın.
 3. "Uygulamalar klasörüne taşınsın mı?" → **Taşı**. Uygulama Uygulamalar'dan yeniden açılır.
 
 ## Deneme

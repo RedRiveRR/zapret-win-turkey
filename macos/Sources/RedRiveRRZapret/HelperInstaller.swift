@@ -23,20 +23,32 @@ enum HelperInstaller {
         let q = shellQuote
         let script = [
             "mkdir -p /Library/PrivilegedHelperTools \(q("/Library/Application Support/RedRiveRR Zapret"))",
-            "cp \(q(source)) \(q(HelperPaths.binary))",
+            "cp -X \(q(source)) \(q(HelperPaths.binary))",
+            "(xattr -c \(q(HelperPaths.binary)) 2>/dev/null; true)",
             "chown root:wheel \(q(HelperPaths.binary))",
             "chmod 755 \(q(HelperPaths.binary))",
-            "cp \(q(tmp.path)) \(q(HelperPaths.plist))",
+            "cp -X \(q(tmp.path)) \(q(HelperPaths.plist))",
             "chown root:wheel \(q(HelperPaths.plist))",
             "chmod 644 \(q(HelperPaths.plist))",
             "(launchctl bootout system/\(HelperPaths.label) 2>/dev/null; true)",
             "launchctl bootstrap system \(q(HelperPaths.plist))",
         ].joined(separator: " && ")
         let apple = "do shell script \"\(appleEscape(script))\" with administrator privileges with prompt \"RedRiveRR Zapret, Mac'in proxy ayarını değiştirebilmek için bir kez yönetici yardımcısını kuracak.\""
-        var err: NSDictionary?
-        NSAppleScript(source: apple)?.executeAndReturnError(&err)
+        // NSAppleScript ana iş parçacığı dışında güvenli değil; ayrı osascript süreci kullanılır (gözden geçirme #5).
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        p.arguments = ["-e", apple]
+        let errPipe = Pipe()
+        p.standardOutput = FileHandle.nullDevice
+        p.standardError = errPipe
+        do { try p.run() } catch { try? FileManager.default.removeItem(at: tmp); log("osascript çalıştırılamadı"); return false }
+        let errText = String(decoding: errPipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        p.waitUntilExit()
         try? FileManager.default.removeItem(at: tmp)
-        if let err = err { log("yardımcı kurulamadı: \(err[NSAppleScript.errorMessage] ?? err)"); return false }
+        if p.terminationStatus != 0 {
+            log("yardımcı kurulamadı: \(errText.trimmingCharacters(in: .whitespacesAndNewlines))")
+            return false
+        }
         // Soket açılana kadar en fazla 5 sn
         for _ in 0..<50 where !FileManager.default.fileExists(atPath: HelperPaths.socket) { Thread.sleep(forTimeInterval: 0.1) }
         let ok = FileManager.default.fileExists(atPath: HelperPaths.socket)

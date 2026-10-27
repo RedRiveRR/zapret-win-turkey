@@ -39,6 +39,9 @@ enum HelperClient {
         var byte: UInt8 = 0
         while data.count < 4096, read(fd, &byte, 1) == 1, byte != 10 { data.append(byte) }
         let reply = String(decoding: data, as: UTF8.self)
+        if reply.isEmpty {
+            return .failure(HelperClientError.refused("yanıt yok (yardımcı başka bir kullanıcı için kurulmuş olabilir; uygulamayı yeniden başlatıp tekrar deneyin)"))
+        }
         if Json.get(reply, "ok") == "true" { return .success(Json.get(reply, "mesaj") ?? "") }
         return .failure(HelperClientError.refused(Json.get(reply, "mesaj") ?? reply))
     }

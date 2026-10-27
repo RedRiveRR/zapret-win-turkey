@@ -22,7 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         showWindow(); return true
     }
 
-    func applicationWillTerminate(_ n: Notification) { controller.stop() }
+    func applicationWillTerminate(_ n: Notification) { controller.stopForQuit() }
 
     private func buildWindow() {
         let cfg = WKWebViewConfiguration()

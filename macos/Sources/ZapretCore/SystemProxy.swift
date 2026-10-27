@@ -42,7 +42,9 @@ public enum SystemProxy {
     }
 
     /// Var olan yedeğe, yedekte olmayan hizmetlerin şimdiki durumunu ekler (var olan kayıtlar değişmez).
-    public static func mergeBackup(existing: [String: SocksState], current: [String: SocksState]) -> [String: SocksState] { [:] }
+    public static func mergeBackup(existing: [String: SocksState], current: [String: SocksState]) -> [String: SocksState] {
+        existing.merging(current) { old, _ in old }
+    }
 
     /// Hizmeti önceki hâline döndürür (kullanıcının kendi proxy'si varsa aynen geri yüklenir).
     public static func restoreCommands(service: String, previous: SocksState) -> [[String]] {

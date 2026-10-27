@@ -42,17 +42,22 @@ final class ProxyKeeper {
 
     private func proxyOn(port p: Int, ownerPid pid: Int32) {
         let services = SystemProxy.parseServices(run([SystemProxy.networksetup, "-listallnetworkservices"]))
-        // Yedek yalnız ilk açılışta alınır (zaten açıkken yeniden açmak kullanıcı ayarını ezmesin).
-        if !FileManager.default.fileExists(atPath: HelperPaths.backup) {
-            var backup: [String: SocksState] = [:]
-            for s in services { backup[s] = SystemProxy.parseSocks(run([SystemProxy.networksetup, "-getsocksfirewallproxy", s])) }
-            try? FileManager.default.createDirectory(atPath: (HelperPaths.backup as NSString).deletingLastPathComponent,
-                                                     withIntermediateDirectories: true)
-            guard let data = try? JSONEncoder().encode(backup),
-                  FileManager.default.createFile(atPath: HelperPaths.backup, contents: data) else {
-                log("yedek yazılamadı; proxy açılmadı")
-                return
-            }
+        // Var olan yedek kayıtları korunur (zaten açıkken yeniden açmak kullanıcı ayarını ezmesin); oturum
+        // sırasında eklenen hizmetler (USB Ethernet, telefon paylaşımı, VPN) önce yedeğe eklenir (gözden geçirme #1).
+        var existing: [String: SocksState] = [:]
+        if let data = FileManager.default.contents(atPath: HelperPaths.backup),
+           let old = try? JSONDecoder().decode([String: SocksState].self, from: data) { existing = old }
+        var current: [String: SocksState] = [:]
+        for s in services where existing[s] == nil {
+            current[s] = SystemProxy.parseSocks(run([SystemProxy.networksetup, "-getsocksfirewallproxy", s]))
+        }
+        let backup = SystemProxy.mergeBackup(existing: existing, current: current)
+        try? FileManager.default.createDirectory(atPath: (HelperPaths.backup as NSString).deletingLastPathComponent,
+                                                 withIntermediateDirectories: true)
+        guard let data = try? JSONEncoder().encode(backup),
+              FileManager.default.createFile(atPath: HelperPaths.backup, contents: data) else {
+            log("yedek yazılamadı; proxy açılmadı")
+            return
         }
         for s in services { for c in SystemProxy.enableCommands(service: s, port: p) { _ = run(c) } }
         on = true

@@ -5,9 +5,12 @@ import ZapretCore
 /// Sayfa (ui/web) <-> program. Mesaj sözleşmesi ui/web/uygulama.js başındaki listeyle aynı.
 final class AppController: NSObject, WKScriptMessageHandler {
     weak var webView: WKWebView?
-    private let engine = TpwsEngine()
+    private let engine = TpwsEngine(pidFile: AppController.supportDir.appendingPathComponent("tpws.pid"))
+    /// Motor ve yardımcı çağrıları ana iş parçacığını kilitlemesin; sırayla çalışsın (gözden geçirme #2).
+    private let work = DispatchQueue(label: "com.redriverr.zapret.work")
     private var strategies: [TpwsStrategy] = []
     private var selected = ""
+    private var running = "" // çalışan strateji (seçili olandan farklı olabilir)
     private var status: AppStatus = .ready
     private var errorText: String?
     private var busy = false
@@ -51,16 +54,20 @@ final class AppController: NSObject, WKScriptMessageHandler {
         case "komut":
             switch Json.get(text, "ad") {
             case "baslat": start()
-            case "durdur": stop(); sendStatus()
+            case "durdur": stop()
             case "kayitlar": NSWorkspace.shared.open(Self.logDir)
             case "github": NSWorkspace.shared.open(URL(string: "https://github.com/RedRiveRR/zapret-win-turkey")!)
             default: break
             }
         case "secim":
-            if Json.get(text, "alan") == "strateji", let v = Json.get(text, "deger"), strategies.contains(where: { $0.name == v }) {
+            // Başlatma/durdurma sürerken seçim yok sayılır; sayfa eski seçime döndürülür (gözden geçirme #6).
+            if busy {
+                sendStatus()
+                post(WebState.strategyJson(options: strategies.map(\.name), selected: selected))
+            } else if Json.get(text, "alan") == "strateji", let v = Json.get(text, "deger"), strategies.contains(where: { $0.name == v }) {
                 selected = v
                 writeConfig("ActiveStrategy", v)
-                if engine.isRunning { start() } // çalışırken strateji değişince yeniden başlat
+                if status == .manual { start() } // çalışırken strateji değişince yeniden başlat
                 else { sendStatus() }
             }
         default: break
@@ -74,16 +81,18 @@ final class AppController: NSObject, WKScriptMessageHandler {
         status = .starting
         errorText = nil
         sendStatus()
-        DispatchQueue.global(qos: .userInitiated).async {
+        work.async {
             let err = self.startWork(strategy)
             DispatchQueue.main.async {
                 self.busy = false
                 if let err = err {
                     self.status = .error
                     self.errorText = err
+                    self.running = ""
                     self.log("başlatılamadı: \(err)")
                 } else {
                     self.status = .manual
+                    self.running = strategy.name
                     self.log("başladı: \(strategy.name) \(strategy.args.joined(separator: " "))")
                 }
                 self.sendStatus()
@@ -113,26 +122,44 @@ final class AppController: NSObject, WKScriptMessageHandler {
     }
 
     func stop() {
-        HelperClient.send(.proxyOff)
-        engine.stop()
-        status = .ready
-        errorText = nil
-        log("durduruldu")
+        guard !busy else { return }
+        busy = true
+        sendStatus()
+        work.async {
+            HelperClient.send(.proxyOff)
+            self.engine.stop()
+            DispatchQueue.main.async {
+                self.busy = false
+                self.status = .ready
+                self.errorText = nil
+                self.running = ""
+                self.log("durduruldu")
+                self.sendStatus()
+            }
+        }
+    }
+
+    /// Uygulama kapanırken: proxy geri alınır, motor durdurulur (bekleyerek).
+    func stopForQuit() {
+        work.sync {
+            HelperClient.send(.proxyOff)
+            engine.stop()
+        }
     }
 
     private func engineDied() {
-        HelperClient.send(.proxyOff)
-        engine.stop()
         status = .error
+        running = ""
         errorText = "Zapret beklenmedik şekilde durdu; internet bağlantınız eski hâline getirildi."
         log("tpws beklenmedik şekilde kapandı; proxy geri alındı")
         sendStatus()
+        work.async { HelperClient.send(.proxyOff) }
     }
 
     // MARK: Sayfaya gidenler
     private func sendStatus() {
         post(WebState.statusJson(status: status, running: status == .manual, buttonEnabled: !busy,
-                                 strategy: selected, detail: "tpws (macOS), Discord ve Roblox siteleri", error: errorText))
+                                 strategy: running.isEmpty ? selected : running, detail: "tpws (macOS), Discord ve Roblox siteleri", error: errorText))
     }
 
     func post(_ json: String) {
