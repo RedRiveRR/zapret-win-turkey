@@ -1,6 +1,10 @@
 import Foundation
 import Darwin
 
+// libproc, Xcode 14 (macOS 12 SDK) modül haritasında yok; yeni SDK'larda var. Sembolü kendi adımızla bağlarız.
+@_silgen_name("proc_pidpath")
+private func zwtProcPidPath(_ pid: Int32, _ buffer: UnsafeMutableRawPointer?, _ size: UInt32) -> Int32
+
 public enum EngineError: LocalizedError {
     case missingBinary(String)
     case portBusy(Int)
@@ -108,7 +112,7 @@ public final class TpwsEngine {
               let pid = pid_t(text.trimmingCharacters(in: .whitespacesAndNewlines)), pid > 1,
               kill(pid, 0) == 0 else { return }
         var buf = [CChar](repeating: 0, count: 4096)
-        guard proc_pidpath(pid, &buf, UInt32(buf.count)) > 0 else { return }
+        guard zwtProcPidPath(pid, &buf, UInt32(buf.count)) > 0 else { return }
         let path = String(cString: buf)
         let want = (expectedPath as NSString).resolvingSymlinksInPath
         guard (path as NSString).resolvingSymlinksInPath == want else { return }
