@@ -8,6 +8,8 @@ on:
       - 'macos/**'
       - 'ui/**'
       - 'veri/**'
+      - 'config/hostlist.txt'
+      - 'lib/Version.au3'
       - '.github/workflows/macos.yml'
 
 jobs:
@@ -22,3 +24,11 @@ jobs:
         run: swift --version
       - name: Birim testleri
         run: swift test
+      - name: .app paketi (universal, ad-hoc imza, denetim)
+        run: bash scripts/build-app.sh "$GITHUB_WORKSPACE/dist-macos"
+      - name: Paketi yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: RedRiveRR-Zapret-macOS-${{ github.sha }}
+          path: dist-macos/*.zip
+          retention-days: 30
