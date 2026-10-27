@@ -33,7 +33,7 @@ let server = socket(AF_UNIX, SOCK_STREAM, 0)
 guard server >= 0 else { perror("socket"); exit(1) }
 var addr = sockaddr_un()
 addr.sun_family = sa_family_t(AF_UNIX)
-_ = withUnsafeMutableBytes(of: &addr.sun_path) { buf in path.utf8CString.withUnsafeBytes { buf.copyMemory(from: $0) } }
+withUnsafeMutableBytes(of: &addr.sun_path) { buf in path.utf8CString.withUnsafeBytes { buf.copyMemory(from: $0) } }
 let bound = withUnsafePointer(to: &addr) {
     $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(server, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
 }
