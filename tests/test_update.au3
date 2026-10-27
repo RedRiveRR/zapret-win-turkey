@@ -1,6 +1,7 @@
 ﻿#include-once
 #include "Assert.au3"
 #include "..\lib\Update.au3"
+#include "..\lib\SelfUpdate.au3"
 #include "..\lib\Version.au3"
 
 Func _TestUpdate()
@@ -55,12 +56,11 @@ Func _TestUpdate()
     _AssertFalse(_UpdateUrlAllowed("http://github.com/RedRiveRR/zapret-win-turkey/releases/download/v5.2.0/x.zip", $sRepo), "https olmayan")
     _AssertFalse(_UpdateUrlAllowed("https://github.com.kotu.example/RedRiveRR/zapret-win-turkey/releases/download/v5.2.0/x.zip", $sRepo), "sahte alan adı")
     _AssertFalse(_UpdateUrlAllowed("https://github.com/RedRiveRR/zapret-win-turkey/releases/download/v5.2.0/../x.zip", $sRepo), "üst klasöre çıkış")
-    Local $sScript = _UpdateApplyScript(1234, "C:\Temp\g\paket", "C:\Program Files\Zapret Windows Turkiye", "RedRiveRR Zapret.exe", "/guncellendi v5.2.0", "C:\Temp\g")
-    _AssertTrue(StringInStr($sScript, "Get-Process -Id 1234") > 0, "eski süreç beklenir")
-    _AssertTrue(StringInStr($sScript, "/XD (Join-Path $src 'config') (Join-Path $src 'logs')") > 0, "config ve logs korunur")
-    _AssertTrue(StringInStr($sScript, "strategies.ini") > 0, "strateji listesi yenilenir")
-    _AssertTrue(StringInStr($sScript, "'C:\Program Files\Zapret Windows Turkiye'") > 0, "hedef tırnaklı")
-    _AssertTrue(StringInStr($sScript, "'/guncellendi v5.2.0'") > 0, "yeni sürüme argüman")
-    Local $sQ = _UpdateApplyScript(1, "C:\Users\Ali'nin\p", "C:\x", "a.exe", "/g", "C:\t")
-    _AssertTrue(StringInStr($sQ, "'C:\Users\Ali''nin\p'") > 0, "tek tırnak kaçışlanır")
+    Local $sJson = '{"assets":[{"name":"SHA256SUMS.txt","browser_download_url":"https://github.com/RedRiveRR/zapret-win-turkey/releases/download/v5.2.0/SHA256SUMS.txt"},' & _
+            '{"name":"RedRiveRR-Zapret-v5.2.0.zip","browser_download_url":"https://github.com/RedRiveRR/zapret-win-turkey/releases/download/v5.2.0/RedRiveRR-Zapret-v5.2.0.zip"}]}'
+    _AssertEq(_UpdateAssetUrl($sJson, "RedRiveRR-Zapret-v5.2.0.zip"), "https://github.com/RedRiveRR/zapret-win-turkey/releases/download/v5.2.0/RedRiveRR-Zapret-v5.2.0.zip", "JSON'dan paket adresi")
+    _AssertEq(_UpdateAssetUrl($sJson, "SHA256SUMS.txt"), "https://github.com/RedRiveRR/zapret-win-turkey/releases/download/v5.2.0/SHA256SUMS.txt", "JSON'dan özet adresi")
+    _AssertEq(_UpdateAssetUrl($sJson, "RedRiveRR-Zapret-Lite-v5.2.0.zip"), "", "olmayan dosya")
+    _AssertTrue(StringInStr(_UpdateTempDir("v5.2.0"), "zwt-guncelleme-v5.2.0") > 0, "geçici klasör adı")
+    _AssertFalse(StringInStr(_UpdateTempDir("v5/../x"), "/") > 0, "etiket klasör adına güvenli çevrilir")
 EndFunc

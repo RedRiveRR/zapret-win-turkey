@@ -28,6 +28,7 @@
 #include "lib\Log.au3"
 #include "lib\Conflicts.au3"
 #include "lib\Update.au3"
+#include "lib\SelfUpdate.au3"
 #include "lib\Diag.au3"
 #include "lib\SmartAnalysis.au3"
 #include "lib\Service.au3"
@@ -42,6 +43,17 @@
 #include "lib\LanShare.au3"
 #include <ScreenCapture.au3>
 #include "lib\Install.au3"
+
+; --- KENDİNİ GÜNCELLEME: KURULUM KİPİ (/guncelle-uygula <pid> <paket> <hedef> <exe> [argümanlar]) ---
+; İndirilen yeni sürümün exe'si geçici klasörden bu kipte çalışır: eski süreç kapanınca dosyaları
+; kurulum klasörüne kopyalar, yeni sürümü açar ve çıkar (lib/SelfUpdate.au3). Pencere açılmaz.
+If $CmdLine[0] >= 5 And $CmdLine[1] = $UPDATE_APPLY_ARG Then
+    Global $__sApplyArgs = ""
+    For $__j = 6 To $CmdLine[0]
+        $__sApplyArgs &= ($__sApplyArgs = "" ? "" : " ") & $CmdLine[$__j]
+    Next
+    Exit _UpdateApply(Int($CmdLine[2]), $CmdLine[3], $CmdLine[4], $CmdLine[5], $__sApplyArgs)
+EndIf
 
 ; --- BAŞSIZ SAĞLIK KONTROLÜ (Görev Zamanlayıcı: /saglik) ---
 ; Pencere açılmaz; servis modunda Discord bağlantısını kontrol edip gerekirse onarır (lib/Health.au3).
@@ -1643,7 +1655,7 @@ Func _LanShareStop()
     _LanShareSetOn(False)
 EndFunc
 
-; --- KENDİNİ GÜNCELLEME (lib/Update.au3) ---
+; --- KENDİNİ GÜNCELLEME (lib/SelfUpdate.au3) ---
 ; Tepsi "Yeni sürümü kur" ya da Diğer > Güncelle: onay, indir + doğrula, program kapanınca kur, yeni sürümü aç.
 Func _AppUpdateNow()
     Local $sTag = _UpdateAvailableTag()
@@ -1657,7 +1669,7 @@ Func _AppUpdateNow()
     _LogInfo("Güncelleme: " & $sTag & " kullanıcı onayıyla başlıyor")
     If $g_bWebUi And $g_bWebPageReady Then _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", $sTag & " indiriliyor; birkaç saniye sürebilir."))
     TrayTip("Güncelleme", $sTag & " indiriliyor...", 5, 1)
-    Local $sErr, $sTemp = @TempDir & "\zwt-guncelleme-" & StringRegExpReplace($sTag, "[^\w.-]", "")
+    Local $sErr, $sTemp = _UpdateTempDir($sTag)
     Local $sPkg = _UpdateDownload($APP_UPDATE_REPO, $sTag, False, $sTemp, $sErr)
     If $sPkg = "" Then
         _LogWarn("Güncelleme: " & $sErr)
@@ -1666,7 +1678,7 @@ Func _AppUpdateNow()
     EndIf
     Local $sArgs = "/guncellendi " & $sTag & ($isZapretRunning ? " /devam-manuel" : "") & (_StateLanOn() ? " /devam-paylasim" : "")
     Local $sExe = StringRegExpReplace(@ScriptFullPath, "^.*\\", "")
-    If Not _UpdateLaunchApply(_UpdateApplyScript(@AutoItPID, $sPkg, @ScriptDir, $sExe, $sArgs, $sTemp), $sTemp) Then
+    If Not _UpdateLaunchApply(@AutoItPID, $sPkg, @ScriptDir, $sExe, $sArgs) Then
         _LogWarn("Güncelleme: kurulum adımı başlatılamadı")
         MsgBox(48 + 8192, "Güncelleme yapılamadı", "Kurulum adımı başlatılamadı. Sürüm sayfasından elle indirebilirsiniz.", 0, _MainWindowHandle())
         Return
@@ -1678,6 +1690,12 @@ EndFunc
 ; Açılışta: /guncellendi ile açıldıysa sonucu bildirir.
 Func _AppUpdateReport()
     If $g_sUpdatedTag = "" Then Return
+    ; İndirme klasörü (kurulum kipindeki exe birkaç saniye içinde kapanır; silinemezse Windows temizler)
+    Local $sTemp = _UpdateTempDir($g_sUpdatedTag)
+    For $i = 1 To 5
+        If Not FileExists($sTemp) Or DirRemove($sTemp, 1) Then ExitLoop
+        Sleep(600)
+    Next
     If _VersionCompare($g_sUpdatedTag, $APP_VERSION) = 0 And Not $g_bUpdateCopyFailed Then
         _LogInfo("Güncelleme tamamlandı: " & $g_sUpdatedTag)
         $g_sUpdateNotice = $APP_NAME & " " & $g_sUpdatedTag & " sürümüne güncellendi."

@@ -100,7 +100,17 @@ try {
             $p = Start-Process -FilePath $aut2exe -ArgumentList '/in', "`"$in`"", '/out', "`"$out`"", '/icon', "`"$icon`"", '/x64', '/nopack' -Wait -PassThru -NoNewWindow
             if (-not (Test-Path $out)) { throw "$name derlenemedi (Aut2Exe çıkış kodu $($p.ExitCode))" }
             # Ürün adı/açıklama/sürüm: boş kimlikli imzasız exe Akıllı Uygulama Denetimi'nde daha kolay engelleniyor (H25).
-            Set-ExeVersionInfo -Path $out -Version $version -Description $description -OriginalName $exeName
+            try { Set-ExeVersionInfo -Path $out -Version $version -Description $description -OriginalName $exeName }
+            catch {
+                if ("$_" -match 'virüs|virus|istenmeyebilecek|unwanted') { throw "$exeName antivirüs tarafından zararlı sanıldı (yazma engellendi): $_" }
+                throw
+            }
+            # Windows Defender'ın yanlış alarmı yayına gitmesin (H30: Program:Win32/Contebrew.A!ml).
+            $mp = Join-Path $env:ProgramFiles 'Windows Defender\MpCmdRun.exe'
+            if (Test-Path $mp) {
+                & $mp -Scan -ScanType 3 -File $out -DisableRemediation | Out-Null
+                if ($LASTEXITCODE -eq 2) { throw "$exeName Windows Defender'da zararlı olarak işaretlendi; yayınlanmamalı (Get-MpThreatDetection ile ayrıntı)." }
+            }
             $sac = Test-SacAllowed $out
             $sacText = if ($null -eq $sac) { 'Akıllı Uygulama Denetimi yoklanmadı' } elseif ($sac) { 'Akıllı Uygulama Denetimi: geçti' } else { 'Akıllı Uygulama Denetimi: ENGELLENİYOR' }
             Write-Host ("derlendi {0} ({1:N0} bayt, sürüm {2}; {3})" -f $exeName, (Get-Item $out).Length, (Get-Item $out).VersionInfo.FileVersion, $sacText)

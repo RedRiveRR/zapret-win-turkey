@@ -136,9 +136,13 @@ function Set-ExeVersionInfo {
     $values = $Comments, $Company, $Description, $verText, ([IO.Path]::GetFileNameWithoutExtension($OriginalName)),
         "Copyright (c) $year RedRiveRR. alimali54/zapret-win-turkey tabanlı.", $OriginalName, $Product, $Version
     $data = [ZwtVersionResource]::Build([int[]]$parts, [string[]]$keys, [string[]]$values, [uint16]0x041F)
-    [ZwtVersionResource]::Write($Path, $data, [uint16]0x041F)
-    $vi = (Get-Item $Path).VersionInfo
-    if ($vi.FileDescription -ne $Description -or $vi.ProductName -ne $Product) {
-        throw "Sürüm bilgisi yazılamadı: $Path (okunan açıklama '$($vi.FileDescription)')"
+    # Yeni derlenen exe'yi antivirüs kısa süre kilitleyebiliyor; yazma ara sıra sessizce boşa gidiyordu
+    # (2026-10-27, lite exe, 3 derlemede 2 kez). Doğrulanana kadar en fazla 5 kez denenir.
+    for ($try = 1; $try -le 5; $try++) {
+        try { [ZwtVersionResource]::Write($Path, $data, [uint16]0x041F) } catch { if ($try -eq 5) { throw } }
+        $vi = [Diagnostics.FileVersionInfo]::GetVersionInfo($Path)
+        if ($vi.FileDescription -eq $Description -and $vi.ProductName -eq $Product) { return }
+        Start-Sleep -Milliseconds (500 * $try)
     }
+    throw "Sürüm bilgisi yazılamadı: $Path (okunan açıklama '$($vi.FileDescription)')"
 }
