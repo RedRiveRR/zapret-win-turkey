@@ -2,6 +2,12 @@
 
 Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-turkey) üzerine bu fork'ta (`gelistirme` dalı) yapılan değişiklikleri listeler. Temel: upstream `9eeac04` (v4.5 kaynakları).
 
+## [v5.2.1] — 2026-10-27 — kararlı
+
+### Değişiklik
+- **Pencerenin X'i programı kapatmaz, tepsiye gizler.** Zapret ve ağ paylaşımı arka planda çalışmaya devam eder; ilk seferde nasıl kapatılacağı bir kez söylenir. Programı kapatmak için tepsi simgesine sağ tıklayıp **Kapat**. Küçültme düğmesi artık pencereyi görev çubuğuna küçültür (önce tepsiye alıyordu). Ana ve Lite.
+- X'e basınca ayarlar da kaydedilir (önceden yalnız programdan çıkarken yazılıyordu).
+
 ## [v5.2.0] — 2026-10-27 — kararlı
 
 ### Yeni
