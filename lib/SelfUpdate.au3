@@ -17,6 +17,10 @@
 ; Neden PowerShell betiği yok: indir + "-ExecutionPolicy Bypass -File" ile betik çalıştır kalıbı
 ; Windows Defender'ın makine öğrenmesi tespitine takıldı (Program:Win32/Contebrew.A!ml, 2026-10-27).
 ; =========================================================================
+; SÖZLEŞME (değiştirmeyin): eski sürüm, indirdiği YENİ exe'yi şu argümanlarla başlatır:
+;   /guncelle-uygula <eski pid> "<paket klasörü>" "<kurulum klasörü>" "<exe adı>" [yeni sürüme argümanlar...]
+; ve yeni sürüm şu argümanları tanır: /guncellendi <etiket>, /devam-manuel, /devam-paylasim, /guncelleme-hatasi.
+; Sonraki sürümler bu biçimi bozarsa 5.2.0+ kurulumlar kendini güncelleyemez.
 Global Const $UPDATE_APPLY_ARG = "/guncelle-uygula"
 
 ; Release'teki paket adı: RedRiveRR-Zapret-v5.2.0.zip / RedRiveRR-Zapret-Lite-v5.2.0.zip
