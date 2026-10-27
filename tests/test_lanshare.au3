@@ -22,7 +22,7 @@ Func _TestLanShare()
 
     ; --- Alt ağ seçimi ---
     _AssertEq(_LanPickPrefix("192.168.1.34"), "172.24", "ev ağı 192.168: varsayılan 172.24")
-    _AssertEq(_LanPickPrefix("172.24.5.10,192.168.56.1"), "10.77", "172.24 kullanılıyorsa 10.77")
+    _AssertEq(_LanPickPrefix("172.24.5.10,192.168.77.1"), "10.77", "172.24 kullanılıyorsa 10.77")
     _AssertEq(_LanPickPrefix("172.24.1.2,10.77.0.5"), "172.29", "ikisi de doluysa 172.29")
     _AssertEq(_LanPickPrefix("172.240.1.1"), "172.24", "172.240 ile 172.24 karışmaz")
     _AssertEq(_LanPickPrefix(""), "172.24", "IP bilinmiyorsa varsayılan")

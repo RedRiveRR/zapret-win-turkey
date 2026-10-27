@@ -87,6 +87,39 @@ try {
         }
     }
 
+    # Repoya bu bilgisayarın kişisel bilgileri girmesin (H27: testlere gerçek kullanıcı adı ve ev ağı IP'si
+    # yazılmıştı). Aranan değerler betikte yazılı değildir; her çalıştırmada bu bilgisayardan okunur.
+    # Taranan: izlenen + henüz eklenmemiş (yoksayılmayan) metin dosyaları; üçüncü taraf ikilileri (bin\) hariç.
+    if (Get-Command git -ErrorAction SilentlyContinue) {
+        Write-Host "== Kişisel veri taraması" -ForegroundColor Cyan
+        $needles = @()
+        if ($env:USERNAME) { $needles += "Users\$($env:USERNAME)\", "Users/$($env:USERNAME)/", "Users\\$($env:USERNAME)\\" }
+        if ($env:COMPUTERNAME -and $env:COMPUTERNAME.Length -ge 5) { $needles += $env:COMPUTERNAME }
+        $mail = (git -C $repo config user.email) 2>$null
+        if ($mail -and $mail -notmatch 'noreply') { $needles += $mail }
+        $ips = @()
+        if (Get-Command Get-NetIPAddress -ErrorAction SilentlyContinue) {
+            $ips = @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+                Where-Object { $_.IPAddress -notmatch '^(127\.|169\.254\.)' } | ForEach-Object IPAddress | Sort-Object -Unique)
+        }
+        $hits = @()
+        foreach ($n in $needles) {
+            $hits += @(git -C $repo grep -I -n -i -F --untracked -e $n -- . ':!bin/' 2>$null)
+        }
+        foreach ($ip in $ips) {
+            $hits += @(git -C $repo grep -I -n -w -F --untracked -e $ip -- . ':!bin/' 2>$null)
+        }
+        $hits = @($hits | Where-Object { $_ } | Sort-Object -Unique)
+        if ($hits.Count -gt 0) {
+            $failed = $true
+            $hits | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+            Write-Host "FAIL bu bilgisayara ait kişisel bilgi bulundu ($($hits.Count) satır); örnek değerle değiştirin (C:\Users\Ali, 192.168.1.50)" -ForegroundColor Red
+        }
+        else {
+            Write-Host "ok   kullanıcı adı, bilgisayar adı, e-posta ve $($ips.Count) yerel IP adresi arandı; bulunmadı"
+        }
+    }
+
     $runner = Join-Path $work 'tests\run_tests.au3'
     if (Test-Path $runner) {
         Write-Host "== Birim testleri" -ForegroundColor Cyan
