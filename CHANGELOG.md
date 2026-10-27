@@ -2,6 +2,12 @@
 
 Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-turkey) üzerine bu fork'ta (`gelistirme` dalı) yapılan değişiklikleri listeler. Temel: upstream `9eeac04` (v4.5 kaynakları).
 
+## [v5.1.1] — 2026-10-27 — kararlı (düzeltme)
+
+### Düzeltme
+- **Güncellemede site listeleriniz artık korunuyor.** Önceki ZIP'ler `config\hostlist.txt`, `excludelist.txt` ve `autohostlist.txt` dosyalarını doğrudan `config\` içinde taşıyordu; yeni sürümü eski klasöre "Dosyaları değiştir" ile çıkaranların kendi listeleri ve otomatik öğrenilen liste varsayılana dönüyordu. Varsayılan listeler artık `config\varsayilan\` altında gelir; program açılışta yalnızca eksik olanı kopyalar.
+- README'ye adım adım güncelleme rehberi: programı kapat → aynı klasöre çıkar → Dosyaları değiştir → servis kuruluysa "kullanımda" denen motor dosyaları için Atla.
+
 ## [v5.1.0] — 2026-10-27 — kararlı
 
 Konsol ve akıllı TV gibi cihazlar için **ağ paylaşımı** artık kararlı; PS5'te Discord ve sesli sohbet uçtan uca denendi. Ayarlarınız korunur; yeni sürümü aynı klasöre çıkarmanız yeterli.
