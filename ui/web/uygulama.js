@@ -14,7 +14,7 @@
 //    kurAcik, kaldirAcik, ayarAcik}   (program -> sayfa)
 //   {tip:"dns", durum, baslik, aciklama, mod:"saglayici|cloudflare|sifreli|diger|", sunucular, degistirAcik}
 //   {tip:"dnsYenile"} (DNS sekmesi açılınca), {tip:"komut", ad:"dns", mod}
-//   {tip:"diger", paylasim, paylasimAcik, guncelleme, hakkinda, temizleAcik}
+//   {tip:"diger", paylasim, paylasimAcik, guncelleme, hakkinda, temizleAcik, yeniSurum:"v5.2.0|"}  ({tip:"komut", ad:"guncelle"} kurar)
 //   {tip:"komut", ad:"tanilama|kayitlar|ayarlar|temizle"}, {tip:"ayar", ad:"guncelleme", deger:bool}
 //   {tip:"paylasim", durum:"acik|kapali|hata", hata, npcap:"var|uyumsuz|yok|", baslatilabilir, kart, wifi, ip, ip2, maske, gecit, mtu, bitti,
 //    cihazlar:[{ip, tur:"PlayStation|Samsung|...|", durum:"Etkin|N dk önce|HH:MM'de", etkin, baglanti, ilk:"HH:MM"}]}
@@ -243,7 +243,13 @@ function digerUygula(m) {
   $('guncelleme').disabled = false;
   $('hakkinda').textContent = m.hakkinda || '';
   $('temizle').disabled = !m.temizleAcik;
+  const g = $('guncelle-satir');
+  g.hidden = !m.yeniSurum;
+  g.disabled = false;
+  if (m.yeniSurum) $('guncelle-baslik').textContent = `Yeni sürüm: ${m.yeniSurum}`;
 }
+// Güncelle: onay penceresi açılana kadar ikinci basış gönderilmesin.
+$('guncelle-satir').addEventListener('click', () => { $('guncelle-satir').disabled = true; });
 
 // --- Ağ paylaşımı ---
 $('paylasim-ac').addEventListener('click', () => { gorunumAc('paylasim'); gonder({ tip: 'komut', ad: 'paylasimYenile' }); });

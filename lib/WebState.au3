@@ -169,9 +169,10 @@ EndFunc
 ; Diğer ekranı mesajı.
 ;   $bLanActive: ağ paylaşımı açık mı (_StateLanOn), $bLanOn: düğme kullanılabilir mi
 ;   $sUpdateCheck: config.ini [Settings] UpdateCheck, $sEngine: "Zapret2 v1.0.5.2" gibi, $bCleanOn: temizle düğmesi
-Func _WebOtherJson($bLanActive, $bLanOn, $sUpdateCheck, $sVersion, $sEngine, $bCleanOn)
+Func _WebOtherJson($bLanActive, $bLanOn, $sUpdateCheck, $sVersion, $sEngine, $bCleanOn, $sNewTag = "")
     Local $s = _WebJsonObj("tip", "diger", "paylasim", $bLanActive = True, "paylasimAcik", $bLanOn = True)
     $s = _WebJsonAdd($s, "guncelleme", $sUpdateCheck <> "0")
+    $s = _WebJsonAdd($s, "yeniSurum", $sNewTag) ; bulunan yeni sürüm ("" = yok)
     Local $sAbout = "Sürüm " & $sVersion
     If $sEngine <> "" Then $sAbout &= ", " & StringReplace($sEngine, " v", " motoru ")
     $s = _WebJsonAdd($s, "hakkinda", $sAbout)

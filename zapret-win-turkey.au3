@@ -65,12 +65,28 @@ Global $g_sWebLastSvcJson = "", $g_hWebSvcTimer = 0, $g_hWebTaskTimer = 0, $g_sW
 Global $g_bWebHealthIni = True, $g_bWebRestartIni = False, $g_sWebSvcHealth = ""
 ; DNS ekranı: etkin DNS sunucuları ("?" = okunmadı; PowerShell gerektirir, yalnızca sekme açılınca ve değişiklikten sonra okunur)
 Global $g_sWebDnsServers = "?", $g_bWebDnsReread = False, $g_sWebLastDnsJson = ""
-Global $g_sWebLastOtherJson = "", $g_sWebUpdateIni = "1"
+Global $g_sWebLastOtherJson = "", $g_sWebUpdateIni = "1", $g_sUpdateNotice = ""
 Global $g_sPrevTestShot = "" ; önizleme: deneme penceresi görüntüsünün yolu
 Global $g_hWebYieldTimer = 0
 Global $g_sPrevBusyLeft = "" ; önizleme: alt pencere kapanırken kuyrukta kalan mesaj
 $g_sUiYieldHook = "_UiYield"
 If $CmdLine[0] >= 2 And $CmdLine[1] = "/arayuz-onizleme" Then $g_sUiPreviewDir = $CmdLine[2]
+
+; --- KENDİNİ GÜNCELLEMEDEN SONRA (/guncellendi <etiket> [/devam-manuel] [/devam-paylasim] [/guncelleme-hatasi]) ---
+; Güncellemeden önce manuel mod ya da paylaşım açıksa yeni sürüm onları bir kez yeniden başlatır.
+Global $g_sUpdatedTag = "", $g_bUpdateCopyFailed = False, $g_bResumeManual = False, $g_bResumeLan = False, $g_hResumeTimer = 0
+For $__i = 1 To $CmdLine[0]
+    Switch $CmdLine[$__i]
+        Case "/guncellendi"
+            If $__i < $CmdLine[0] Then $g_sUpdatedTag = $CmdLine[$__i + 1]
+        Case "/devam-manuel"
+            $g_bResumeManual = True
+        Case "/devam-paylasim"
+            $g_bResumeLan = True
+        Case "/guncelleme-hatasi"
+            $g_bUpdateCopyFailed = True
+    EndSwitch
+Next
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
 Local $currentDir = @ScriptDir
@@ -352,6 +368,10 @@ _HealthTaskRepair()
 ; --- SERVİS ÇALIŞIYORSA DISCORD'A GERÇEKTEN ULAŞILIYOR MU? ---
 _StartupServiceCheck()
 
+; --- KENDİNİ GÜNCELLEME SONUCU ---
+_AppUpdateReport()
+$g_hResumeTimer = TimerInit()
+
 While 1
     Local $nMsg = GUIGetMsg()
     ; Yeni arayüz: sayfa komutları eski düğme olaylarına çevrilir, durum sayfaya aktarılır.
@@ -359,6 +379,9 @@ While 1
 
     ; Kenar menüsü, hover ve durum renkleri (ui/Theme.au3)
     _UiTick($hGUI)
+
+    ; Güncellemeden sonra: önceki manuel mod / paylaşım bir kez yeniden başlatılır (en fazla 2 dk denenir).
+    If ($g_bResumeManual Or $g_bResumeLan) And $nMsg = 0 Then $nMsg = _AppResumeTick()
 
     ; DNSCrypt çalışırken kuyruğa alınan tıklamaları da atla.
     If $nMsg = $btnDnscrypt And $bDnscryptBusy Then ContinueLoop
@@ -434,7 +457,7 @@ While 1
 			EndIf
 
 		EndIf
-		_UpdatePollAndNotify($APP_VERSION, $APP_RELEASES_URL)
+		If _UpdatePollAndNotify($APP_VERSION, $APP_RELEASES_URL, "_AppUpdateNow") <> "" Then $g_sWebLastOtherJson = ""
 		; Alt satırdaki onarım durumunu 30 sn'de bir tazele (sağlık kontrolü arka planda yazar).
 		$g_iFooterTicks += 1
 		If $g_iFooterTicks >= 30 Then
@@ -1620,6 +1643,79 @@ Func _LanShareStop()
     _LanShareSetOn(False)
 EndFunc
 
+; --- KENDİNİ GÜNCELLEME (lib/Update.au3) ---
+; Tepsi "Yeni sürümü kur" ya da Diğer > Güncelle: onay, indir + doğrula, program kapanınca kur, yeni sürümü aç.
+Func _AppUpdateNow()
+    Local $sTag = _UpdateAvailableTag()
+    If $sTag = "" Then Return
+    Local $sState = ""
+    If $isZapretRunning Then $sState &= @CRLF & "• Manuel modda çalışan Zapret birkaç saniye duracak, yeni sürüm açılınca yeniden başlayacak."
+    If _StateLanOn() Then $sState &= @CRLF & "• Ağ paylaşımı birkaç saniye duracak, yeni sürüm açılınca yeniden başlayacak."
+    If MsgBox(4 + 32 + 8192, "Güncelleme: " & $sTag, $APP_NAME & " " & $sTag & " indirilip kurulacak (yaklaşık 30 MB)." & @CRLF & _
+            "Program kapanıp yeni sürümle yeniden açılacak; ayarlarınız ve site listeleriniz korunur." & $sState & @CRLF & @CRLF & _
+            "Servis kuruluysa Zapret arka planda çalışmaya devam eder." & @CRLF & @CRLF & "Şimdi güncellensin mi?", 0, _MainWindowHandle()) <> 6 Then Return
+    _LogInfo("Güncelleme: " & $sTag & " kullanıcı onayıyla başlıyor")
+    If $g_bWebUi And $g_bWebPageReady Then _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", $sTag & " indiriliyor; birkaç saniye sürebilir."))
+    TrayTip("Güncelleme", $sTag & " indiriliyor...", 5, 1)
+    Local $sErr, $sTemp = @TempDir & "\zwt-guncelleme-" & StringRegExpReplace($sTag, "[^\w.-]", "")
+    Local $sPkg = _UpdateDownload($APP_UPDATE_REPO, $sTag, False, $sTemp, $sErr)
+    If $sPkg = "" Then
+        _LogWarn("Güncelleme: " & $sErr)
+        If MsgBox(4 + 48 + 8192, "Güncelleme yapılamadı", $sErr & @CRLF & @CRLF & "Sürüm sayfası açılsın mı? Oradan elle indirebilirsiniz.", 0, _MainWindowHandle()) = 6 Then ShellExecute($APP_RELEASES_URL)
+        Return
+    EndIf
+    Local $sArgs = "/guncellendi " & $sTag & ($isZapretRunning ? " /devam-manuel" : "") & (_StateLanOn() ? " /devam-paylasim" : "")
+    Local $sExe = StringRegExpReplace(@ScriptFullPath, "^.*\\", "")
+    If Not _UpdateLaunchApply(_UpdateApplyScript(@AutoItPID, $sPkg, @ScriptDir, $sExe, $sArgs, $sTemp), $sTemp) Then
+        _LogWarn("Güncelleme: kurulum adımı başlatılamadı")
+        MsgBox(48 + 8192, "Güncelleme yapılamadı", "Kurulum adımı başlatılamadı. Sürüm sayfasından elle indirebilirsiniz.", 0, _MainWindowHandle())
+        Return
+    EndIf
+    _LogInfo("Güncelleme: kurulum adımı başladı, program kapanıyor (" & $sArgs & ")")
+    _SaveConfigAndExit()
+EndFunc
+
+; Açılışta: /guncellendi ile açıldıysa sonucu bildirir.
+Func _AppUpdateReport()
+    If $g_sUpdatedTag = "" Then Return
+    If _VersionCompare($g_sUpdatedTag, $APP_VERSION) = 0 And Not $g_bUpdateCopyFailed Then
+        _LogInfo("Güncelleme tamamlandı: " & $g_sUpdatedTag)
+        $g_sUpdateNotice = $APP_NAME & " " & $g_sUpdatedTag & " sürümüne güncellendi."
+    Else
+        _LogWarn("Güncelleme tamamlanamadı: beklenen " & $g_sUpdatedTag & ", çalışan v" & $APP_VERSION & ($g_bUpdateCopyFailed ? ", kopyalama hatası" : "") & " (logs\guncelleme.log)")
+        $g_sUpdateNotice = "Güncelleme tamamlanamadı (bazı dosyalar kullanımdaydı). Ayrıntı: logs\guncelleme.log. Sürüm sayfasından elle kurabilirsiniz."
+    EndIf
+    TrayTip("Güncelleme", $g_sUpdateNotice, 10, 1)
+EndFunc
+
+; Güncellemeden önceki durumu bir kez geri getirir. Dönüş: işlenecek olay (manuel başlat) ya da 0.
+Func _AppResumeTick()
+    If TimerDiff($g_hResumeTimer) > 120000 Then
+        If $g_bResumeManual Or $g_bResumeLan Then _LogWarn("Güncelleme sonrası önceki durum geri getirilemedi (2 dk doldu)")
+        $g_bResumeManual = False
+        $g_bResumeLan = False
+        Return 0
+    EndIf
+    If TimerDiff($g_hResumeTimer) < 2000 Then Return 0
+    If $g_bResumeManual Then
+        If $isZapretRunning Then
+            $g_bResumeManual = False
+        ElseIf BitAND(GUICtrlGetState($btnRunZapret), $GUI_ENABLE) Then
+            $g_bResumeManual = False
+            _LogInfo("Güncelleme sonrası: manuel mod yeniden başlatılıyor")
+            Return $btnRunZapret
+        EndIf
+        Return 0
+    EndIf
+    If $g_bResumeLan And Not _StateLanOn() And BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) Then
+        $g_bResumeLan = False
+        _LogInfo("Güncelleme sonrası: ağ paylaşımı yeniden başlatılıyor")
+        $g_iLanRestarts = 0
+        _LanShareStart(False)
+    EndIf
+    Return 0
+EndFunc
+
 ; DNSCrypt durumu tek kaynaktan (lib/AppState); düğme metni yalnız görüntü, config.ini kalıcı kayıt.
 Func _DnscryptSetOn($bOn)
     _StateSetCryptOn($bOn)
@@ -1831,6 +1927,10 @@ Func _WebUiTick($nMsg)
                 $g_sWebLastOtherJson = ""
                 _WebUiServiceRefreshSoon()
                 _WV2_Post(_WebJsonObj("tip", "tema", "tema", _WebUiTheme()))
+                If $g_sUpdateNotice <> "" Then
+                    _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", $g_sUpdateNotice))
+                    $g_sUpdateNotice = ""
+                EndIf
             Case "tema"
                 Local $sTheme = (_WebJsonGet($sMsg, "tema") = "koyu") ? "koyu" : "acik"
                 IniWrite($iniPath, "Arayuz", "Tema", $sTheme)
@@ -1874,6 +1974,9 @@ Func _WebUiTick($nMsg)
                     $g_bWebLanDone = True
                 ElseIf $sCmd = "npcap" Then
                     ShellExecute("https://npcap.com/#download")
+                ElseIf $sCmd = "guncelle" Then
+                    _AppUpdateNow() ; vazgeçilir ya da hata olursa düğme yeniden açılsın diye durum tekrar gönderilir
+                    $g_sWebLastOtherJson = ""
                 ElseIf $sCmd = "github" Then
                     ShellExecute("https://github.com/" & $APP_UPDATE_REPO)
                 ElseIf $sCmd = "tanilama" Or $sCmd = "kayitlar" Or $sCmd = "ayarlar" Or $sCmd = "temizle" Then
@@ -1957,7 +2060,7 @@ Func _WebUiSyncAll()
         _WV2_Post($sLan)
     EndIf
     Local $sOther = _WebOtherJson(_StateLanOn(), BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) <> 0, $g_sWebUpdateIni, _
-            $APP_VERSION, $g_sEngineFooter, BitAND(GUICtrlGetState($btnRemoveService), $GUI_ENABLE) <> 0)
+            $APP_VERSION, $g_sEngineFooter, BitAND(GUICtrlGetState($btnRemoveService), $GUI_ENABLE) <> 0, _UpdateAvailableTag())
     If $sOther <> $g_sWebLastOtherJson Then
         $g_sWebLastOtherJson = $sOther
         _WV2_Post($sOther)

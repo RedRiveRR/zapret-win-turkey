@@ -40,4 +40,27 @@ Func _TestUpdate()
     _AssertEq(_UpdateFailText(""), "sürüm bilgisi alınamadı", "boş çıktı")
     _AssertTrue(_IsVersionTag("v4.5.1-RedRiveRR"), "fork sürüm etiketi geçerli")
     _AssertEq(_VersionCompare("v4.5.1-RedRiveRR", "4.5.1"), 0, "fork etiketi aynı sürüm sayılır")
+    ; --- Kendini güncelleme (saf parçalar; değerler uydurma) ---
+    _AssertEq(_UpdateAssetName("v5.2.0"), "RedRiveRR-Zapret-v5.2.0.zip", "ana paket adı")
+    _AssertEq(_UpdateAssetName("v5.2.0", True), "RedRiveRR-Zapret-Lite-v5.2.0.zip", "lite paket adı")
+    Local $sH1 = "9070808fe5b045993fc7000d1ed2699489ca356bb6fd6306efdd378e0ed2d5f6"
+    Local $sSums = $sH1 & "  RedRiveRR-Zapret-v5.2.0.zip" & @LF & StringUpper("aa" & StringTrimLeft($sH1, 2)) & "  RedRiveRR-Zapret-Lite-v5.2.0.zip" & @LF
+    _AssertEq(_UpdateSumFor($sSums, "RedRiveRR-Zapret-v5.2.0.zip"), $sH1, "özet bulunur")
+    _AssertEq(_UpdateSumFor($sSums, "RedRiveRR-Zapret-Lite-v5.2.0.zip"), "aa" & StringTrimLeft($sH1, 2), "büyük harfli özet küçültülür")
+    _AssertEq(_UpdateSumFor($sSums, "RedRiveRR-Zapret-v5.2.zip"), "", "benzer ad eşleşmez")
+    _AssertEq(_UpdateSumFor("bozuk satır", "x.zip"), "", "bozuk dosya")
+    Local $sRepo = "RedRiveRR/zapret-win-turkey"
+    _AssertTrue(_UpdateUrlAllowed("https://github.com/RedRiveRR/zapret-win-turkey/releases/download/v5.2.0/RedRiveRR-Zapret-v5.2.0.zip", $sRepo), "kendi release adresi")
+    _AssertFalse(_UpdateUrlAllowed("https://github.com/baskasi/zapret-win-turkey/releases/download/v5.2.0/x.zip", $sRepo), "başka depo")
+    _AssertFalse(_UpdateUrlAllowed("http://github.com/RedRiveRR/zapret-win-turkey/releases/download/v5.2.0/x.zip", $sRepo), "https olmayan")
+    _AssertFalse(_UpdateUrlAllowed("https://github.com.kotu.example/RedRiveRR/zapret-win-turkey/releases/download/v5.2.0/x.zip", $sRepo), "sahte alan adı")
+    _AssertFalse(_UpdateUrlAllowed("https://github.com/RedRiveRR/zapret-win-turkey/releases/download/v5.2.0/../x.zip", $sRepo), "üst klasöre çıkış")
+    Local $sScript = _UpdateApplyScript(1234, "C:\Temp\g\paket", "C:\Program Files\Zapret Windows Turkiye", "RedRiveRR Zapret.exe", "/guncellendi v5.2.0", "C:\Temp\g")
+    _AssertTrue(StringInStr($sScript, "Get-Process -Id 1234") > 0, "eski süreç beklenir")
+    _AssertTrue(StringInStr($sScript, "/XD (Join-Path $src 'config') (Join-Path $src 'logs')") > 0, "config ve logs korunur")
+    _AssertTrue(StringInStr($sScript, "strategies.ini") > 0, "strateji listesi yenilenir")
+    _AssertTrue(StringInStr($sScript, "'C:\Program Files\Zapret Windows Turkiye'") > 0, "hedef tırnaklı")
+    _AssertTrue(StringInStr($sScript, "'/guncellendi v5.2.0'") > 0, "yeni sürüme argüman")
+    Local $sQ = _UpdateApplyScript(1, "C:\Users\Ali'nin\p", "C:\x", "a.exe", "/g", "C:\t")
+    _AssertTrue(StringInStr($sQ, "'C:\Users\Ali''nin\p'") > 0, "tek tırnak kaçışlanır")
 EndFunc
