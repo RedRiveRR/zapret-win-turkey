@@ -152,6 +152,8 @@ PlayStation, Xbox, Nintendo Switch ve akıllı TV gibi cihazlar, bilgisayarını
 | "DNS sorunu" | **DNS → Cloudflare'e geç.** Sağlayıcı 53. porta müdahale ediyorsa **Şifreli DNS** kullanın. |
 | "Servis durdu" | Bir program (çoğunlukla oyun hile koruması) zapret'i kapatmış olabilir. Bilgisayarı yeniden başlatın ya da **Servis → Servisi kaldır**, ardından **Servisi kur**. |
 | Yeni arayüz açılmıyor | WebView2 eksik olabilir; program klasik arayüzle açılır. [WebView2 çalışma zamanını](https://developer.microsoft.com/microsoft-edge/webview2/) kurabilirsiniz. |
+| "Windows bilgisayarınızı korudu" (SmartScreen) | İnternetten indirilen imzasız programlarda çıkar. **Ek bilgi → Yine de çalıştır** deyin. Dosyanın değişmediğini `SHA256SUMS.txt` ile doğrulayabilirsiniz. |
+| "Akıllı Uygulama Denetimi bu uygulamayı engelledi" | Program kod imzalama sertifikası olmadan dağıtılıyor; Windows her yeni sürümü ayrıca değerlendirir ve bazen engelleyebilir. Bir önceki sürümü kullanın ve durumu [Issues](https://github.com/RedRiveRR/zapret-win-turkey/issues) sayfasından bildirin. Akıllı Uygulama Denetimi'ni **kapatmanızı önermiyoruz**: Windows sıfırlanmadan geri açılamaz. |
 | Sesli görüşme çalışmıyor | Puan sesi ölçmez; *Tüm sonuçlar*dan başka bir stratejiyi *Seçileni Kullan* ile deneyin. |
 | GoodbyeDPI / başka zapret çalışıyor | Program açılışta çakışan araçları (GoodbyeDPI, ByeDPI, başka klasördeki winws) tespit eder ve onayınızla kapatır. |
 | Konsol "internete bağlanılamıyor" diyor | Paylaşımın açık olduğunu kontrol edin. DNS olarak ağ geçidini (172.24.2.1) değil, `1.1.1.1` / `8.8.8.8` yazın. PS5/Switch'te MTU'yu sayfadaki değerle (ör. 1478) elle girin; olmazsa 1400 deneyin. Bilgisayarda VPN açıksa kapatın. |
