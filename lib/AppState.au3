@@ -16,3 +16,14 @@ EndFunc
 Func _StateStatus()
     Return $g_sStateStatus
 EndFunc
+
+; Ağ paylaşımı açık mı (Aşama 2.8; önceden "[ ✓ ] Paylaşım Aktif / Durdur" düğme metninden okunuyordu).
+Global $g_bStateLanOn = False
+
+Func _StateSetLanOn($bOn)
+    $g_bStateLanOn = IsBool($bOn) ? $bOn : (Number($bOn) <> 0)
+EndFunc
+
+Func _StateLanOn()
+    Return $g_bStateLanOn
+EndFunc

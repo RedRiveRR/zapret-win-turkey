@@ -167,10 +167,10 @@ Func _WebDnsJson($sStatus, $sServers, $bChangeOn)
 EndFunc
 
 ; Diğer ekranı mesajı.
-;   $sLanText: ağ paylaşımı düğmesinin metni ("Ağdaki Cihazlarla Paylaş" = kapalı), $bLanOn: düğme kullanılabilir mi
+;   $bLanActive: ağ paylaşımı açık mı (_StateLanOn), $bLanOn: düğme kullanılabilir mi
 ;   $sUpdateCheck: config.ini [Settings] UpdateCheck, $sEngine: "Zapret2 v1.0.5.2" gibi, $bCleanOn: temizle düğmesi
-Func _WebOtherJson($sLanText, $bLanOn, $sUpdateCheck, $sVersion, $sEngine, $bCleanOn)
-    Local $s = _WebJsonObj("tip", "diger", "paylasim", $sLanText <> "Ağdaki Cihazlarla Paylaş", "paylasimAcik", $bLanOn = True)
+Func _WebOtherJson($bLanActive, $bLanOn, $sUpdateCheck, $sVersion, $sEngine, $bCleanOn)
+    Local $s = _WebJsonObj("tip", "diger", "paylasim", $bLanActive = True, "paylasimAcik", $bLanOn = True)
     $s = _WebJsonAdd($s, "guncelleme", $sUpdateCheck <> "0")
     Local $sAbout = "Sürüm " & $sVersion
     If $sEngine <> "" Then $sAbout &= ", " & StringReplace($sEngine, " v", " motoru ")

@@ -412,7 +412,7 @@ While 1
 			If BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) Then
 				GUICtrlSetState($btnLanShare, $GUI_DISABLE)
 
-				If GUICtrlRead($btnLanShare) = "[ ✓ ] Paylaşım Aktif / Durdur" Then _LanShareStop()
+				If _StateLanOn() Then _LanShareStop()
 			EndIf
 
 			; 3. Zapret ölmüşse VE bizim arayüz hala "Çalışıyor" modundaysa (Çökme veya Harici Kapatma durumu)
@@ -529,7 +529,7 @@ While 1
             EndIf ; $bBlockcheckBusy kilit bloğu
 
 		Case $btnLanShare
-            If GUICtrlRead($btnLanShare) = "Ağdaki Cihazlarla Paylaş" Then
+            If Not _StateLanOn() Then
                 $g_iLanRestarts = 0
                 _LanShareStart(True)
             Else
@@ -1591,7 +1591,7 @@ Func _LanShareStart($bInteractive)
     If $pcapPID = 0 Then
         $g_sLanError = $sErr
         $g_sLanNpcap = _LanNpcapStatus()
-        GUICtrlSetData($btnLanShare, "Ağdaki Cihazlarla Paylaş")
+        _LanShareSetOn(False)
         If $bInteractive Then _LanShareNotify("Ağ paylaşımı başlamadı", $sErr, True)
         Return False
     EndIf
@@ -1599,7 +1599,7 @@ Func _LanShareStart($bInteractive)
     $g_sLanNpcap = "var"
     _LanDevicesReset()
     $g_sLanMtu = _LanParseMtu(_LanLogTail(@ScriptDir & $LAN_LOG_REL, 40))
-    GUICtrlSetData($btnLanShare, "[ ✓ ] Paylaşım Aktif / Durdur")
+    _LanShareSetOn(True)
     If $bInteractive And $g_bWebUi Then
         _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", "Paylaşım açık. Cihazda sayfadaki ayarları gir."))
     ElseIf $bInteractive Then
@@ -1619,13 +1619,19 @@ Func _LanShareStop()
     _LanStop($pcapPID, @ScriptDir)
     $pcapPID = 0
     _LanDevicesReset()
-    GUICtrlSetData($btnLanShare, "Ağdaki Cihazlarla Paylaş")
+    _LanShareSetOn(False)
+EndFunc
+
+; Paylaşım durumu tek kaynaktan (lib/AppState); klasik penceredeki düğme metni yalnız görüntü.
+Func _LanShareSetOn($bOn)
+    _StateSetLanOn($bOn)
+    GUICtrlSetData($btnLanShare, $bOn ? "[ ✓ ] Paylaşım Aktif / Durdur" : "Ağdaki Cihazlarla Paylaş")
 EndFunc
 
 ; Ana döngüden saniyede bir: paylaşım açık görünüyor ama süreç düştüyse bir kez yeniden başlatır,
 ; yine düşerse kapatıp nedenini bildirir (önceden arayüz "aktif" demeye devam ediyordu).
 Func _LanShareWatch()
-    If GUICtrlRead($btnLanShare) <> "[ ✓ ] Paylaşım Aktif / Durdur" Then Return
+    If Not _StateLanOn() Then Return
     If _LanIsRunning($pcapPID) Then
         If $g_sLanMtu = "" Then $g_sLanMtu = _LanParseMtu(_LanLogTail(@ScriptDir & $LAN_LOG_REL, 40))
         Local $nDev = UBound($__g_aLanDevices)
@@ -1851,8 +1857,7 @@ Func _WebUiTick($nMsg)
                 ElseIf $sCmd = "paylasimBaslat" Or $sCmd = "paylasimDurdur" Then
                     ; Komut hedef durumdur (aç/kapa değil): başlatma sürerken sıraya giren ikinci basış
                     ; paylaşımı hemen kapatıyordu (2026-10-27, H26).
-                    Local $bLanOn = (GUICtrlRead($btnLanShare) = "[ ✓ ] Paylaşım Aktif / Durdur")
-                    If ($sCmd = "paylasimBaslat") <> $bLanOn And BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) Then Return $btnLanShare
+                    If ($sCmd = "paylasimBaslat") <> _StateLanOn() And BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) Then Return $btnLanShare
                     $g_bWebLanDone = True
                 ElseIf $sCmd = "npcap" Then
                     ShellExecute("https://npcap.com/#download")
@@ -1938,7 +1943,7 @@ Func _WebUiSyncAll()
         $g_sWebLastLanJson = $sLan
         _WV2_Post($sLan)
     EndIf
-    Local $sOther = _WebOtherJson(GUICtrlRead($btnLanShare), BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) <> 0, $g_sWebUpdateIni, _
+    Local $sOther = _WebOtherJson(_StateLanOn(), BitAND(GUICtrlGetState($btnLanShare), $GUI_ENABLE) <> 0, $g_sWebUpdateIni, _
             $APP_VERSION, $g_sEngineFooter, BitAND(GUICtrlGetState($btnRemoveService), $GUI_ENABLE) <> 0)
     If $sOther <> $g_sWebLastOtherJson Then
         $g_sWebLastOtherJson = $sOther
