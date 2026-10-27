@@ -192,16 +192,6 @@ Func _UiButton($sText, $x, $y, $w, $h, $iKind = $UI_KIND_PRIMARY, $fSize = 10, $
     Return $id
 EndFunc
 
-; Kenar menüsü öğesi (ikon + sola yaslı yazı).
-Func _UiNavItem($iGlyph, $sText, $x, $y, $w, $h = 40)
-    Local $id = _UiButton("           " & $sText, $x, $y, $w, $h, $UI_KIND_NAV, 10.5, 8, $UI_SIDEBAR, BitOR($SS_LEFT, $SS_CENTERIMAGE))
-    $__g_aUiBtn[UBound($__g_aUiBtn) - 1][10] = -1 ; devre dışı yazısı çizilmez (menü öğeleri kapatılmaz)
-    GUICtrlSetFont($id, 10.5, 500, 0, $UI_FONT)
-    Local $idIcon = _UiIcon($iGlyph, $x + 10, $y, 26, $h, 12, $UI_TEXT2)
-    GUICtrlSetState($idIcon, $GUI_DISABLE)
-    Return $id
-EndFunc
-
 ; Butonun türünü (rengini) değiştirir; ör. Başlat (yeşil) <-> Durdur (kırmızı).
 Func _UiButtonSetKind($id, $iKind)
     For $i = 0 To UBound($__g_aUiBtn) - 1

@@ -135,11 +135,6 @@ Func _ServiceRestoreBinPath($sName, $sRawBinPath)
     Return $iCfg = 0 And _ServiceWaitState($sName, "RUNNING", 10000)
 EndFunc
 
-; Servisi durdurup siler (WinDivert sürücü kalıntılarına dokunmaz).
-Func _ServiceRemove($sName)
-    RunWait(@ComSpec & " /c sc stop " & $sName & " & sc delete " & $sName, "", @SW_HIDE)
-EndFunc
-
 ; Servisi durdurur (strateji testleri için). Durduysa True.
 Func _ServiceStop($sName, $iTimeoutMs = 10000)
     RunWait(@ComSpec & " /c sc stop " & $sName, "", @SW_HIDE)

@@ -175,7 +175,6 @@ TraySetToolTip($APP_NAME)
 ; Derlenmemiş çalıştırmada (geliştirme/önizleme) tepside de kilit simgesi; derlenmiş exe kendi simgesini kullanır.
 If Not @Compiled And FileExists(@ScriptDir & "\ui\simge\kilit.ico") Then TraySetIcon(@ScriptDir & "\ui\simge\kilit.ico")
 
-Global $g_sUiLastStatus = "", $g_sUiLastRun = ""
 
 ; --- Üst Durum Paneli ---
 Global $lblStatusBg = GUICtrlCreateLabel("", 15, 15, 370, 75)
@@ -263,11 +262,8 @@ Global $lblFooter = GUICtrlCreateLabel("", 0, 543, 400, 32, $SS_CENTER)
 GUICtrlSetFont(-1, 8.5, 400, 0, "Consolas")
 GUICtrlSetColor(-1, 0x95A5A6)
 
-; Program mantığının yazdığı ama klasik pencerede yer almayan denetimler (gizli).
-Global $lblStatusDot = __ClassicHidden(), $lblStatusHint = __ClassicHidden()
-Global $lblSvcDot = __ClassicHidden(), $lblSvcTitle = __ClassicHidden(), $lblSvcInfo = __ClassicHidden()
-Global $btnSvcSettings = __ClassicHidden(), $lblSmartLast = __ClassicHidden(), $lblDnsInfo = __ClassicHidden()
-Global $btnPageDiag = __ClassicHidden(), $btnPageLogs = __ClassicHidden()
+; Klasik pencerede yer almayan ama yeni arayüzün komutlarını ana döngüye taşıyan olay kimlikleri (gizli).
+Global $btnSvcSettings = __ClassicHidden(), $btnPageDiag = __ClassicHidden(), $btnPageLogs = __ClassicHidden()
 
 ; Düğme Array'lerine yeni butonu ekledik ki sistem hazır olduğunda kilitleri otomatik açılsın
 Local $aCriticalButtons[7] = [$btnRunZapret, $btnAnalyze, $btnInstallService, $cmbEngine, $cmbStrategy, $cmbFilter, $btnDnscrypt]
@@ -360,7 +356,6 @@ While 1
 
     ; Kenar menüsü, hover ve durum renkleri (ui/Theme.au3)
     _UiTick($hGUI)
-    _MainUiSync()
 
     ; DNSCrypt çalışırken kuyruğa alınan tıklamaları da atla.
     If $nMsg = $btnDnscrypt And $bDnscryptBusy Then ContinueLoop
@@ -452,7 +447,6 @@ While 1
 
         Case $btnPageSettings, $btnSvcSettings
             _OpenSettings()
-            _MainRefreshServicePage()
 
         Case $btnPageDiag
             _DiagCreateFromTray()
@@ -962,69 +956,6 @@ Func _MainUiPreviewAndExit($sDir)
             ", klasik görünür=" & (BitAND(WinGetState($hGUI), 2) = 2))
     If $g_bWebUi Then _ScreenCapture_CaptureWnd($sDir & "\klasikten-yeni.png", $hWebGui)
     Exit
-EndFunc
-
-; Klasik pencerede durum renkleri özgün koddaki GUICtrlSetColor çağrılarıyla gelir; burada yalnızca
-; servis bilgisi (gizli denetimler) tazelenir.
-Func _MainUiSync()
-    Local $s = _StateStatus()
-    If $s = $g_sUiLastStatus Then Return
-    $g_sUiLastStatus = $s
-    _MainRefreshServicePage()
-EndFunc
-
-Func _MainRefreshServicePage()
-    Local $s = _StateStatus(), $iDot = $UI_MUTED, $sTitle = "Servis kurulu değil"
-    If $s = "SERVİS MODU AKTİF" Then
-        $iDot = $UI_GREEN
-        $sTitle = "Servis çalışıyor"
-    ElseIf $s = "SERVİS YÜKLÜ - DURDU" Then
-        $iDot = $UI_RED
-        $sTitle = "Servis kurulu ama durmuş"
-    ElseIf StringInStr($s, "GEÇİCİ") Then
-        $iDot = $UI_YELLOW
-        $sTitle = "Servis analiz için geçici olarak durduruldu"
-    EndIf
-    GUICtrlSetColor($lblSvcDot, $iDot)
-    GUICtrlSetData($lblSvcTitle, $sTitle)
-    Local $bService = $iDot <> $UI_MUTED
-    Local $sHealth = _HealthStatusFormat(True, IniRead($iniPath, "Health", "Enabled", "1"), IniRead($iniPath, "Health", "LastCheck", ""), _
-            IniRead($iniPath, "Health", "LastResult", ""), @YEAR & "/" & @MON & "/" & @MDAY)
-    If $bService Then
-        GUICtrlSetData($lblSvcInfo, "Otomatik başlangıç açık  ·  Otomatik yeniden başlatma " & _
-                (IniRead($iniPath, "Service", "AutoRestart", "0") = "1" ? "açık" : "kapalı") & "  ·  " & $sHealth)
-    Else
-        GUICtrlSetData($lblSvcInfo, "Servis kurulursa Zapret bilgisayar açılınca kendiliğinden başlar; programı açık tutmanız gerekmez.")
-    EndIf
-EndFunc
-
-Func _MainRefreshSmartSummary()
-    Local $sPath = _SmartResultsPath()
-    If Not FileExists($sPath) Then
-        GUICtrlSetData($lblSmartLast, "Henüz akıllı analiz yapılmadı.")
-        Return
-    EndIf
-    Local $sLine = FileReadLine($sPath, 1)
-    If StringLeft($sLine, 2) = "# " Then $sLine = StringTrimLeft($sLine, 2)
-    GUICtrlSetData($lblSmartLast, $sLine)
-EndFunc
-
-Func _MainRefreshDnsInfo()
-    Local $s = StringStripWS(_GetActiveAdapterDnsServers(), 3)
-    Local $sName = "ISS / modem DNS'i"
-    If StringInStr($s, "127.0.0.1") Then
-        $sName = "DNSCrypt (yerel, şifreli)"
-    ElseIf StringInStr($s, "1.1.1.1") Or StringInStr($s, "1.0.0.1") Then
-        $sName = "Cloudflare"
-    ElseIf $s = "" Then
-        $sName = "otomatik (DHCP)"
-    EndIf
-    ; Yalnızca IPv4 adresleri gösterilir (IPv6 adresleri satıra sığmıyor).
-    Local $sV4 = ""
-    For $sAddr In StringSplit($s, ",", 2)
-        If $sAddr <> "" And Not StringInStr($sAddr, ":") Then $sV4 &= ($sV4 = "" ? "" : ", ") & $sAddr
-    Next
-    GUICtrlSetData($lblDnsInfo, "Etkin DNS: " & ($sV4 = "" ? "—" : $sV4) & "  ·  " & $sName)
 EndFunc
 
 ; Alt satır: motor sürümü + (servis modunda) otomatik onarımın son durumu.

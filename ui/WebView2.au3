@@ -106,12 +106,6 @@ Func _WV2_SetCaption($hWnd, $bDark, $iCaptionRgb)
     DllCall("dwmapi.dll", "long", "DwmSetWindowAttribute", "hwnd", $hWnd, "dword", 35, "dword*", $iBgr, "dword", 4)
 EndFunc
 
-; Pencere gizlenip gösterilirken WebView2'nin görünürlüğü.
-Func _WV2_SetVisible($bVisible)
-    If $__g_WV2_pCtrl = 0 Then Return
-    DllCallAddress("long", __WV2_Vt($__g_WV2_pCtrl, 4), "ptr", $__g_WV2_pCtrl, "bool", $bVisible) ; put_IsVisible
-EndFunc
-
 Func _WV2_Close()
     If $__g_WV2_pCtrl <> 0 Then DllCallAddress("long", __WV2_Vt($__g_WV2_pCtrl, 24), "ptr", $__g_WV2_pCtrl) ; Close
     $__g_WV2_pCtrl = 0
