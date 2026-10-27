@@ -481,7 +481,7 @@ While 1
 
     Switch $nMsg
         Case $GUI_EVENT_CLOSE
-            _SaveConfigAndExit()
+            _CloseToTray()
 
         Case $btnPageSettings, $btnSvcSettings
             _OpenSettings()
@@ -494,10 +494,6 @@ While 1
 
         Case $btnPageLogs
             ShellExecute(@ScriptDir & "\logs")
-
-        Case $GUI_EVENT_MINIMIZE
-            _MainWindowHide()
-            TraySetToolTip($APP_NAME & " çalışıyor")
 
         Case $cmbEngine
             _UpdateEnginePaths(GUICtrlRead($cmbEngine))
@@ -800,6 +796,18 @@ EndFunc
 
 Func _MainWindowHide()
     GUISetState(@SW_HIDE, $g_bWebUi ? $hWebGui : $hGUI)
+EndFunc
+
+; Pencerenin X'i programı kapatmaz, tepsiye gizler (Zapret/paylaşım çalışmaya devam eder); kapatmak
+; tepsi simgesi > Kapat. İlk seferde bir kez nasıl kapatılacağı söylenir (config.ini [Arayuz] TepsiBilgisi).
+Func _CloseToTray()
+    _SaveConfig() ; ayarlar önceden yalnız programdan çıkarken yazılıyordu
+    _MainWindowHide()
+    TraySetToolTip($APP_NAME & " çalışıyor")
+    If IniRead($iniPath, "Arayuz", "TepsiBilgisi", "0") <> "1" Then
+        IniWrite($iniPath, "Arayuz", "TepsiBilgisi", "1")
+        TrayTip($APP_NAME & " arka planda çalışıyor", "Pencere tepsiye gizlendi. Açmak için simgeye çift tıklayın; programı kapatmak için simgeye sağ tıklayıp Kapat'ı seçin.", 10, 1)
+    EndIf
 EndFunc
 
 ; Ana durumu yazar: durum modülü tek kaynaktır; eski arayüzün etiketi de güncellenir (Aşama 2.1).

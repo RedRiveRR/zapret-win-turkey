@@ -303,14 +303,17 @@ While 1
 
     Switch $nMsg
         Case $GUI_EVENT_CLOSE
-            _SaveConfigAndExit()
+            ; X tepsiye gizler; programı kapatmak tepsi simgesi > Kapat (ilk seferde bir kez söylenir).
+            _SaveConfig() ; ayarlar önceden yalnız programdan çıkarken yazılıyordu
+            GUISetState(@SW_HIDE, $hGUI)
+            TraySetToolTip($APP_NAME & " Lite")
+            If IniRead($iniPath, "Arayuz", "TepsiBilgisi", "0") <> "1" Then
+                IniWrite($iniPath, "Arayuz", "TepsiBilgisi", "1")
+                TrayTip($APP_NAME & " arka planda çalışıyor", "Pencere tepsiye gizlendi. Açmak için simgeye çift tıklayın; programı kapatmak için simgeye sağ tıklayıp Kapat'ı seçin.", 10, 1)
+            EndIf
 
         Case $btnLiteSettings
             _OpenSettings()
-
-        Case $GUI_EVENT_MINIMIZE
-            GUISetState(@SW_HIDE, $hGUI)
-            TraySetToolTip($APP_NAME & " Lite")
 
         Case $cmbEngine
             _UpdateEnginePaths(GUICtrlRead($cmbEngine))
@@ -451,6 +454,7 @@ EndFunc
 
 Func ShowGUI()
     GUISetState(@SW_SHOW, $hGUI)
+    GUISetState(@SW_RESTORE, $hGUI) ; görev çubuğuna küçültülmüşse geri getir
     GUISetState(@SW_RESTORE, $hGUI)
 EndFunc
 
