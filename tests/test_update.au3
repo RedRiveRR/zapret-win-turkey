@@ -29,7 +29,7 @@ Func _TestUpdate()
     _AssertTrue(_IsVersionTag("v4.5.1-RedRiveRR"), "takma adlı etiket geçerli")
     _AssertEq(_VersionCompare("v" & $APP_VERSION, $APP_VERSION), 0, "kendi sürümünde bildirim yok")
     _AssertEq(_VersionCompare("v4.5.1-RedRiveRR", $APP_VERSION), -1, "eski taslak etiketi bildirilmez")
-    _AssertEq(_VersionCompare("v5.0.1", $APP_VERSION), 1, "sonraki sürüm bildirilir")
+    _AssertEq(_VersionCompare("v" & (Int(StringLeft($APP_VERSION, StringInStr($APP_VERSION, ".") - 1)) + 1) & ".0.0", $APP_VERSION), 1, "sonraki sürüm bildirilir")
 
     ; --- _UpdatePoll: sorgu başlatılmadıysa boş ---
     _AssertEq(_UpdatePoll("4.5"), "", "başlatılmamış sorgu boş döner")

@@ -2,6 +2,24 @@
 
 Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-turkey) üzerine bu fork'ta (`gelistirme` dalı) yapılan değişiklikleri listeler. Temel: upstream `9eeac04` (v4.5 kaynakları).
 
+## [v5.1.0] — 2026-10-27 — kararlı
+
+Konsol ve akıllı TV gibi cihazlar için **ağ paylaşımı** artık kararlı; PS5'te Discord ve sesli sohbet uçtan uca denendi. Ayarlarınız korunur; yeni sürümü aynı klasöre çıkarmanız yeterli.
+
+### Ağ paylaşımı
+- **Yeni Paylaşım sayfası** (Diğer → Ağ paylaşımı): durum, Npcap ve bağlantı türü kontrolü, cihaza girilecek IP / maske / ağ geçidi / DNS / MTU (her biri **Kopyala** düğmeli), PS5, PS4, Xbox, Nintendo Switch ve akıllı TV için adım adım rehber.
+- **Discord konsolda açılıyor:** bazı sağlayıcılar Discord adlarını soran şifresiz DNS'i düşürüyor. Paylaşılan cihazların DNS soruları artık şifreli DNS'ten cevaplanıyor: DNSCrypt servisi kuruluysa o kullanılır (ikinci servis açılmaz), değilse paylaşıma özel geçici bir kopya çalışır (servis değildir, bilgisayarın DNS'ine dokunmaz). Sayfadaki **Cihazların DNS'i** satırı hangi yolun kullanıldığını gösterir.
+- Cihaz DNS'i `1.1.1.1` / `8.8.8.8` (ağ geçidi adresi DNS olarak çalışmıyordu).
+- Doğru ağ kartı (kartın kendi IPv4'ü) ve çakışmayan adres aralığı kendiliğinden seçilir; MTU gerçek çıktıdan okunup gösterilir.
+- Npcap'in "WinPcap API-compatible Mode" ile kurulu olması kontrol edilir; eksikse indirme bağlantısı çıkar.
+- Paylaşım ya da şifreli DNS düşerse bir kez kendiliğinden yeniden başlar; olmazsa nedeni bildirilir.
+- **Düzeltme:** başlatma sürerken (~10 sn) ikinci kez basılınca paylaşım hemen kapanıyordu. Düğme artık "Başlatılıyor…" yazıp kilitli kalır, ikinci basış yok sayılır.
+- **Düzeltme:** güvenlik duvarı izni her başlatmada yineleniyordu; fazla kurallar kendiliğinden temizlenir.
+- Sayfada uyarı: cihaz bu ayarlarla internete bilgisayar üzerinden çıkar; ayarları mümkünse ayrı bir bağlantı kaydı olarak ekleyin.
+
+### Windows uyumluluğu
+- Exe'lerde ürün adı, açıklama, şirket ve sürüm bilgisi var (Özellikler → Ayrıntılar). Boş kimlikli imzasız exe'ler Windows Akıllı Uygulama Denetimi'nde daha kolay engelleniyordu.
+
 ## [v5.0.0] — 2026-10-24 — kararlı
 
 RedRiveRR fork'unun ilk kararlı sürümü. Temel: upstream v4.5. Program adı artık **RedRiveRR Zapret** (kilit simgesi); exe adları `RedRiveRR Zapret.exe` ve `RedRiveRR Zapret Lite.exe` (önceden `zapret-win-turkey.exe`). Sürüm numaraları artık upstream'den bağımsız.
