@@ -136,3 +136,6 @@ finally {
 
 if ($failed) { exit 1 }
 Write-Host "Tüm denetimler geçti." -ForegroundColor Green
+# Açık çıkış kodu: GitHub Actions (pwsh -command) betiğin sonunda son harici komutun
+# $LASTEXITCODE'unu döndürür; kişisel veri taramasındaki git grep "bulunamadı" = 1 bırakıyordu.
+exit 0
