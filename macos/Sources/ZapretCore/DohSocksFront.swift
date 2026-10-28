@@ -92,11 +92,20 @@ public final class DohSocksFront {
     }
 
     private func handleHttp(_ c: Int32) {
-        guard let head = Self.readHead(c) else { Self.writeAll(c, HttpConnect.failure(400)); return }
+        guard let head = Self.readHead(c) else {
+            onEvent?("http başlık okunamadı (400)")
+            Self.writeAll(c, HttpConnect.failure(400))
+            return
+        }
+        let line = String(head.components(separatedBy: "\n").first?.trimmingCharacters(in: .whitespacesAndNewlines).prefix(120) ?? "")
         switch HttpConnect.parse(head: head) {
         case .connect(let target, let port): tunnel(c, target: target, port: port, http: true)
-        case .notConnect: Self.writeAll(c, HttpConnect.failure(405))
-        case .bad: Self.writeAll(c, HttpConnect.failure(400))
+        case .notConnect:
+            onEvent?("http reddedildi (405): \(line)")
+            Self.writeAll(c, HttpConnect.failure(405))
+        case .bad:
+            onEvent?("http reddedildi (400): \(line)")
+            Self.writeAll(c, HttpConnect.failure(400))
         }
     }
 
