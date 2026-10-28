@@ -19,6 +19,12 @@ enum HelperClient {
         FileManager.default.fileExists(atPath: HelperPaths.plist) && FileManager.default.fileExists(atPath: HelperPaths.socket)
     }
 
+    /// Kurulu ve bu uygulamanın beklediği sürümde mi (eski yardımcı Güvenli Web Proxy'yi bilmez → yeniden kurulur).
+    static var isCurrent: Bool {
+        guard isInstalled, case .success(let m) = send(.status) else { return false }
+        return HelperProtocol.parseVersion(m) == HelperProtocol.version
+    }
+
     @discardableResult
     static func send(_ cmd: HelperCommand) -> Result<String, Error> {
         guard FileManager.default.fileExists(atPath: HelperPaths.socket) else { return .failure(HelperClientError.notInstalled) }

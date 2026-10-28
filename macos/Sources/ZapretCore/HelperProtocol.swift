@@ -22,6 +22,19 @@ public enum HelperPaths {
     public static let backup = "/Library/Application Support/RedRiveRR Zapret/proxy-yedek.json"
 }
 
+/// Yardımcının sürümü. Sürüm 2: Güvenli Web Proxy'yi de yönetir (Discord güncelleyicisi için).
+/// Eski (sürümsüz) yardımcı `status` yanıtında sürüm vermez; uygulama onu yeniden kurar.
+extension HelperProtocol {
+    public static let version = 2
+
+    public static func statusMessage(on: Bool) -> String { "\(on ? "acik" : "kapali") v\(version)" }
+
+    public static func parseVersion(_ statusMessage: String) -> Int? {
+        guard let last = statusMessage.split(separator: " ").last, last.hasPrefix("v") else { return nil }
+        return Int(last.dropFirst())
+    }
+}
+
 /// Satır başına bir JSON: {"cmd":"proxyOn","port":1080,"pid":123} · {"cmd":"proxyOff"} · {"cmd":"status"}
 public enum HelperProtocol {
     public static func decode(_ line: String) -> Result<HelperCommand, HelperError> {

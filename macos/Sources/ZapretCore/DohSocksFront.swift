@@ -1,9 +1,9 @@
 import Foundation
 import Darwin
 
-/// 127.0.0.1:port'ta SOCKS5 CONNECT kabul eder, tpws'e (upstreamPort) iletir. Alan adı geldiğinde `resolve`
+/// 127.0.0.1:port'ta SOCKS5 CONNECT ve HTTP CONNECT kabul eder, tpws'e (upstreamPort) iletir. Alan adı geldiğinde `resolve`
 /// IP verirse (DoH ile, zehirsiz) tpws'e adın yerine IPv4 gider; tpws hostlist'i yine SNI'dan uygular.
-/// Çözüm yoksa ad olduğu gibi tpws'e geçer (sistem DNS'i). Yalnız CONNECT; UDP/BIND desteklenmez.
+/// Çözüm yoksa ad olduğu gibi tpws'e geçer (sistem DNS'i). Yalnız CONNECT (HTTP'de düz GET/POST 405); UDP/BIND desteklenmez.
 public final class DohSocksFront {
     public let port: Int
     /// Her CONNECT denemesi için tek satır ("ad:kapı -> hedef [(DoH)] tamam|hata N"). Ziyaret geçmişi içerir; yalnız hata ayıklamada bağlanır.
@@ -70,31 +70,51 @@ public final class DohSocksFront {
 
     // MARK: Bağlantı
 
+    /// İlk bayt 0x05 ise SOCKS5, değilse HTTP (CONNECT) istemcisi sayılır.
     private func handle(_ c: Int32) {
         defer {
             lock.lock(); clients.remove(c); lock.unlock()
             close(c)
         }
         Self.prepare(c)
+        var first: UInt8 = 0
+        guard recv(c, &first, 1, MSG_PEEK) == 1 else { return }
+        if first == 5 { handleSocks(c) } else { handleHttp(c) }
+    }
+
+    private func handleSocks(_ c: Int32) {
         guard let g = Self.readExact(c, 2), g[0] == 5, Self.readExact(c, Int(g[1])) != nil else { return }
         Self.writeAll(c, [5, 0])
         guard let req = Self.readRequest(c) else { Self.writeAll(c, Self.failure(8)); return }
         guard let r = Socks5.parseRequest(req) else { Self.writeAll(c, Self.failure(1)); return }
         guard r.command == 1 else { Self.writeAll(c, Self.failure(7)); return }
+        tunnel(c, target: r.target, port: r.port, http: false)
+    }
 
-        var targets: [(target: Socks5.Target, doh: Bool)] = [(r.target, false)]
-        if case .domain(let name) = r.target {
-            let ips = resolve(name).compactMap(Socks5.ipv4Bytes).prefix(3).map { (target: Socks5.Target.ipv4($0), doh: true) }
-            if !ips.isEmpty { targets = ips + [(r.target, false)] }
+    private func handleHttp(_ c: Int32) {
+        guard let head = Self.readHead(c) else { Self.writeAll(c, HttpConnect.failure(400)); return }
+        switch HttpConnect.parse(head: head) {
+        case .connect(let target, let port): tunnel(c, target: target, port: port, http: true)
+        case .notConnect: Self.writeAll(c, HttpConnect.failure(405))
+        case .bad: Self.writeAll(c, HttpConnect.failure(400))
         }
-        let asked = "\(Self.describe(r.target)):\(r.port)"
+    }
+
+    /// Hedefi (gerekirse DoH ile IP'ye çevirip) tpws üzerinden açar ve iki yönlü aktarır.
+    private func tunnel(_ c: Int32, target: Socks5.Target, port: UInt16, http: Bool) {
+        var targets: [(target: Socks5.Target, doh: Bool)] = [(target, false)]
+        if case .domain(let name) = target {
+            let ips = resolve(name).compactMap(Socks5.ipv4Bytes).prefix(3).map { (target: Socks5.Target.ipv4($0), doh: true) }
+            if !ips.isEmpty { targets = ips + [(target, false)] }
+        }
+        let asked = "\(Self.describe(target)):\(port)"
         var last = Self.failure(4)
         for t in targets {
             let how = "\(asked) -> \(Self.describe(t.target))\(t.doh ? " (DoH)" : "")"
-            switch openUpstream(Socks5.encodeConnect(target: t.target, port: r.port)) {
+            switch openUpstream(Socks5.encodeConnect(target: t.target, port: port)) {
             case .connected(let up, let reply):
                 onEvent?("\(how) tamam")
-                Self.writeAll(c, reply)
+                Self.writeAll(c, http ? HttpConnect.established : reply)
                 relay(c, up)
                 close(up)
                 return
@@ -103,7 +123,7 @@ public final class DohSocksFront {
                 last = reply
             }
         }
-        Self.writeAll(c, last)
+        Self.writeAll(c, http ? HttpConnect.failure(502) : last)
     }
 
     private enum Upstream { case connected(Int32, [UInt8]); case refused([UInt8]) }
@@ -152,6 +172,17 @@ public final class DohSocksFront {
     }
 
     // MARK: Yardımcılar
+
+    /// HTTP istek satırı + başlıklar (CRLFCRLF'e kadar, en çok 8 KiB); tünelin ilk baytlarını yutmamak için bayt bayt okunur.
+    private static func readHead(_ fd: Int32) -> String? {
+        var out = [UInt8]()
+        while out.count < 8192 {
+            guard let b = readExact(fd, 1) else { return nil }
+            out += b
+            if out.count >= 4, Array(out.suffix(4)) == [13, 10, 13, 10] { return String(decoding: out, as: UTF8.self) }
+        }
+        return nil
+    }
 
     /// SOCKS5 isteği ya da yanıtı: 4 baytlık başlık + adres + kapı.
     private static func readRequest(_ fd: Int32) -> [UInt8]? {

@@ -2,7 +2,7 @@ import Foundation
 import Darwin
 import ZapretCore
 
-/// Sistem SOCKS proxy'sini açar/kapatır, önceki ayarları yedekler ve korur (yardımcı içinde, root).
+/// Sistem SOCKS ve Güvenli Web proxy'sini açar/kapatır, önceki ayarları yedekler ve korur (yardımcı içinde, root).
 final class ProxyKeeper {
     let queue = DispatchQueue(label: "com.redriverr.zapret.helper.keeper")
     private var on = false
@@ -19,7 +19,7 @@ final class ProxyKeeper {
             proxyOff()
             return HelperProtocol.encodeReply(ok: true, message: "proxy kapalı")
         case .status:
-            return HelperProtocol.encodeReply(ok: true, message: on ? "acik" : "kapali")
+            return HelperProtocol.encodeReply(ok: true, message: HelperProtocol.statusMessage(on: on))
         }
     }
 
@@ -44,12 +44,14 @@ final class ProxyKeeper {
         let services = SystemProxy.parseServices(run([SystemProxy.networksetup, "-listallnetworkservices"]))
         // Var olan yedek kayıtları korunur (zaten açıkken yeniden açmak kullanıcı ayarını ezmesin); oturum
         // sırasında eklenen hizmetler (USB Ethernet, telefon paylaşımı, VPN) önce yedeğe eklenir (gözden geçirme #1).
-        var existing: [String: SocksState] = [:]
+        var existing: [String: ProxyBackup] = [:]
         if let data = FileManager.default.contents(atPath: HelperPaths.backup),
-           let old = try? JSONDecoder().decode([String: SocksState].self, from: data) { existing = old }
-        var current: [String: SocksState] = [:]
+           let old = try? JSONDecoder().decode([String: ProxyBackup].self, from: data) { existing = old }
+        var current: [String: ProxyBackup] = [:]
         for s in services where existing[s] == nil {
-            current[s] = SystemProxy.parseSocks(run([SystemProxy.networksetup, "-getsocksfirewallproxy", s]))
+            current[s] = ProxyBackup(
+                socks: SystemProxy.parseProxy(run([SystemProxy.networksetup, "-getsocksfirewallproxy", s])),
+                secureWeb: SystemProxy.parseProxy(run([SystemProxy.networksetup, "-getsecurewebproxy", s])))
         }
         let backup = SystemProxy.mergeBackup(existing: existing, current: current)
         try? FileManager.default.createDirectory(atPath: (HelperPaths.backup as NSString).deletingLastPathComponent,
@@ -69,7 +71,7 @@ final class ProxyKeeper {
 
     private func proxyOff() {
         if let data = FileManager.default.contents(atPath: HelperPaths.backup),
-           let backup = try? JSONDecoder().decode([String: SocksState].self, from: data) {
+           let backup = try? JSONDecoder().decode([String: ProxyBackup].self, from: data) {
             for (s, st) in backup { for c in SystemProxy.restoreCommands(service: s, previous: st) { _ = run(c) } }
             try? FileManager.default.removeItem(atPath: HelperPaths.backup)
             log("proxy önceki hâline döndü (\(backup.count) hizmet)")

@@ -33,7 +33,7 @@ enum HelperInstaller {
             "(launchctl bootout system/\(HelperPaths.label) 2>/dev/null; true)",
             "launchctl bootstrap system \(q(HelperPaths.plist))",
         ].joined(separator: " && ")
-        let apple = "do shell script \"\(appleEscape(script))\" with administrator privileges with prompt \"RedRiveRR Zapret, Mac'in proxy ayarını değiştirebilmek için bir kez yönetici yardımcısını kuracak.\""
+        let apple = "do shell script \"\(appleEscape(script))\" with administrator privileges with prompt \"RedRiveRR Zapret, Mac'in proxy ayarını değiştirebilmek için yönetici yardımcısını kuracak (yalnız ilk kullanımda ve yardımcı güncellenince).\""
         // NSAppleScript ana iş parçacığı dışında güvenli değil; ayrı osascript süreci kullanılır (gözden geçirme #5).
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")

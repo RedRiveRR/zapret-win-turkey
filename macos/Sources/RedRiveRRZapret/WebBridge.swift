@@ -105,8 +105,11 @@ final class AppController: NSObject, WKScriptMessageHandler {
 
     /// Arka planda: yardımcı (gerekirse bir kez kurulur) + tpws + sistem proxy'si. Hata metni ya da nil.
     private func startWork(_ strategy: TpwsStrategy) -> String? {
-        if !HelperClient.isInstalled && !HelperInstaller.install(log: log) {
-            return "Yönetici yardımcısı kurulamadı. Proxy ayarı için bir kez yönetici parolası gerekiyor."
+        if !HelperClient.isCurrent {
+            log(HelperClient.isInstalled ? "yönetici yardımcısı eski sürüm; güncelleniyor" : "yönetici yardımcısı kuruluyor")
+            if !HelperInstaller.install(log: log) {
+                return "Yönetici yardımcısı kurulamadı. Proxy ayarı için bir kez yönetici parolası gerekiyor."
+            }
         }
         let tpws = Bundle.main.bundleURL.appendingPathComponent("Contents/Resources/bin/tpws").path
         // İlk Mac sürümü: atlatma yalnız Discord/Roblox listesine (filtre seçimi sonraki aşamada).
