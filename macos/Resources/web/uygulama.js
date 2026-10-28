@@ -139,6 +139,11 @@ function paylasimUygula(m) {
   $('paylasim-duvar').hidden = !m.guvenlikDuvari;
 }
 
+// "Cihazda nasıl ayarlanır" açılınca panelin altında kalmasın: boyut değişince görünür alana kaydır.
+document.querySelector('#paylasim details').addEventListener('toggle', (e) => {
+  if (e.target.open) setTimeout(() => e.target.scrollIntoView({ block: 'end', behavior: 'smooth' }), 120);
+});
+
 // --- Güncelleme ---
 $('guncelle').addEventListener('click', () => gonder({ tip: 'komut', ad: 'guncelle' }));
 function guncellemeUygula(m) {
@@ -179,5 +184,9 @@ if (wv) wv.addEventListener('message', (e) => {
   else if (m.tip === 'surum') $('surum').textContent = 'Sürüm ' + m.surum;
   else if (m.tip === 'bildirim') bildirimGoster(m.metin || '');
 });
+
+// Panel açılınca WebKit ilk odaklanabilir öğeye (strateji seçici) odak verip çerçeve çiziyordu; fareyle açılışta odak olmasın.
+const odagiBirak = () => { if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur(); };
+window.addEventListener('focus', () => setTimeout(odagiBirak, 0));
 
 gonder({ tip: 'hazir' });

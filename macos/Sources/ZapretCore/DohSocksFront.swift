@@ -102,7 +102,7 @@ public final class DohSocksFront {
         guard let req = Self.readRequest(c) else { Self.writeAll(c, Self.failure(8)); return }
         guard let r = Socks5.parseRequest(req) else { Self.writeAll(c, Self.failure(1)); return }
         guard r.command == 1 else { Self.writeAll(c, Self.failure(7)); return }
-        tunnel(c, target: r.target, port: r.port, http: false)
+        tunnel(c, target: r.target, port: r.port, mode: .socks)
     }
 
     private func handleHttp(_ c: Int32) {
@@ -113,7 +113,8 @@ public final class DohSocksFront {
         }
         let line = String(head.components(separatedBy: "\n").first?.trimmingCharacters(in: .whitespacesAndNewlines).prefix(120) ?? "")
         switch HttpConnect.parse(head: head) {
-        case .connect(let target, let port): tunnel(c, target: target, port: port, http: true)
+        case .connect(let target, let port): tunnel(c, target: target, port: port, mode: .connect)
+        case .forward(let target, let port, let head): tunnel(c, target: target, port: port, mode: .forward(head))
         case .notConnect:
             onEvent?("http reddedildi (405): \(line)")
             Self.writeAll(c, HttpConnect.failure(405))
@@ -123,8 +124,11 @@ public final class DohSocksFront {
         }
     }
 
+    /// socks: SOCKS5 yanıtı; connect: "200 Connection Established"; forward: yeniden yazılmış düz HTTP isteği sunucuya gider.
+    private enum Mode { case socks, connect, forward([UInt8]) }
+
     /// Hedefi (gerekirse DoH ile IP'ye çevirip) tpws üzerinden açar ve iki yönlü aktarır.
-    private func tunnel(_ c: Int32, target: Socks5.Target, port: UInt16, http: Bool) {
+    private func tunnel(_ c: Int32, target: Socks5.Target, port: UInt16, mode: Mode) {
         var targets: [(target: Socks5.Target, doh: Bool)] = [(target, false)]
         if case .domain(let name) = target {
             let ips = resolve(name).compactMap(Socks5.ipv4Bytes).prefix(3).map { (target: Socks5.Target.ipv4($0), doh: true) }
@@ -137,7 +141,11 @@ public final class DohSocksFront {
             switch openUpstream(Socks5.encodeConnect(target: t.target, port: port)) {
             case .connected(let up, let reply):
                 onEvent?("\(how) tamam")
-                Self.writeAll(c, http ? HttpConnect.established : reply)
+                switch mode {
+                case .socks: Self.writeAll(c, reply)
+                case .connect: Self.writeAll(c, HttpConnect.established)
+                case .forward(let head): Self.writeAll(up, head)
+                }
                 relay(c, up)
                 close(up)
                 return
@@ -146,7 +154,7 @@ public final class DohSocksFront {
                 last = reply
             }
         }
-        Self.writeAll(c, http ? HttpConnect.failure(502) : last)
+        if case .socks = mode { Self.writeAll(c, last) } else { Self.writeAll(c, HttpConnect.failure(502)) }
     }
 
     private enum Upstream { case connected(Int32, [UInt8]); case refused([UInt8]) }

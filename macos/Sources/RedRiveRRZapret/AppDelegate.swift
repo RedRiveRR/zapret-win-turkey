@@ -14,6 +14,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var outsideClick: Any?
     private var contentHeight: CGFloat = 420
     private static let width: CGFloat = 340
+    private static let radius: CGFloat = 14
+
+    /// Esneyen yuvarlak köşeli maske (yalnız köşeler sabit, kenarlar uzar).
+    private static func roundedMask(radius: CGFloat) -> NSImage {
+        let edge = radius * 2 + 1
+        let img = NSImage(size: NSSize(width: edge, height: edge), flipped: false) { r in
+            NSColor.black.setFill()
+            NSBezierPath(roundedRect: r, xRadius: radius, yRadius: radius).fill()
+            return true
+        }
+        img.capInsets = NSEdgeInsets(top: radius, left: radius, bottom: radius, right: radius)
+        img.resizingMode = .stretch
+        return img
+    }
     let controller = AppController()
 
     func applicationDidFinishLaunching(_ n: Notification) {
@@ -48,11 +62,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         glass.material = .popover
         glass.blendingMode = .behindWindow
         glass.state = .active
-        glass.wantsLayer = true
-        glass.layer?.cornerRadius = 16
-        glass.layer?.masksToBounds = true
-        glass.layer?.borderWidth = 0.5
-        glass.layer?.borderColor = NSColor.white.withAlphaComponent(0.18).cgColor
+        // Köşeler: katman cornerRadius camı ve pencere gölgesini kırpmıyordu (keskin köşe); maskImage ikisini de yuvarlar.
+        glass.maskImage = Self.roundedMask(radius: Self.radius)
+        web.wantsLayer = true
+        web.layer?.cornerRadius = Self.radius
+        web.layer?.masksToBounds = true
         glass.addSubview(web)
 
         panel = GlassPanel(contentRect: frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
@@ -130,6 +144,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         var x = b.midX - Self.width / 2
         x = max(screen.minX + 8, min(x, screen.maxX - Self.width - 8))
         panel.setFrame(NSRect(x: x, y: b.minY - 6 - h, width: Self.width, height: h), display: true)
+        panel.invalidateShadow()
     }
 
     private func resize(to h: CGFloat) {
@@ -139,6 +154,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let screen = panel.screen?.visibleFrame ?? .zero
         let nh = min(h, screen.height - 16)
         panel.setFrame(NSRect(x: panel.frame.minX, y: top - nh, width: Self.width, height: nh), display: true, animate: false)
+        panel.invalidateShadow()
     }
 
     /// Spec 7.6a: /Applications dışındaysa (İndirilenler, App Translocation) taşımayı önerir. Taşındıysa true.

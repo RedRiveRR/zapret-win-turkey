@@ -10,7 +10,12 @@
   --bad:#F2555F;--badTint:rgba(242,85,95,.17);--knob:#F5F5F7;--track:rgba(255,255,255,.2)}}
 *{box-sizing:border-box}
 html,body{margin:0;background:transparent;color:var(--text);font:13px/1.38 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;
-  -webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none;cursor:default;overflow:hidden}
+  -webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none;cursor:default}
+/* Panel ekran yüksekliğiyle sınırlı; içerik uzunsa sayfa kayar (yatay asla). */
+html,body{height:100%;overflow-x:hidden}
+body{overflow-y:auto}
+body::-webkit-scrollbar{width:6px}
+body::-webkit-scrollbar-thumb{background:var(--track);border-radius:3px}
 button,select{font:inherit;color:inherit;cursor:default}
 b{font-weight:600}
 :focus-visible{outline:2px solid var(--accent);outline-offset:1px}
@@ -130,6 +135,6 @@ dt{font-weight:600}
 dd{margin:0;color:var(--muted)}
 
 /* Bildirim */
-.bildirim{position:absolute;left:10px;right:10px;bottom:12px;padding:8px 11px;border-radius:10px;font-size:12px;color:#fff;background:rgba(28,28,34,.92);
+.bildirim{position:fixed;left:10px;right:10px;bottom:12px;padding:8px 11px;border-radius:10px;font-size:12px;color:#fff;background:rgba(28,28,34,.92);
   box-shadow:0 6px 20px rgba(0,0,0,.25);opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;pointer-events:none}
 .bildirim.goster{opacity:1;transform:none}
