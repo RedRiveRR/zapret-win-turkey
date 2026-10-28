@@ -23,7 +23,10 @@ final class GatewayTests: XCTestCase {
         XCTAssertEqual(p.gateway, "172.24.2.1")
         XCTAssertEqual(p.deviceIP, "172.24.2.50")
         XCTAssertEqual(p.mask, "255.255.0.0")
-        XCTAssertEqual(p.dns, "172.24.2.1") // DNS sorguları geçitten yanıtlanır
+        // Geçidin kendi adresine giden DNS go-pcap2socks'ta yanıtlanmıyor (Windows H23: 216 soru, 0 yanıt); dış adres
+        // verilir, port 53 kuralı onu yakalayıp Mac'in çözücüsüne yollar.
+        XCTAssertEqual(p.dns, "1.1.1.1")
+        XCTAssertEqual(p.dns2, "8.8.8.8")
         let q = GatewayPlan.make(lanAddress: "172.24.9.3")
         XCTAssertEqual(q.gateway, "10.77.2.1")
         XCTAssertEqual(q.deviceIP, "10.77.2.50")
@@ -61,6 +64,10 @@ final class GatewayTests: XCTestCase {
         """
         XCTAssertEqual(GatewayPlan.devices(inLog: log), ["172.24.2.50", "172.24.2.51"])
         XCTAssertEqual(GatewayPlan.devices(inLog: ""), [])
+    }
+
+    func testDeviceMtuLeavesRoomForEthernetHeader() {
+        XCTAssertEqual(GatewayPlan.deviceMTU(interfaceMTU: 1500), 1486) // go-pcap2socks: "MTU: 1486 (or lower)"
     }
 
     func testMtuFromIfconfig() {
