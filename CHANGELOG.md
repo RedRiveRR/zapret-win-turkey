@@ -2,6 +2,11 @@
 
 Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-turkey) üzerine bu fork'ta (`gelistirme` dalı) yapılan değişiklikleri listeler. Temel: upstream `9eeac04` (v4.5 kaynakları).
 
+## [v5.2.2] — 2026-10-28 — kararlı (düzeltme)
+
+### Düzeltme
+- **Servis modunda bilgisayar açılınca Discord açılmıyordu.** Zapret tüm UDP trafiğini yakaladığı için bilgisayar açılışta modemden IPv4 adresi alamıyordu (DHCP); yalnız IPv6 kalıyor, Discord ve stratejiler çalışmıyordu. Servisi kaldırıp bekleyince Windows birkaç dakika sonra adresi alabildiği için "kendiliğinden" düzeliyordu. Artık DHCP isteği (UDP 67) yakalanmıyor. Önceki sürümle kurulmuş servis, program açılınca ya da oturum açılışındaki sağlık kontrolünde kendiliğinden düzeltilir (çalışıyorsa birkaç saniye yeniden başlar). Ana ve Lite.
+
 ## [v5.2.1] — 2026-10-27 — kararlı
 
 ### Değişiklik
