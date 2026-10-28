@@ -40,6 +40,7 @@ final class AppController: NSObject, WKScriptMessageHandler {
         let saved = readConfig()["ActiveStrategy"] ?? ""
         selected = strategies.contains { $0.name == saved } ? saved : (strategies.first?.name ?? "")
         engine.onUnexpectedExit = { [weak self] in self?.engineDied() }
+        clearProxyEnv(onlyIfOurs: true) // çökmeden kalan HTTPS_PROXY
         log("=== RedRiveRR Zapret (macOS) başlatıldı, \(strategies.count) strateji")
     }
 
@@ -137,6 +138,7 @@ final class AppController: NSObject, WKScriptMessageHandler {
             engine.stop()
             return e.localizedDescription
         }
+        for c in ProxyEnv.setCommands(port: f.port) { _ = Self.run(c) }
         return nil
     }
 
@@ -169,8 +171,28 @@ final class AppController: NSObject, WKScriptMessageHandler {
     }
 
     private func stopFront() {
+        clearProxyEnv(onlyIfOurs: false)
         front?.stop()
         front = nil
+    }
+
+    private func clearProxyEnv(onlyIfOurs: Bool) {
+        if onlyIfOurs && !ProxyEnv.isOurs(Self.run([ProxyEnv.launchctl, "getenv", ProxyEnv.names[0]]), port: TpwsArgs.defaultPort) { return }
+        for c in ProxyEnv.unsetCommands() { _ = Self.run(c) }
+    }
+
+    @discardableResult
+    private static func run(_ argv: [String]) -> String {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: argv[0])
+        p.arguments = Array(argv.dropFirst())
+        let out = Pipe()
+        p.standardOutput = out
+        p.standardError = FileHandle.nullDevice
+        do { try p.run() } catch { return "" }
+        let data = out.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+        return String(decoding: data, as: UTF8.self)
     }
 
     private func engineDied() {
