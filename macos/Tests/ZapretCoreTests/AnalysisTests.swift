@@ -38,11 +38,25 @@ final class CandidatesTests: XCTestCase {
     func testGeneratedCandidatesAreUniqueAndIncludeFieldWinners() {
         let c = StrategyCandidates.generate()
         XCTAssertEqual(Set(c.map(\.args)).count, c.count)
-        XCTAssertTrue((25...80).contains(c.count), "\(c.count)")
+        XCTAssertTrue((80...110).contains(c.count), "\(c.count)")
         for known in [["--tlsrec=midsld"], ["--tlsrec=sniext+1"], ["--tlsrec=host+1"], ["--oob=tls", "--split-pos=1"]] {
             XCTAssertTrue(c.contains { $0.args == known }, "\(known)")
         }
         XCTAssertTrue(c.allSatisfy { !$0.name.isEmpty && !$0.args.isEmpty })
+    }
+
+    // Yeni adaylar eskilerin arkasına eklenir: eski sıra (eşit puanda tercih) ve kayıtlı seçimler değişmez.
+    func testNewCandidatesAppendedAfterOriginalOnes() {
+        let c = StrategyCandidates.generate().map(\.args)
+        XCTAssertEqual(Array(c.prefix(2)), [["--tlsrec=sniext"], ["--tlsrec=sniext+1"]])
+        let lastOld = c.firstIndex(of: ["--hostcase", "--tlsrec=midsld"])!
+        for new in [["--tlsrec=sld+1", "--split-pos=1,midsld"], ["--split-pos=1,sniext+1,midsld"],
+                    ["--tlsrec=midsld", "--split-pos=1", "--disorder=tls"], ["--oob=tls", "--oob-data=0x16", "--split-pos=1"],
+                    ["--tlsrec=sld+1", "--tamper-cutoff=n2"]] {
+            let i = c.firstIndex(of: new)
+            XCTAssertNotNil(i, "\(new)")
+            XCTAssertGreaterThan(i ?? 0, lastOld, "\(new)")
+        }
     }
 
     func testBundledStrategiesComeFirstWithoutDuplicates() {

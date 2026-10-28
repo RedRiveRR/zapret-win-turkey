@@ -22,6 +22,13 @@ final class AnalysisUiTests: XCTestCase {
         }
     }
 
+    // Seçim listesi: 100 puanlı ilk 20 sonuç (önce 8); analiz satırları paneli uzatmamak için 8'de kalır.
+    func testStrategyListOffersUpTo20Winners() {
+        let many = (0..<30).map { StrategyScore(name: "--tlsrec=\($0)", args: ["--tlsrec=\($0)"], passed: 30, total: 30, latencyMs: 40 + $0) }
+        XCTAssertEqual(AnalysisReport.strategies(bundled: bundled, scores: many).count, bundled.count + 20)
+        XCTAssertEqual(AnalysisReport.rows(bundled: bundled, scores: many).count, 8)
+    }
+
     func testBestUsesBundledNameWhenSameArgs() {
         XCTAssertEqual(AnalysisReport.best(bundled: bundled, scores: scores)?.name, "TLS kaydı orta alan adı")
         XCTAssertNil(AnalysisReport.best(bundled: bundled, scores: [scores[3]]))

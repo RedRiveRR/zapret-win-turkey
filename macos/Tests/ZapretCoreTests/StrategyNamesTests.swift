@@ -12,6 +12,8 @@ final class StrategyNamesTests: XCTestCase {
         XCTAssertEqual(StrategyNames.label(["--oob=tls", "--split-pos=1"]), "Bölme · 1. bayt + OOB")
         XCTAssertEqual(StrategyNames.label(["--split-pos=1,midsld", "--disorder=tls"]), "Bölme · 1. bayt, alan adı ortası + sıra bozma")
         XCTAssertEqual(StrategyNames.label(["--tlsrec=host+1", "--split-pos=sniext+2"]), "TLS kaydı · ad başı +1 + bölme · SNI +2")
+        XCTAssertEqual(StrategyNames.label(["--oob=tls", "--oob-data=0x16", "--split-pos=1"]), "Bölme · 1. bayt + OOB (0x16)")
+        XCTAssertEqual(StrategyNames.label(["--tlsrec=sld+1", "--tamper-cutoff=n2"]), "TLS kaydı · ana alan adı +1 + yalnız ilk paket")
     }
 
     func testLabelsNeverContainDoubleHyphenAndUnknownFallsBack() {
