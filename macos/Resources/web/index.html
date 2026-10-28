@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:">
+<title>RedRiveRR Zapret</title>
+<link rel="stylesheet" href="stil.css">
+</head>
+<body>
+<!-- macOS menü çubuğu paneli. Windows arayüzü ui/web'de; mesaj sözleşmesi uygulama.js başında. -->
+<div class="app" id="app">
+  <header>
+    <div class="marka">
+      <svg width="22" height="22" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="var(--accent)"></rect><path d="M40 30 V21 A 8 8 0 0 0 24 21 V18" fill="none" stroke="#FFFFFF" stroke-width="5.5" stroke-linecap="round"></path><rect x="17" y="30" width="30" height="22" rx="6" fill="#FFFFFF"></rect><path d="M26 41 L30 45 L38 37" fill="none" stroke="var(--accent)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      <span>RedRiveRR <b>Zapret</b></span>
+    </div>
+    <button class="ikon" id="menu-ac" aria-label="Menü" aria-haspopup="menu" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button>
+    <div class="menu" id="menu" role="menu" hidden>
+      <button role="menuitem" data-komut="kayitlar">Kayıtları aç</button>
+      <button role="menuitem" data-komut="sonuclar">Analiz raporu</button>
+      <button role="menuitem" data-komut="github">GitHub sayfası</button>
+      <hr>
+      <button role="menuitem" data-komut="cikis">Zapret'ten çık</button>
+    </div>
+  </header>
+
+  <section class="kart kahraman" id="kahraman" data-durum="bekliyor">
+    <div class="ust">
+      <div class="metin">
+        <span class="rozet"><i></i><span id="rozet">Hazırlanıyor…</span></span>
+        <h1 id="baslik">Sistem hazırlanıyor</h1>
+      </div>
+      <button class="guc" id="guc" aria-label="Başlat" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 3v8"></path><path d="M6.3 6.8a8 8 0 1 0 11.4 0"></path></svg></button>
+    </div>
+    <div class="yol" aria-label="Bağlantı yolu: Mac, Zapret, sağlayıcı, Discord">
+      <span>Mac</span><i></i><span>Zapret</span><i></i><span class="saglayici">Sağlayıcı</span><i></i><span>Discord</span>
+    </div>
+    <p class="aciklama" id="aciklama"></p>
+    <button class="ikincil" id="discord-yenile" hidden>Discord'u yeniden başlat</button>
+  </section>
+
+  <section class="kart strateji">
+    <div class="baslik-satir">
+      <h2>Strateji</h2>
+      <span class="kucuk" id="zaman"></span>
+    </div>
+    <label class="secici">
+      <select id="sec-strateji" aria-label="Strateji" disabled></select>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+    </label>
+    <div class="ilerleme" id="ilerleme" hidden><div><i id="ilerleme-cubuk"></i></div><span id="ilerleme-metin"></span></div>
+    <ul class="sonuclar" id="sonuclar" aria-label="Analiz sonuçları"></ul>
+    <button class="birincil" id="analiz" disabled>Sağlayıcıma göre analiz et</button>
+  </section>
+
+  <div class="bildirim" id="bildirim" role="status" aria-live="polite"></div>
+</div>
+<script src="uygulama.js"></script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+// RedRiveRR Zapret — macOS menü çubuğu paneli (Windows arayüzü ui/web'de, ayrı).
+//
+// Program -> sayfa (window.chrome.webview 'message', Resources/bridge.js):
+//   {tip:"durum", durum:"aktif|hazir|bekliyor|hata", rozet, baslik, aciklama, calisiyor:bool, dugme:bool, strateji}
+//   {tip:"strateji", secenekler[], secili, secimAcik, analizAcik, zaman, sonuclar[{puan, ad, durum, tam, calisti, secim, secili}]}
+//   {tip:"analiz", calisiyor:bool, metin, oran:0..1}
+//   {tip:"discord", yenidenBaslat:bool}   (Discord, Zapret'ten önce açılmışsa yeniden başlatılmalı)
+//   {tip:"bildirim", metin}
+// Sayfa -> program (postMessage):
+//   {tip:"hazir"}, {tip:"komut", ad:"baslat|durdur|analiz|sonuclar|kayitlar|github|cikis|gizle|discordYenile"}
+//   {tip:"secim", alan:"strateji", deger}, {tip:"boyut", yukseklik}   (panel içeriğe göre boyutlanır)
+'use strict';
+
+const wv = window.chrome && window.chrome.webview;
+const $ = (id) => document.getElementById(id);
+const gonder = (m) => { if (wv) wv.postMessage(m); };
+
+// --- Menü ---
+const menu = $('menu');
+function menuAc(acik) {
+  menu.hidden = !acik;
+  $('menu-ac').setAttribute('aria-expanded', String(acik));
+}
+$('menu-ac').addEventListener('click', (e) => { e.stopPropagation(); menuAc(menu.hidden); });
+document.addEventListener('click', (e) => { if (!menu.hidden && !menu.contains(e.target)) menuAc(false); });
+menu.querySelectorAll('[data-komut]').forEach((b) => b.addEventListener('click', () => {
+  menuAc(false);
+  gonder({ tip: 'komut', ad: b.dataset.komut });
+}));
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (!menu.hidden) menuAc(false); else gonder({ tip: 'komut', ad: 'gizle' });
+});
+
+// --- Bağlantı ---
+let calisiyor = false;
+$('guc').addEventListener('click', () => {
+  $('guc').disabled = true; // yanıt gelene kadar çift tıklamayı engelle
+  gonder({ tip: 'komut', ad: calisiyor ? 'durdur' : 'baslat' });
+});
+$('discord-yenile').addEventListener('click', () => {
+  $('discord-yenile').disabled = true;
+  gonder({ tip: 'komut', ad: 'discordYenile' });
+});
+
+function durumUygula(m) {
+  $('kahraman').dataset.durum = m.durum || 'bekliyor';
+  $('rozet').textContent = m.rozet || '';
+  $('baslik').textContent = m.baslik || '';
+  $('aciklama').textContent = m.aciklama || '';
+  calisiyor = !!m.calisiyor;
+  $('guc').disabled = !m.dugme;
+  $('guc').setAttribute('aria-label', calisiyor ? 'Durdur' : 'Başlat');
+  if (!calisiyor) $('discord-yenile').hidden = true;
+}
+
+// --- Strateji ---
+$('sec-strateji').addEventListener('change', (e) => {
+  e.target.disabled = true; // program yeni durumu gönderince açılır
+  gonder({ tip: 'secim', alan: 'strateji', deger: e.target.value });
+});
+$('analiz').addEventListener('click', () => {
+  $('analiz').disabled = true;
+  gonder({ tip: 'komut', ad: 'analiz' });
+});
+
+function stratejiUygula(m) {
+  const sel = $('sec-strateji');
+  const liste = m.secenekler || [];
+  if (Array.from(sel.options).map((o) => o.value).join('|') !== liste.join('|')) {
+    sel.replaceChildren(...liste.map((ad) => new Option(ad, ad)));
+  }
+  sel.value = m.secili || '';
+  sel.disabled = !m.secimAcik;
+  $('analiz').disabled = !m.analizAcik;
+  $('analiz').textContent = (m.sonuclar || []).length ? 'Yeniden analiz et' : 'Sağlayıcıma göre analiz et';
+  $('zaman').textContent = m.zaman ? 'Son analiz ' + m.zaman : '';
+  $('sonuclar').replaceChildren(...(m.sonuclar || []).slice(0, 5).map(satir));
+}
+
+function satir(r) {
+  const li = document.createElement('li');
+  li.className = (r.calisti ? 'tam' : 'calismadi') + (r.secili ? ' secili' : '');
+  li.title = r.tam || '';
+  const puan = document.createElement('span');
+  puan.className = 'puan';
+  puan.textContent = r.puan;
+  const ad = document.createElement('span');
+  ad.className = 'ad';
+  ad.textContent = (r.ad || '').replace(/^★\s*/, '');
+  const ms = document.createElement('span');
+  ms.className = 'ms';
+  const m = /(\d+) ms/.exec(r.durum || '');
+  ms.textContent = m ? m[1] + ' ms' : (r.durum || '').replace(' geçti', '');
+  const tik = document.createElement('span');
+  tik.className = 'tik';
+  tik.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>';
+  li.append(puan, ad, ms, tik);
+  if (r.secim) {
+    li.dataset.secim = r.secim;
+    li.tabIndex = 0;
+    li.setAttribute('role', 'button');
+    li.setAttribute('aria-pressed', String(!!r.secili));
+    const sec = () => { if (!r.secili) gonder({ tip: 'secim', alan: 'strateji', deger: r.secim }); };
+    li.addEventListener('click', sec);
+    li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sec(); } });
+  }
+  return li;
+}
+
+function analizUygula(m) {
+  $('ilerleme').hidden = !m.calisiyor;
+  $('ilerleme-cubuk').style.width = Math.round((m.oran || 0) * 100) + '%';
+  $('ilerleme-metin').textContent = m.metin || '';
+}
+
+// --- Bildirim ---
+let bildirimZaman = 0;
+function bildirimGoster(metin) {
+  const b = $('bildirim');
+  b.textContent = metin;
+  b.classList.toggle('goster', !!metin);
+  clearTimeout(bildirimZaman);
+  if (metin) bildirimZaman = setTimeout(() => b.classList.remove('goster'), 4500);
+}
+
+// --- Panel boyutu: içerik değiştikçe programa bildir ---
+let sonYukseklik = 0;
+new ResizeObserver(() => {
+  const h = Math.ceil($('app').getBoundingClientRect().height);
+  if (h !== sonYukseklik) { sonYukseklik = h; gonder({ tip: 'boyut', yukseklik: h }); }
+}).observe($('app'));
+
+if (wv) wv.addEventListener('message', (e) => {
+  const m = e.data || {};
+  if (m.tip === 'durum') durumUygula(m);
+  else if (m.tip === 'strateji') stratejiUygula(m);
+  else if (m.tip === 'analiz') analizUygula(m);
+  else if (m.tip === 'discord') { $('discord-yenile').hidden = !m.yenidenBaslat; $('discord-yenile').disabled = false; }
+  else if (m.tip === 'bildirim') bildirimGoster(m.metin || '');
+});
+
+gonder({ tip: 'hazir' });

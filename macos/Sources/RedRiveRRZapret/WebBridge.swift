@@ -2,9 +2,14 @@ import AppKit
 import WebKit
 import ZapretCore
 
-/// Sayfa (ui/web) <-> program. Mesaj sözleşmesi ui/web/uygulama.js başındaki listeyle aynı.
+/// Panel sayfası (Resources/web) <-> program. Mesaj sözleşmesi Resources/web/uygulama.js başında.
 final class AppController: NSObject, WKScriptMessageHandler {
     weak var webView: WKWebView?
+    /// Menü çubuğu paneli için: içerik yüksekliği, gizleme isteği, Zapret açık/kapalı (simge).
+    var onResize: ((CGFloat) -> Void)?
+    var onHide: (() -> Void)?
+    var onRunningChange: ((Bool) -> Void)?
+    private static let discordId = "com.hnc.Discord"
     /// Sistem proxy'si `TpwsArgs.defaultPort`'taki ön proxy'ye (DoH ile ad çözer) gider; tpws iç kapıdadır.
     private static let tpwsPort = TpwsArgs.defaultPort + 1
     private let engine = TpwsEngine(port: AppController.tpwsPort, pidFile: AppController.supportDir.appendingPathComponent("tpws.pid"))
@@ -47,8 +52,9 @@ final class AppController: NSObject, WKScriptMessageHandler {
                                     scores: StrategyRanking.sort(r.scores, order: bundled.map(\.args)))
         }
         strategies = AnalysisReport.strategies(bundled: bundled, scores: report?.scores ?? [])
-        let saved = readConfig()["ActiveStrategy"] ?? ""
-        selected = strategies.contains { $0.name == saved } ? saved : (strategies.first?.name ?? "")
+        let cfg = readConfig()
+        selected = Strategies.resolve(savedName: cfg["ActiveStrategy"] ?? "", savedArgs: cfg["ActiveArgs"] ?? "", in: strategies)?.name
+            ?? strategies.first?.name ?? ""
         engine.onUnexpectedExit = { [weak self] in self?.engineDied() }
         clearProxyEnv(onlyIfOurs: true) // çökmeden kalan HTTPS_PROXY
         log("=== RedRiveRR Zapret (macOS) başlatıldı, \(strategies.count) strateji")
@@ -59,12 +65,9 @@ final class AppController: NSObject, WKScriptMessageHandler {
         guard let text = message.body as? String else { return }
         switch Json.get(text, "tip") {
         case "hazir":
-            post(Json.object(["tip": "platform", "ad": "macos"]))
-            post(Json.object(["tip": "tema", "tema": readConfig()["Tema"] ?? systemTheme()]))
             sendStatus()
-            sendStrategy()
-        case "tema":
-            writeConfig("Tema", Json.get(text, "tema") == "koyu" ? "koyu" : "acik")
+        case "boyut":
+            if let h = Json.get(text, "yukseklik").flatMap(Double.init), h > 0 { onResize?(CGFloat(h)) }
         case "komut":
             switch Json.get(text, "ad") {
             case "baslat": start()
@@ -73,6 +76,9 @@ final class AppController: NSObject, WKScriptMessageHandler {
             case "sonuclar": openReport()
             case "kayitlar": NSWorkspace.shared.open(Self.logDir)
             case "github": NSWorkspace.shared.open(URL(string: "https://github.com/RedRiveRR/zapret-win-turkey")!)
+            case "cikis": NSApp.terminate(nil)
+            case "gizle": onHide?()
+            case "discordYenile": restartDiscord()
             default: break
             }
         case "secim":
@@ -81,8 +87,7 @@ final class AppController: NSObject, WKScriptMessageHandler {
                 sendStatus()
                 sendStrategy()
             } else if Json.get(text, "alan") == "strateji", let v = Json.get(text, "deger"), strategies.contains(where: { $0.name == v }) {
-                selected = v
-                writeConfig("ActiveStrategy", v)
+                select(v)
                 if status == .manual { start() } // çalışırken strateji değişince yeniden başlat
                 else { sendStatus() }
             }
@@ -97,6 +102,7 @@ final class AppController: NSObject, WKScriptMessageHandler {
         status = .starting
         errorText = nil
         sendStatus()
+        let startedAt = Date()
         work.async {
             let err = self.startWork(strategy)
             DispatchQueue.main.async {
@@ -110,6 +116,11 @@ final class AppController: NSObject, WKScriptMessageHandler {
                     self.status = .manual
                     self.running = strategy.name
                     self.log("başladı: \(strategy.name) \(strategy.args.joined(separator: " "))")
+                    // Discord Zapret'ten önce açıldıysa eski (proxy'siz) bağlantısını tutar; yeniden başlatılmalı.
+                    let discordWasOpen = NSRunningApplication.runningApplications(withBundleIdentifier: Self.discordId).contains {
+                        ($0.launchDate ?? .distantPast) < startedAt
+                    }
+                    self.post(Json.object(["tip": "discord", "yenidenBaslat": discordWasOpen]))
                 }
                 self.sendStatus()
             }
@@ -220,13 +231,39 @@ final class AppController: NSObject, WKScriptMessageHandler {
         }
     }
 
+    private func select(_ name: String) {
+        selected = name
+        writeConfig("ActiveStrategy", name)
+        if let s = strategies.first(where: { $0.name == name }) { writeConfig("ActiveArgs", s.args.joined(separator: " ")) }
+    }
+
+    /// Discord'u kapatıp yeniden açar (HTTPS_PROXY ile; güncelleyici sistem proxy'sini her zaman okumuyor).
+    private func restartDiscord() {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let apps = NSRunningApplication.runningApplications(withBundleIdentifier: Self.discordId)
+            apps.forEach { $0.terminate() }
+            let deadline = Date().addingTimeInterval(8)
+            while apps.contains(where: { !$0.isTerminated }) && Date() < deadline { Thread.sleep(forTimeInterval: 0.2) }
+            guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: Self.discordId) else {
+                return self.notify("Discord bulunamadı.")
+            }
+            let cfg = NSWorkspace.OpenConfiguration()
+            cfg.environment = Dictionary(uniqueKeysWithValues: ProxyEnv.names.map { ($0, ProxyEnv.value(port: TpwsArgs.defaultPort)) })
+            NSWorkspace.shared.openApplication(at: url, configuration: cfg) { _, error in
+                self.post(Json.object(["tip": "discord", "yenidenBaslat": error != nil]))
+                self.notify(error == nil ? "Discord yeniden açılıyor" : "Discord açılamadı: \(error!.localizedDescription)")
+                self.log(error == nil ? "Discord yeniden başlatıldı" : "Discord açılamadı")
+            }
+        }
+    }
+
     // MARK: Strateji analizi
     /// Sağlayıcıya göre en iyi stratejiyi ölçer (sistem proxy'sine dokunmaz; adaylar geçici tpws kapılarında sınanır).
     func analyze() {
         guard !analyzing else { return }
         analyzing = true
         sendStrategy()
-        info("Strateji analizi: adlar çözülüyor…")
+        progress(true, "Adlar şifreli DNS ile çözülüyor…", 0.02)
         log("strateji analizi başladı")
         let tpws = Bundle.main.bundleURL.appendingPathComponent("Contents/Resources/bin/tpws").path
         let hostlist = Bundle.main.url(forResource: "hostlist", withExtension: "txt")?.path
@@ -240,11 +277,9 @@ final class AppController: NSObject, WKScriptMessageHandler {
             let base = TpwsMeasure.direct(plan.detail)
             let analyzer = StrategyAnalyzer(concurrency: 4, measure: TpwsMeasure.make(tpwsPath: tpws, hostlist: hostlist, logDir: Self.logDir))
             analyzer.onProgress = { done, total, phase in
-                DispatchQueue.main.async {
-                    let t = "Strateji analizi (\(phase)): \(done)/\(total)"
-                    self.info(t)
-                    self.notify(t) // Strateji sayfasında da görünsün
-                }
+                let screening = phase == "eleme"
+                let ratio = screening ? 0.05 + 0.55 * Double(done) / Double(max(total, 1)) : 0.6 + 0.4 * Double(done) / Double(max(total, 1))
+                self.progress(true, (screening ? "Adaylar eleniyor" : "Kalanlar ayrıntılı ölçülüyor") + " · \(done)/\(total)", ratio)
             }
             let scores = analyzer.run(candidates: candidates, screen: plan.screen, detail: plan.detail)
             let f = DateFormatter()
@@ -256,7 +291,7 @@ final class AppController: NSObject, WKScriptMessageHandler {
 
     private func analysisDone(_ r: AnalysisReport?, error: String?) {
         analyzing = false
-        info("")
+        progress(false, "", 0)
         if let r = r {
             report = r
             if let d = try? JSONEncoder().encode(r) { try? d.write(to: analysisURL, options: .atomic) }
@@ -264,8 +299,7 @@ final class AppController: NSObject, WKScriptMessageHandler {
             let summary = r.scores.prefix(3).map { "\($0.score) \($0.args.joined(separator: " "))" }.joined(separator: "; ")
             log("strateji analizi bitti: taban \(r.baselinePassed)/\(r.baselineTotal), \(r.scores.count) aday; ilk: \(summary)")
             if let best = AnalysisReport.best(bundled: bundled, scores: r.scores) {
-                selected = best.name
-                writeConfig("ActiveStrategy", best.name)
+                select(best.name)
                 notify("En iyi strateji seçildi: \(best.name)" + (status == .manual ? " — uygulanıyor" : ""))
                 if status == .manual { start() }
             } else {
@@ -291,12 +325,16 @@ final class AppController: NSObject, WKScriptMessageHandler {
                                    time: report?.time ?? "", results: AnalysisReport.rows(bundled: bundled, scores: report?.scores ?? [], selected: running.isEmpty ? selected : running)))
     }
 
-    private func info(_ s: String) { post(Json.object(["tip": "bilgi", "metin": s])) }
+    private func progress(_ on: Bool, _ text: String, _ ratio: Double) {
+        post(Json.object(["tip": "analiz", "calisiyor": on, "metin": text, "oran": Json.Raw(String(format: "%.3f", ratio))]))
+    }
     private func notify(_ s: String) { post(Json.object(["tip": "bildirim", "metin": s])) }
 
     // MARK: Sayfaya gidenler
     private func sendStatus() {
         defer { sendStrategy() } // sonuç listesindeki "seçili" işareti çalışan stratejiyi izler
+        let on = status == .manual
+        DispatchQueue.main.async { self.onRunningChange?(on) }
         post(WebState.statusJson(status: status, running: status == .manual, buttonEnabled: !busy,
                                  strategy: running.isEmpty ? selected : running, detail: "tpws (macOS), Discord ve Roblox siteleri", error: errorText))
     }
@@ -321,12 +359,8 @@ final class AppController: NSObject, WKScriptMessageHandler {
     private func writeConfig(_ key: String, _ value: String) {
         var d = readConfig()
         d[key] = value
-        try? d.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" }.joined(separator: "\n")
+        try? (d.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" }.joined(separator: "\n") + "\n")
             .write(to: configURL, atomically: true, encoding: .utf8)
-    }
-
-    private func systemTheme() -> String {
-        NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? "koyu" : "acik"
     }
 
     private static let logLock = NSLock() // ön proxy iş parçacıkları da yazar

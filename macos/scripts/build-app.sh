@@ -38,7 +38,7 @@ cp "$BIN/RedRiveRRZapret" "$APP/Contents/MacOS/RedRiveRRZapret"
 cp "$BIN/zwt-helper" "$APP/Contents/MacOS/zwt-helper"
 cp "$TPWS" "$APP/Contents/Resources/bin/tpws"
 chmod 755 "$APP/Contents/MacOS/"* "$APP/Contents/Resources/bin/tpws"
-cp -R "$REPO/ui/web" "$APP/Contents/Resources/web"
+cp -R "$HERE/Resources/web" "$APP/Contents/Resources/web"   # Mac menü çubuğu paneli (Windows arayüzü ui/web ayrı)
 cp -R "$REPO/veri" "$APP/Contents/Resources/veri"
 cp "$HERE/Resources/bridge.js" "$HERE/Resources/strategies-macos.ini" "$APP/Contents/Resources/"
 cp "$REPO/config/hostlist.txt" "$APP/Contents/Resources/hostlist.txt"   # atlatma yalnız bu sitelere

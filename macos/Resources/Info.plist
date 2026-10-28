@@ -11,6 +11,7 @@
   <key>CFBundleShortVersionString</key><string>__SURUM__</string>
   <key>CFBundleVersion</key><string>__SURUM__</string>
   <key>LSMinimumSystemVersion</key><string>12.0</string>
+  <key>LSUIElement</key><true/>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSHumanReadableCopyright</key><string>RedRiveRR — alimali54/zapret-win-turkey tabanlı</string>
   <key>NSPrincipalClass</key><string>NSApplication</string>
