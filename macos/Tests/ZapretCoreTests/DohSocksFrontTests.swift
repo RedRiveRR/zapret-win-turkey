@@ -247,4 +247,43 @@ final class DohSocksFrontTests: XCTestCase {
         lock.lock(); defer { lock.unlock() }
         XCTAssertEqual(events, ["http reddedildi (405): GET /yerel HTTP/1.1"])
     }
+
+    // MARK: SNI ile kurtarma (paylaşım: cihaz adı zehirli ISS DNS'iyle çözüp proxy'ye IP gönderirse)
+
+    func testIpTargetIsRedirectedToDohAddressOfSniHost() {
+        let up = freePort(), fp = freePort()
+        let lock = NSLock(); var seenReq: [UInt8] = []; var events: [String] = []
+        let ls = startFakeUpstream(port: up) { lock.lock(); seenReq = $0; lock.unlock() }
+        defer { close(ls) }
+        let front = DohSocksFront(port: fp, upstreamPort: up, resolve: { $0 == "discord.com" ? ["162.159.128.233"] : [] }, sniRecovery: true)
+        front.onEvent = { lock.lock(); events.append($0); lock.unlock() }
+        XCTAssertNoThrow(try front.start()); defer { front.stop() }
+        let c = connectLocal(fp); defer { close(c) }
+        writeAll(c, Array("CONNECT 195.175.254.2:443 HTTP/1.1\r\n\r\n".utf8))
+        XCTAssertTrue(readHead(c).hasPrefix("HTTP/1.1 200"))
+        let hello = TlsClientHello.build(sni: "discord.com", profile: .modern)
+        writeAll(c, hello)
+        XCTAssertEqual(readN(c, hello.count), hello) // ClientHello yukarı akışa (gerçek IP'ye) iletildi, yankı döndü
+        lock.lock(); defer { lock.unlock() }
+        XCTAssertEqual(Socks5.parseRequest(seenReq)?.target, .ipv4([162, 159, 128, 233]))
+        XCTAssertEqual(events, ["195.175.254.2:443 (SNI discord.com) -> 162.159.128.233 (DoH) tamam"])
+    }
+
+    func testIpTargetWithUnlistedSniKeepsOriginalAddress() {
+        let up = freePort(), fp = freePort()
+        let lock = NSLock(); var seenReq: [UInt8] = []
+        let ls = startFakeUpstream(port: up) { lock.lock(); seenReq = $0; lock.unlock() }
+        defer { close(ls) }
+        let front = DohSocksFront(port: fp, upstreamPort: up, resolve: { _ in [] }, sniRecovery: true)
+        XCTAssertNoThrow(try front.start()); defer { front.stop() }
+        let c = connectLocal(fp); defer { close(c) }
+        writeAll(c, [5, 1, 0]); _ = readN(c, 2)
+        writeAll(c, Socks5.encodeConnect(target: .ipv4([93, 184, 216, 34]), port: 443))
+        XCTAssertEqual(readN(c, 10)[1], 0)
+        let hello = TlsClientHello.build(sni: "example.org", profile: .modern)
+        writeAll(c, hello)
+        XCTAssertEqual(readN(c, hello.count), hello)
+        lock.lock(); defer { lock.unlock() }
+        XCTAssertEqual(Socks5.parseRequest(seenReq)?.target, .ipv4([93, 184, 216, 34]))
+    }
 }
