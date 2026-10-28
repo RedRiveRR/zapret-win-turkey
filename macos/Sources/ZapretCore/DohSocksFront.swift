@@ -14,6 +14,7 @@ public final class DohSocksFront {
     private let resolve: (String) -> [String]
     private let bindAddress: String
     private let allow: ((String) -> Bool)?
+    private let sniRecovery: Bool
     private let lock = NSLock()
     private var listenFD: Int32 = -1
     private var clients = Set<Int32>()
@@ -21,7 +22,8 @@ public final class DohSocksFront {
 
     /// `bindAddress`: varsayılan yalnız bu Mac; "0.0.0.0" yerel ağ paylaşımı. `allow`: kaynak IP süzgeci (reddedilen kapatılır).
     public init(port: Int, upstreamPort: Int, resolve: @escaping (String) -> [String],
-                bindAddress: String = "127.0.0.1", allow: ((String) -> Bool)? = nil) {
+                bindAddress: String = "127.0.0.1", allow: ((String) -> Bool)? = nil, sniRecovery: Bool = false) {
+        self.sniRecovery = sniRecovery
         self.port = port
         self.upstreamPort = upstreamPort
         self.resolve = resolve
@@ -129,6 +131,12 @@ public final class DohSocksFront {
 
     /// Hedefi (gerekirse DoH ile IP'ye çevirip) tpws üzerinden açar ve iki yönlü aktarır.
     private func tunnel(_ c: Int32, target: Socks5.Target, port: UInt16, mode: Mode) {
+        if sniRecovery, port == 443, case .ipv4 = target {
+            switch mode {
+            case .socks, .connect: return recoverBySni(c, target: target, port: port, mode: mode)
+            case .forward: break
+            }
+        }
         var targets: [(target: Socks5.Target, doh: Bool)] = [(target, false)]
         if case .domain(let name) = target {
             let ips = resolve(name).compactMap(Socks5.ipv4Bytes).prefix(3).map { (target: Socks5.Target.ipv4($0), doh: true) }
@@ -155,6 +163,42 @@ public final class DohSocksFront {
             }
         }
         if case .socks = mode { Self.writeAll(c, last) } else { Self.writeAll(c, HttpConnect.failure(502)) }
+    }
+
+    /// Paylaşım (`sniRecovery`): cihaz adı zehirli ISS DNS'iyle çözüp IP gönderdiyse, önce istemciye "tamam" denir,
+    /// ClientHello okunur; SNI'daki ad DoH'ta çözülürse oraya, çözülmezse istenen IP'ye bağlanılır ve ClientHello iletilir.
+    private func recoverBySni(_ c: Int32, target: Socks5.Target, port: UInt16, mode: Mode) {
+        if case .connect = mode { Self.writeAll(c, HttpConnect.established) }
+        else if case .ipv4(let a) = target { Self.writeAll(c, [5, 0, 0, 1] + a + [UInt8(port >> 8), UInt8(port & 0xFF)]) }
+        guard let first = Self.readTlsRecord(c) else { return }
+        let sni = TlsClientHello.serverName(in: first)
+        var targets: [(target: Socks5.Target, doh: Bool)] = [(target, false)]
+        if let name = sni {
+            let ips = resolve(name).compactMap(Socks5.ipv4Bytes).prefix(3).map { (target: Socks5.Target.ipv4($0), doh: true) }
+            if !ips.isEmpty { targets = ips + [(target, false)] }
+        }
+        let asked = "\(Self.describe(target)):\(port)" + (sni.map { " (SNI \($0))" } ?? "")
+        for t in targets {
+            let how = "\(asked) -> \(Self.describe(t.target))\(t.doh ? " (DoH)" : "")"
+            if case .connected(let up, _) = openUpstream(Socks5.encodeConnect(target: t.target, port: port)) {
+                onEvent?("\(how) tamam")
+                Self.writeAll(up, first)
+                relay(c, up)
+                close(up)
+                return
+            }
+            onEvent?("\(how) hata")
+        }
+    }
+
+    /// İlk TLS kaydı (başlık + uzunluk kadar, en çok 16 KiB); TLS değilse eldeki baytlar.
+    private static func readTlsRecord(_ fd: Int32) -> [UInt8]? {
+        guard var out = readExact(fd, 5) else { return nil }
+        guard out[0] == 0x16 else { return out }
+        let len = min(Int(out[3]) << 8 | Int(out[4]), 16 * 1024)
+        guard let body = readExact(fd, len) else { return nil }
+        out += body
+        return out
     }
 
     private enum Upstream { case connected(Int32, [UInt8]); case refused([UInt8]) }

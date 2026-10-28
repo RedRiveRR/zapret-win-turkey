@@ -287,7 +287,11 @@ final class AppController: NSObject, WKScriptMessageHandler {
     private func startShareLocked() -> String? {
         guard lanFront == nil else { return nil }
         guard let resolve = frontResolve, front != nil else { return "Önce Zapret'i başlatın." }
-        let f = DohSocksFront(port: LanShare.port, upstreamPort: engine.port, resolve: resolve, bindAddress: "0.0.0.0", allow: LanShare.isLocal)
+        let f = DohSocksFront(port: LanShare.port, upstreamPort: engine.port, resolve: resolve, bindAddress: "0.0.0.0",
+                              allow: LanShare.isLocal, sniRecovery: true)
+        // Paylaşım günlüğü: yalnız atlatılan adlar (DoH) ve başarısızlıklar; ziyaret geçmişi tutulmaz (Ayrinti=1 hepsini yazar).
+        let all = readConfig()["Ayrinti"] == "1"
+        f.onEvent = { [weak self] e in if all || e.contains("DoH") || e.contains("hata") { self?.log("paylaşım \(e)") } }
         f.onClient = { [weak self] ip in
             guard let self = self, ip != "127.0.0.1" else { return }
             self.lanLock.lock(); self.lanClients.seen(ip); self.lanLock.unlock()
