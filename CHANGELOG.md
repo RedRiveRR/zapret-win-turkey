@@ -2,6 +2,16 @@
 
 Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-turkey) üzerine bu fork'ta (`gelistirme` dalı) yapılan değişiklikleri listeler. Temel: upstream `9eeac04` (v4.5 kaynakları).
 
+## [v5.2.5] — 2026-10-29 — kararlı (macOS)
+
+### macOS
+- **Strateji analizi daha çok yöntem dener:** 52 yerine 89 aday (birden çok noktadan bölme, TLS kaydı bölme + sıra bozma, farklı bant dışı bayt, yalnız ilk paketi değiştirme). Analiz yine yaklaşık 20–40 saniye sürer.
+- **Strateji listesinde daha çok seçenek:** analizde çalışan en iyi 20 yöntem listelenir (önce 8).
+- Paketteki stratejiler, kayıtlı seçiminiz ve son analiz sonucu değişmez; yeni yöntemler bir sonraki **Analiz et**'te denenir.
+
+### Windows
+- Değişiklik yok.
+
 ## [v5.2.4] — 2026-10-29 — kararlı (macOS düzeltmesi)
 
 ### macOS
