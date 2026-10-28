@@ -6,7 +6,8 @@
 //   {tip:"bilgi", metin}
 //   {tip:"tema", tema:"acik|koyu"}
 //   {tip:"strateji", secenekler[], secili, motorlar[], motor, filtreler[], filtre,
-//    secimAcik, filtreAcik, analizAcik, zaman, sonuclar[{puan, ad, durum, tam, calisti}]}
+//    secimAcik, filtreAcik, analizAcik, zaman, sonuclar[{puan, ad, durum, tam, calisti, secim?, secili?}]}
+//    (secim doluysa satır tıklanınca {tip:"secim", alan:"strateji", deger:secim} gider; şimdilik yalnız macOS gönderir)
 // Sayfa -> program (postMessage):
 //   {tip:"hazir"}, {tip:"komut", ad:"baslat|durdur|eskiArayuz|sonuclar"}, {tip:"tema", tema}
 //   {tip:"komut", ad:"analiz", tur:"hizli|tam"}, {tip:"secim", alan:"strateji|motor|filtre", deger}
@@ -137,6 +138,15 @@ function stratejiUygula(m) {
     a2.textContent = r.durum;
     ad.append(a1, a2);
     satir.append(puan, ad);
+    if (r.secim) {
+      satir.dataset.secim = r.secim;
+      satir.tabIndex = 0;
+      satir.setAttribute('role', 'button');
+      if (r.secili) { satir.classList.add('secili'); satir.setAttribute('aria-pressed', 'true'); }
+      const sec = () => { if (!r.secili) gonder({ tip: 'secim', alan: 'strateji', deger: r.secim }); };
+      satir.addEventListener('click', sec);
+      satir.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sec(); } });
+    }
     return satir;
   }));
 }
