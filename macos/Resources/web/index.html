@@ -64,24 +64,39 @@
       <h2>Ağ paylaşımı</h2>
       <button class="anahtar" id="paylasim-anahtar" role="switch" aria-checked="false" aria-label="Ağ paylaşımı" disabled><span></span></button>
     </div>
-    <p class="not" id="paylasim-not">PS5, PS4 ve Switch bu Mac üzerinden Discord'a bağlansın.</p>
+    <p class="not" id="paylasim-not">Konsol ve TV bu Mac üzerinden Discord'a bağlansın.</p>
     <div class="paylasim-govde" id="paylasim-govde" hidden>
-      <p class="not">Cihazın ağ ayarında <b>proxy sunucusu</b> olarak gir:</p>
-      <div class="adres">
-        <div><span class="deger" id="paylasim-adres">—</span><span class="not">Port <b id="paylasim-port">8080</b></span></div>
-        <button class="metin-dugme" id="paylasim-kopyala">Kopyala</button>
+      <div id="gecit-blok">
+        <p class="not">Cihazın ağ ayarında IP'yi <b>elle</b> gir (DHCP değil):</p>
+        <dl class="ayarlar">
+          <dt>IP adresi</dt><dd><span class="deger" id="gecit-ip">—</span><button class="metin-dugme" data-kopyala="gecit-ip">Kopyala</button></dd>
+          <dt>Alt ağ maskesi</dt><dd><span class="deger" id="gecit-maske">—</span><button class="metin-dugme" data-kopyala="gecit-maske">Kopyala</button></dd>
+          <dt>Ağ geçidi</dt><dd><span class="deger" id="gecit-gecit">—</span><button class="metin-dugme" data-kopyala="gecit-gecit">Kopyala</button></dd>
+          <dt>DNS</dt><dd><span class="deger" id="gecit-dns">—</span><button class="metin-dugme" data-kopyala="gecit-dns">Kopyala</button></dd>
+          <dt>MTU</dt><dd><span class="deger" id="gecit-mtu">—</span><button class="metin-dugme" data-kopyala="gecit-mtu">Kopyala</button></dd>
+        </dl>
+        <p class="not">İkinci cihaza IP'nin sonunu değiştirerek ver (.51, .52 …). Proxy ayarı varsa kapat.</p>
+      </div>
+      <div id="proxy-blok" hidden>
+        <p class="not">Cihazın ağ ayarında <b>proxy sunucusu</b> olarak gir:</p>
+        <div class="adres">
+          <div><span class="deger" id="paylasim-adres">—</span><span class="not">Port <b id="paylasim-port">8080</b></span></div>
+          <button class="metin-dugme" id="paylasim-kopyala">Kopyala</button>
+        </div>
       </div>
       <p class="not" id="paylasim-cihaz">Henüz bağlanan cihaz yok</p>
+      <p class="uyari" id="paylasim-kablosuz" hidden>Mac Wi-Fi'de; paylaşım kabloyla daha hızlı ve kararlı.</p>
       <p class="uyari" id="paylasim-duvar" hidden>macOS güvenlik duvarı açık. Cihaz ilk bağlandığında çıkan pencerede "İzin ver"i seç.</p>
       <details>
         <summary>Cihazda nasıl ayarlanır</summary>
-        <dl>
-          <dt>PS5</dt><dd>Ayarlar › Ağ › Ayarlar › İnternet bağlantısını kur › bağlantın › Gelişmiş ayarlar › Proxy sunucusu: Kullan.</dd>
-          <dt>PS4</dt><dd>Ayarlar › Ağ › İnternet bağlantısını kur › Özel › … › Proxy sunucusu: Kullan.</dd>
-          <dt>Switch</dt><dd>Sistem ayarları › İnternet › ağın › Ayarı değiştir › Proxy ayarları: Açık.</dd>
-          <dt>Xbox, TV</dt><dd>Proxy ayarı olmadığı için bu yolla bağlanamaz.</dd>
+        <dl class="adimlar">
+          <dt>PS5</dt><dd>Ayarlar › Ağ › Ayarlar › İnternet bağlantısını kur › bağlantın › Gelişmiş ayarlar: IP ayarları Manuel (yukarıdaki değerler), MTU Manuel, Proxy kullanma.</dd>
+          <dt>PS4</dt><dd>Ayarlar › Ağ › İnternet bağlantısını kur › Özel: IP Manuel, DNS Manuel, MTU Manuel, Proxy kullanma.</dd>
+          <dt>Xbox</dt><dd>Ayarlar › Genel › Ağ ayarları › Gelişmiş ayarlar: IP ayarları El ile, DNS El ile.</dd>
+          <dt>Switch</dt><dd>Sistem ayarları › İnternet › ağın › Ayarı değiştir: IP Manuel, DNS Manuel, MTU.</dd>
+          <dt>TV</dt><dd>Ağ ayarları › IP ayarları Statik/Manuel (aynı değerler).</dd>
         </dl>
-        <p class="not">Mac açık, Zapret çalışıyor ve paylaşım açık olmalı; yoksa cihaz internete çıkamaz. Bilgisayarsız oynarken cihazda proxy'yi kapat.</p>
+        <p class="not">Mac açık, Zapret çalışıyor ve paylaşım açık olmalı; yoksa cihaz internete çıkamaz. Bilgisayarsız oynarken cihazda IP'yi Otomatik'e döndür.</p>
       </details>
     </div>
   </section>

@@ -5,7 +5,8 @@
 //   {tip:"strateji", secenekler[], secili, secimAcik, analizAcik, zaman, sonuclar[{puan, ad, durum, tam, calisti, secim, secili}]}
 //   {tip:"analiz", calisiyor:bool, metin, oran:0..1}
 //   {tip:"discord", yenidenBaslat:bool}   (Discord, Zapret'ten önce açılmışsa yeniden başlatılmalı)
-//   {tip:"paylasim", acik:bool, kullanilabilir:bool, adres, port, cihaz:int, guvenlikDuvari:bool}
+//   {tip:"paylasim", acik:bool, kullanilabilir:bool, gecit:bool, ip, maske, agGecidi, dns, mtu, adres, port, cihaz:int,
+//    kablosuz:bool, guvenlikDuvari:bool}   (gecit: ağ geçidi açık — cihaza IP elle; değilse yedek proxy yolu)
 //   {tip:"guncelleme", surum:"5.3.0|", durum:"hazir|indiriliyor|hata", metin}
 //   {tip:"surum", surum}, {tip:"bildirim", metin}
 // Sayfa -> program (postMessage):
@@ -122,6 +123,7 @@ $('paylasim-anahtar').addEventListener('click', () => {
   gonder({ tip: 'komut', ad: paylasimAcik ? 'paylasimKapat' : 'paylasimAc' });
 });
 $('paylasim-kopyala').addEventListener('click', () => gonder({ tip: 'kopyala', metin: $('paylasim-adres').textContent }));
+document.querySelectorAll('[data-kopyala]').forEach((b) => b.addEventListener('click', () => gonder({ tip: 'kopyala', metin: $(b.dataset.kopyala).textContent })));
 
 function paylasimUygula(m) {
   paylasimAcik = !!m.acik;
@@ -131,7 +133,15 @@ function paylasimUygula(m) {
   $('paylasim').dataset.acik = String(paylasimAcik);
   $('paylasim-govde').hidden = !paylasimAcik;
   $('paylasim-not').textContent = paylasimAcik ? ''
-    : (m.kullanilabilir ? 'PS5, PS4 ve Switch bu Mac üzerinden Discord\'a bağlansın.' : 'Paylaşım için önce Zapret\'i başlat.');
+    : (m.kullanilabilir ? 'Konsol ve TV bu Mac üzerinden Discord\'a bağlansın.' : 'Paylaşım için önce Zapret\'i başlat.');
+  $('gecit-blok').hidden = !m.gecit;
+  $('proxy-blok').hidden = !!m.gecit;
+  $('gecit-ip').textContent = m.ip || '—';
+  $('gecit-maske').textContent = m.maske || '—';
+  $('gecit-gecit').textContent = m.agGecidi || '—';
+  $('gecit-dns').textContent = m.dns || '—';
+  $('gecit-mtu').textContent = m.mtu || '—';
+  $('paylasim-kablosuz').hidden = !(paylasimAcik && m.kablosuz);
   $('paylasim-adres').textContent = m.adres || 'Yerel ağ bulunamadı';
   $('paylasim-port').textContent = m.port || 8080;
   $('paylasim-kopyala').hidden = !m.adres;

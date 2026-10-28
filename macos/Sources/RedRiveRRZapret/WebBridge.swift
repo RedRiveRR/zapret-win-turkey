@@ -15,6 +15,8 @@ final class AppController: NSObject, WKScriptMessageHandler {
     private let engine = TpwsEngine(port: AppController.tpwsPort, pidFile: AppController.supportDir.appendingPathComponent("tpws.pid"))
     private var front: DohSocksFront? // yalnız `work` kuyruğunda
     private var lanFront: DohSocksFront?           // ağ paylaşımı (0.0.0.0:8080), yalnız `work` kuyruğunda
+    private var gatewayFront: DohSocksFront?       // ağ geçidi trafiği (127.0.0.1:1082, SNI kurtarmalı), yalnız `work` kuyruğunda
+    private var gatewayOn = false                  // lanLock ile
     private var frontResolve: ((String) -> [String])?
     private var lanClients = LanClients()
     private var shareOn = false // lanLock ile; ana iş parçacığı work kuyruğunu beklemesin (başlatma parola bekleyebilir)
@@ -300,6 +302,28 @@ final class AppController: NSObject, WKScriptMessageHandler {
         lanFront = f
         lanLock.lock(); shareOn = true; lanLock.unlock()
         log("ağ paylaşımı açık: \(LanShare.port)")
+        return startGatewayLocked(resolve: resolve, notifyOnly: true)
+    }
+
+    /// Ağ geçidi (Windows yöntemi): yardımcı go-pcap2socks'u root ile başlatır; cihazın TCP 80/443'ü 1082'deki SNI kurtarmalı
+    /// ön proxy'ye gelir. Proxy'yi yok sayan uygulamalar (PS5 Discord) da böylece geçer. Araç pakette yoksa yalnız proxy kalır.
+    private func startGatewayLocked(resolve: @escaping (String) -> [String], notifyOnly: Bool) -> String? {
+        guard gatewayFront == nil,
+              FileManager.default.isExecutableFile(atPath: Bundle.main.bundleURL.appendingPathComponent("Contents/Resources/bin/pcap2socks").path)
+        else { return nil }
+        let g = DohSocksFront(port: GatewayPorts.socks, upstreamPort: engine.port, resolve: resolve, sniRecovery: true)
+        g.onEvent = { [weak self] e in if e.contains("DoH") || e.contains("hata") { self?.log("geçit \(e)") } }
+        do { try g.start() } catch { return "Ağ geçidi kapısı \(GatewayPorts.socks) kullanımda." }
+        if case .failure(let e) = HelperClient.send(.gatewayOn(ownerPid: getpid())) {
+            g.stop()
+            log("ağ geçidi açılamadı: \(e.localizedDescription)")
+            let msg = "Ağ geçidi açılamadı (proxy yolu açık): \(e.localizedDescription)"
+            if notifyOnly { notify(msg); return nil }
+            return msg
+        }
+        gatewayFront = g
+        lanLock.lock(); gatewayOn = true; lanLock.unlock()
+        log("ağ geçidi açık")
         return nil
     }
 
@@ -316,17 +340,30 @@ final class AppController: NSObject, WKScriptMessageHandler {
     }
 
     private func stopShareLocked() {
+        if gatewayFront != nil {
+            HelperClient.send(.gatewayOff)
+            gatewayFront?.stop()
+            gatewayFront = nil
+        }
         lanFront?.stop()
         lanFront = nil
-        lanLock.lock(); shareOn = false; lanLock.unlock()
+        lanLock.lock(); shareOn = false; gatewayOn = false; lanLock.unlock()
     }
 
     private func sendShare() {
-        lanLock.lock(); let on = shareOn, devices = lanClients.activeCount(); lanLock.unlock()
+        lanLock.lock(); let on = shareOn, gw = gatewayOn, proxyDevices = lanClients.activeCount(); lanLock.unlock()
         let firewall = on && Self.run(["/usr/libexec/ApplicationFirewall/socketfilterfw", "--getglobalstate"]).contains("enabled")
-        post(Json.object(["tip": "paylasim", "acik": on, "kullanilabilir": status == .manual,
-                          "adres": LanShare.pickAddress(LanShare.interfaces()) ?? "", "port": LanShare.port,
-                          "cihaz": devices, "guvenlikDuvari": firewall]))
+        let ifs = LanShare.interfaces()
+        let lan = LanShare.pickAddress(ifs)
+        let plan = GatewayPlan.make(lanAddress: lan)
+        let ifName = ifs.first { $0.1 == lan }?.0
+        let mtu = ifName.flatMap { GatewayPlan.mtu(ifconfig: Self.run(["/sbin/ifconfig", $0])) } ?? 1500
+        let gwDevices = gw ? GatewayPlan.devices(inLog: (try? String(contentsOfFile: HelperPaths.gatewayLog, encoding: .utf8)) ?? "").count : 0
+        post(Json.object(["tip": "paylasim", "acik": on, "kullanilabilir": status == .manual, "gecit": gw,
+                          "adres": lan ?? "", "port": LanShare.port,
+                          "ip": plan.deviceIP, "maske": plan.mask, "agGecidi": plan.gateway, "dns": plan.dns, "mtu": mtu,
+                          "kablosuz": ifName.map { Self.run(["/usr/sbin/networksetup", "-getairportnetwork", $0]).contains("Current Wi-Fi") } ?? false,
+                          "cihaz": proxyDevices + gwDevices, "guvenlikDuvari": firewall]))
         DispatchQueue.main.async {
             if on && self.shareTimer == nil {
                 self.shareTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in self?.sendShare() }

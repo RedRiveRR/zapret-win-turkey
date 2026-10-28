@@ -8,6 +8,7 @@ Bu araç yönetici yetkisiyle çalışır ve aşağıdaki programları kullanır
 |---|---|---|---|---|---|
 | dnscrypt-proxy | 2.1.18 | [DNSCrypt/dnscrypt-proxy](https://github.com/DNSCrypt/dnscrypt-proxy) | ISC (`bin/dnscrypt-proxy/LICENSE`) | `bin/dnscrypt-proxy/dnscrypt-proxy.exe` | `d847f834aef02f8705a649dc1060f520cdb7931d7361035728770dce2c16eeb6` |
 | go-pcap2socks | bilinmiyor | [DaniilSokolyuk/go-pcap2socks](https://github.com/DaniilSokolyuk/go-pcap2socks) | kaynak repoya bakın | `bin/go-pcap2socks/go-pcap2socks.exe` | `9e0aee0c7d65d09dc0e7063c589f7224b720f29a743c3226c9daa1b493f94b25` |
+| go-pcap2socks (macOS) | GPL-3.0 | [DaniilSokolyuk/go-pcap2socks](https://github.com/DaniilSokolyuk/go-pcap2socks) v0.2.0 | kaynaktan derlenir (`macos/scripts/build-pcap2socks.sh`, Go sağlama veritabanı), universal | `RedRiveRR Zapret.app/Contents/Resources/bin/pcap2socks` | sürüm sabit (v0.2.0) |
 | blockcheck betikleri | zapret / zapret2 ile gelen | [bol-van/zapret](https://github.com/bol-van/zapret) | MIT | `bin/zapret/blockcheck/*/blockcheck*.sh` | — |
 | oui.txt | — | IEEE OUI kaydı | IEEE | `oui.txt` | — |
 

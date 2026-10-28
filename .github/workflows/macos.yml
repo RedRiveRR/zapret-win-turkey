@@ -24,6 +24,11 @@ jobs:
         run: swift --version
       - name: Birim testleri
         run: swift test
+      - name: Go (go-pcap2socks kaynaktan derlenir)
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
       - name: .app paketi (universal, ad-hoc imza, denetim)
         run: bash scripts/build-app.sh "$GITHUB_WORKSPACE/dist-macos"
       - name: Paketi yükle

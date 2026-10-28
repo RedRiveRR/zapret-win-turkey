@@ -31,13 +31,17 @@ unzip -q -o "$WORK/zapret.zip" "zapret-v72.13/binaries/mac64/tpws" -d "$WORK"
 TPWS="$WORK/zapret-v72.13/binaries/mac64/tpws"
 echo "$TPWS_SHA256  $TPWS" | shasum -a 256 -c -
 
+# 2b) go-pcap2socks (ağ paylaşımı / ağ geçidi; sabit sürüm, kaynaktan universal)
+P2S="$(bash "$HERE/scripts/build-pcap2socks.sh")"
+
 # 3) .app paketi
 APP="$WORK/RedRiveRR Zapret.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/bin"
 cp "$BIN/RedRiveRRZapret" "$APP/Contents/MacOS/RedRiveRRZapret"
 cp "$BIN/zwt-helper" "$APP/Contents/MacOS/zwt-helper"
 cp "$TPWS" "$APP/Contents/Resources/bin/tpws"
-chmod 755 "$APP/Contents/MacOS/"* "$APP/Contents/Resources/bin/tpws"
+cp "$P2S" "$APP/Contents/Resources/bin/pcap2socks"
+chmod 755 "$APP/Contents/MacOS/"* "$APP/Contents/Resources/bin/tpws" "$APP/Contents/Resources/bin/pcap2socks"
 cp -R "$HERE/Resources/web" "$APP/Contents/Resources/web"   # Mac menü çubuğu paneli (Windows arayüzü ui/web ayrı)
 cp -R "$REPO/veri" "$APP/Contents/Resources/veri"
 cp "$HERE/Resources/bridge.js" "$HERE/Resources/strategies-macos.ini" "$APP/Contents/Resources/"
@@ -56,13 +60,14 @@ iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
 
 # 4) Ad-hoc imza (Apple Silicon imzasız kodu çalıştırmaz; ücretsiz)
 codesign --force -s - "$APP/Contents/Resources/bin/tpws"
+codesign --force -s - "$APP/Contents/Resources/bin/pcap2socks"
 codesign --force -s - "$APP/Contents/MacOS/zwt-helper"
 codesign --force -s - "$APP"
 
 # 5) Denetim (Review Focus 5): mimariler, imza, çalıştırma izni
 check_app() {
   local a="$1"
-  for f in "$a/Contents/MacOS/RedRiveRRZapret" "$a/Contents/MacOS/zwt-helper" "$a/Contents/Resources/bin/tpws"; do
+  for f in "$a/Contents/MacOS/RedRiveRRZapret" "$a/Contents/MacOS/zwt-helper" "$a/Contents/Resources/bin/tpws" "$a/Contents/Resources/bin/pcap2socks"; do
     test -x "$f" || { echo "çalıştırılamıyor: $f"; exit 1; }
     archs="$(lipo -archs "$f")"
     [[ "$archs" == *x86_64* && "$archs" == *arm64* ]] || { echo "universal değil: $f ($archs)"; exit 1; }

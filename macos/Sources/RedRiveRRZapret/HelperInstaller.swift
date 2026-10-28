@@ -6,6 +6,7 @@ import ZapretCore
 enum HelperInstaller {
     static func install(log: (String) -> Void) -> Bool {
         let source = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/zwt-helper").path
+        let gateway = Bundle.main.bundleURL.appendingPathComponent("Contents/Resources/bin/pcap2socks").path
         guard FileManager.default.isExecutableFile(atPath: source) else { log("yardımcı pakette yok: \(source)"); return false }
         let plist = """
         <?xml version="1.0" encoding="UTF-8"?>
@@ -27,6 +28,10 @@ enum HelperInstaller {
             "(xattr -c \(q(HelperPaths.binary)) 2>/dev/null; true)",
             "chown root:wheel \(q(HelperPaths.binary))",
             "chmod 755 \(q(HelperPaths.binary))",
+            // Ağ geçidi aracı (go-pcap2socks) root'a ait sabit konuma; yardımcı yalnız oradan çalıştırır.
+            FileManager.default.isExecutableFile(atPath: gateway)
+                ? "cp -X \(q(gateway)) \(q(HelperPaths.gatewayBinary)) && chown root:wheel \(q(HelperPaths.gatewayBinary)) && chmod 755 \(q(HelperPaths.gatewayBinary))"
+                : "true",
             "cp -X \(q(tmp.path)) \(q(HelperPaths.plist))",
             "chown root:wheel \(q(HelperPaths.plist))",
             "chmod 644 \(q(HelperPaths.plist))",
