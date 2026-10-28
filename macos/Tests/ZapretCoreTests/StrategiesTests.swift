@@ -21,4 +21,12 @@ final class StrategiesTests: XCTestCase {
     func testOtherSectionsIgnored() {
         XCTAssertEqual(Strategies.parse("[baska]\nX=--y\n[tpws]\nA=--split-pos=1\n").map(\.name), ["A"])
     }
+
+    /// Saha 2026-10-28: --tlsrec=sniext+1 Discord güncelleyicisinin (Secure Transport, 179 bayt) ClientHello'sunda
+    /// RST yiyordu; --tlsrec=midsld Chromium, güncelleyici, curl ve Roblox'ta geçti. Paketteki varsayılan bu olmalı.
+    func testBundledDefaultIsMidsld() throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../Resources/strategies-macos.ini")
+        let s = Strategies.parse(try String(contentsOf: url, encoding: .utf8))
+        XCTAssertEqual(s.first?.args, ["--tlsrec=midsld"])
+    }
 }
