@@ -68,6 +68,11 @@ Func _TestHealth()
     _AssertFalse(_HealthNetCameUp("192.168.1.50", "0.0.0.0"), "ağ gitti")
     _AssertFalse(_HealthNetCameUp("192.168.1.50", "169.254.10.1"), "DHCP alınamadı (APIPA) gelmiş sayılmaz")
     _AssertEq($HEALTH_ARG_CHILD, "/uygulamadan", "alt süreç işareti")
+    _AssertEq(_HealthCmdAction(2, "/saglik", "/uygulamadan"), "kontrol", "programın alt süreci kontrol eder")
+    _AssertEq(_HealthCmdAction(1, "/saglik", ""), "gorev-kaldir", "eski görev /saglik ile açtı: görevi sil, kontrol etme")
+    _AssertEq(_HealthCmdAction(2, "/saglik", "/baska"), "gorev-kaldir", "tanınmayan ikinci argüman da eski görev sayılır")
+    _AssertEq(_HealthCmdAction(0, "", ""), "", "normal açılış")
+    _AssertEq(_HealthCmdAction(1, "/yeni-arayuz", ""), "", "başka komut")
     _AssertFalse(_ScheduleExists("zwt-olmayan-gorev-123"), "olmayan görev yok sayılır")
 
     ; --- _HealthGuiIsOpen: görünür pencere sayılır, gizli (tepsideki) sayılmaz ---

@@ -334,6 +334,15 @@ EndFunc
 Global $__g_hHealthBgTimer = 0, $__g_hHealthNetTimer = 0, $__g_hHealthIpTimer = 0
 Global $__g_sHealthIp = "", $__g_iHealthChildPid = 0
 
+; /saglik komut satırı ne yapmalı? "kontrol" = programın başlattığı alt süreç (/saglik /uygulamadan);
+; "gorev-kaldir" = eski sürümün zamanlanmış görevi açtı (yalnız /saglik): kontrol yapılmaz, görev silinir
+; ki oturum açılışında kendini yönetici başlatma (Defender Persistence, H32) tekrarlanmasın; "" = normal açılış.
+Func _HealthCmdAction($iArgc, $sArg1, $sArg2)
+    If $iArgc < 1 Or $sArg1 <> $HEALTH_ARG Then Return ""
+    If $iArgc >= 2 And $sArg2 = $HEALTH_ARG_CHILD Then Return "kontrol"
+    Return "gorev-kaldir"
+EndFunc
+
 ; Arka plan kontrolü zamanı geldi mi? $fSinceNetUpMs: ağ geleli geçen süre, -1 = bekleyen ağ olayı yok.
 Func _HealthBackgroundDue($fSinceCheckMs, $fSinceNetUpMs)
     If $fSinceCheckMs >= $HEALTH_BG_INTERVAL_MS Then Return True

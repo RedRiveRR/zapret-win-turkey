@@ -58,10 +58,17 @@ EndIf
 ; --- BAŞSIZ SAĞLIK KONTROLÜ (/saglik) ---
 ; Pencere açılmaz; servis modunda Discord bağlantısını kontrol edip gerekirse onarır (lib/Health.au3).
 ; Açık program 30 dk'da bir ve ağ gelince kendini "/saglik /uygulamadan" ile başlatır (H32).
-If $CmdLine[0] >= 1 And $CmdLine[1] = $HEALTH_ARG Then
-    _LogInit(@ScriptDir & "\logs\app.log")
-    Exit _HealthRun(@ScriptDir, "ZapretService", $APP_NAME, False, $CmdLine[0] >= 2 And $CmdLine[2] = $HEALTH_ARG_CHILD)
-EndIf
+; Yalnız "/saglik" ile açıldıysa bunu eski sürümün zamanlanmış görevi yapmıştır: görev silinir, çıkılır.
+Switch _HealthCmdAction($CmdLine[0], $CmdLine[0] >= 1 ? $CmdLine[1] : "", $CmdLine[0] >= 2 ? $CmdLine[2] : "")
+    Case "kontrol"
+        _LogInit(@ScriptDir & "\logs\app.log")
+        Exit _HealthRun(@ScriptDir, "ZapretService", $APP_NAME, False, True)
+    Case "gorev-kaldir"
+        _LogInit(@ScriptDir & "\logs\app.log")
+        _LogInfo("Eski zamanlanmış görev programı /saglik ile açtı; görev kaldırılıyor (H32)")
+        _HealthRemoveTask()
+        Exit 0
+EndSwitch
 
 ; --- GELİŞTİRİCİ: ARAYÜZ ÖNİZLEMESİ (/arayuz-onizleme <klasör>) ---
 ; Açılış kontrollerini (çakışma, eski servisler, DNS, WinDivert temizliği) atlar; her sayfanın
