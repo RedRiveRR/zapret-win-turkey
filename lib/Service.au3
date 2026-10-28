@@ -2,6 +2,7 @@
 #include <AutoItConstants.au3>
 #include "Log.au3"
 #include "Process.au3"
+#include "Winws.au3"
 
 ; =========================================================================
 ; --- WINDOWS SERVİSİ ---
@@ -133,6 +134,28 @@ Func _ServiceRestoreBinPath($sName, $sRawBinPath)
     Local $iCfg = RunWait(@ComSpec & " /c sc config " & $sName & ' binPath= "' & StringReplace($sRawBinPath, '"', '\"') & '"', "", @SW_HIDE)
     RunWait(@ComSpec & " /c sc start " & $sName, "", @SW_HIDE)
     Return $iCfg = 0 And _ServiceWaitState($sName, "RUNNING", 10000)
+EndFunc
+
+; Eski sürümün kurduğu servis tüm UDP'yi yakalıyorsa (açılışta DHCP'yi bozar, H31) komutu düzeltir.
+; Çalışıyorsa yeni komutla yeniden başlatılır (birkaç saniye), durmuşsa yalnız kayıt değişir.
+; Düzeltildiyse True.
+Func _ServiceMigrateDhcpFilter($sName)
+    Local $sRaw = _ServiceParseBinPath(_ServiceGetConfig($sName))
+    If $sRaw = "" Then Return False
+    Local $sFixed = _WinwsArgsFixDhcp($sRaw)
+    If $sFixed == $sRaw Then Return False
+    Local $bOk
+    If _ServiceGetState($sName) = "RUNNING" Then
+        $bOk = _ServiceRestoreBinPath($sName, $sFixed)
+    Else
+        $bOk = RunWait(@ComSpec & " /c sc config " & $sName & ' binPath= "' & StringReplace($sFixed, '"', '\"') & '"', "", @SW_HIDE) = 0
+    EndIf
+    If $bOk Then
+        _LogInfo("Servis komutu düzeltildi: DHCP (UDP 67) artık yakalanmıyor (H31)")
+    Else
+        _LogWarn("Servis komutu düzeltilemedi (DHCP filtresi, H31)")
+    EndIf
+    Return $bOk
 EndFunc
 
 ; Servisi durdurur (strateji testleri için). Durduysa True.

@@ -195,6 +195,7 @@ Func _HealthRun($sRoot, $sName, $sAppName, $bFromGui = False)
     Local $sIni = $sRoot & "\config\config.ini"
     If Not $bFromGui And IniRead($sIni, "Health", "Enabled", "1") <> "1" Then Return $HEALTH_SKIPPED
     If Not _ServiceIsInstalled($sName) Then Return $HEALTH_SKIPPED
+    _ServiceMigrateDhcpFilter($sName) ; eski servis açılışta DHCP'yi bozuyordu (H31)
     If Not $bFromGui And _HealthGuiIsOpen($sAppName) Then Return $HEALTH_SKIPPED
 
     Local $sBin = _ServiceParseBinPath(_ServiceGetConfig($sName))

@@ -24,20 +24,33 @@ Func _TestWinws()
 
     ; --- _BuildWinwsArgs ---
     _AssertEq(_BuildWinwsArgs("Zapret2", $sExe2, $sS2, $WINWS_FILTER_AUTO, $sEx, $sAuto, $sHost), _
-            '--wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-65535 --hostlist-exclude="' & $sEx & '" ' & $sS2 & $sLua & ' --hostlist-auto="' & $sAuto & '"', _
+            '--wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-66,68-65535 --hostlist-exclude="' & $sEx & '" ' & $sS2 & $sLua & ' --hostlist-auto="' & $sAuto & '"', _
             "Zapret2 + auto filtre")
     _AssertEq(_BuildWinwsArgs("Zapret2", $sExe2, $sS2, $WINWS_FILTER_OFF, $sEx, $sAuto, $sHost), _
-            '--wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-65535 --hostlist-exclude="' & $sEx & '" ' & $sS2 & $sLua, _
+            '--wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-66,68-65535 --hostlist-exclude="' & $sEx & '" ' & $sS2 & $sLua, _
             "Zapret2 + filtre kapalı")
     _AssertEq(_BuildWinwsArgs("Zapret1", $sExe1, $sS1, $WINWS_FILTER_MANUAL, $sEx, $sAuto, $sHost), _
-            '--wf-tcp=0-65535 --wf-udp=0-65535 --hostlist-exclude="' & $sEx & '" ' & $sS1 & ' --hostlist="' & $sHost & '"', _
+            '--wf-tcp=0-65535 --wf-udp=0-66,68-65535 --hostlist-exclude="' & $sEx & '" ' & $sS1 & ' --hostlist="' & $sHost & '"', _
             "Zapret1 + manuel filtre")
     _AssertEq(_BuildWinwsArgs("Zapret2", $sExe2, "--lua-desync=oob", $WINWS_FILTER_AUTO, $sEx, $sAuto, $sHost), _
-            '--wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-65535 --lua-desync=oob' & $sLua, _
+            '--wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-66,68-65535 --lua-desync=oob' & $sLua, _
             "OOB: exclude ve hostlist eklenmez")
     _AssertEq(_BuildWinwsArgs("Zapret2", $sExe2, $sS2, $WINWS_FILTER_OFF), _
-            '--wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-65535 ' & $sS2 & $sLua, _
+            '--wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-66,68-65535 ' & $sS2 & $sLua, _
             "strateji testi: filtresiz, exclude'suz")
+
+    ; --- DHCP (H31): UDP 67 yakalanmaz; eski servis komutları düzeltilir ---
+    Local $sOld2 = '"C:\Z\winws2.exe" --wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-65535 --hostlist-exclude="C:\Z\ex.txt" ' & $sS2
+    _AssertEq(_WinwsArgsFixDhcp($sOld2), '"C:\Z\winws2.exe" --wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-66,68-65535 --hostlist-exclude="C:\Z\ex.txt" ' & $sS2, _
+            "eski winws2 servis komutu düzeltilir")
+    _AssertEq(_WinwsArgsFixDhcp('"C:\Z\winws.exe" --wf-tcp=0-65535 --wf-udp=0-65535 ' & $sS1), _
+            '"C:\Z\winws.exe" --wf-tcp=0-65535 --wf-udp=0-66,68-65535 ' & $sS1, "eski winws servis komutu düzeltilir")
+    Local $sNew2 = _BuildWinwsArgs("Zapret2", $sExe2, $sS2, $WINWS_FILTER_OFF)
+    _AssertEq(_WinwsArgsFixDhcp($sNew2), $sNew2, "yeni komut değişmez")
+    _AssertEq(_WinwsArgsFixDhcp('"C:\Z\winws2.exe" --wf-udp-out=443 ' & $sS2), '"C:\Z\winws2.exe" --wf-udp-out=443 ' & $sS2, _
+            "başka UDP portu verilmişse dokunulmaz")
+    _AssertEq(_WinwsArgsFixDhcp(""), "", "boş komut")
+    _AssertTrue(Not StringInStr(_BuildWinwsArgs("Zapret1", $sExe1, $sS1, $WINWS_FILTER_OFF), "--wf-udp=0-65535"), "Zapret1 tüm UDP'yi yakalamaz")
 
     ; --- _EnsureHostlistFile ---
     Local $sTmpAuto = @TempDir & "\zwt-test-auto.txt", $sTmpHost = @TempDir & "\zwt-test-host.txt"

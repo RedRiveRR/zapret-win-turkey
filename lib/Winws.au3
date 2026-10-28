@@ -22,6 +22,18 @@ Func _WinwsStrategyHasOOB($sStrategy)
     Return StringInStr($sStrategy, "oob") > 0
 EndFunc
 
+; Yakalanan giden UDP portları: 67 (DHCP sunucusu) hariç hepsi (H31). Açılışta bilgisayar henüz IPv4
+; adresi yokken 0.0.0.0 -> 255.255.255.255:67 DHCP isteği gönderir; winws bunu yakalayıp geri
+; gönderemiyor, Ethernet IPv4 adresi alamıyor (yalnız IPv6 kalıyor, Discord açılmıyor).
+Global Const $WINWS_UDP_PORTS = "0-66,68-65535"
+
+; Eski sürümlerin kurduğu servis komutunda tüm UDP'yi yakalayan filtreyi DHCP'siz hâline çevirir.
+; Başka biçimde verilmiş UDP filtresine dokunulmaz.
+Func _WinwsArgsFixDhcp($sCmd)
+    $sCmd = StringReplace($sCmd, "--wf-udp-out=0-65535", "--wf-udp-out=" & $WINWS_UDP_PORTS)
+    Return StringReplace($sCmd, "--wf-udp=0-65535", "--wf-udp=" & $WINWS_UDP_PORTS)
+EndFunc
+
 ; winws/winws2 argümanlarını (exe yolu hariç) oluşturur.
 ;   $sEngine            : "Zapret2" veya "Zapret1"
 ;   $sWinwsPath         : winws(2).exe tam yolu (Zapret2 lua klasörü buradan bulunur)
@@ -35,9 +47,9 @@ Func _BuildWinwsArgs($sEngine, $sWinwsPath, $sStrategy, $sFilterMode, $sExcludeP
     Local $sArgs = ""
 
     If $sEngine = "Zapret2" Then
-        $sArgs = "--wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-65535 "
+        $sArgs = "--wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=" & $WINWS_UDP_PORTS & " "
     Else
-        $sArgs = "--wf-tcp=0-65535 --wf-udp=0-65535 "
+        $sArgs = "--wf-tcp=0-65535 --wf-udp=" & $WINWS_UDP_PORTS & " "
     EndIf
 
     If Not $bOOB And $sExcludePath <> "" Then $sArgs &= '--hostlist-exclude="' & $sExcludePath & '" '

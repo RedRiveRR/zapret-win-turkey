@@ -201,6 +201,7 @@ _RefreshStrategyLabel()
 _UpdateFilterForStrategy()
 
 ; --- GÜVENLİ AÇILIŞ AKIŞI VE DİNAMİK DNS ZEHİRLENMESİ KONTROL DÖNGÜSÜ ---
+_ServiceMigrateDhcpFilter($serviceName)
 _ServiceDriverCleanup($serviceName)
 GUICtrlSetData($lblStatusText, "DNS KONTROL EDİLİYOR...")
 
