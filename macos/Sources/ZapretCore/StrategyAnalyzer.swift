@@ -29,13 +29,23 @@ public struct StrategyScore: Codable, Equatable {
     public var strategy: TpwsStrategy { TpwsStrategy(name: name, args: args) }
 }
 
-/// Puan (yüksek) → gecikme (düşük) → sadelik (az argüman) → ad.
+/// Puan (yüksek) → gecikme (aynı puandaki en hızlıya göre 20 ms dilim; daha küçük fark ölçüm gürültüsü) → sadelik (az argüman) → aday sırası
+/// (`order`: paketteki stratejiler önce) → ad.
 public enum StrategyRanking {
-    public static func sort(_ s: [StrategyScore]) -> [StrategyScore] {
-        s.sorted {
+    public static let latencyBucketMs = 20
+
+    public static func sort(_ s: [StrategyScore], order: [[String]] = []) -> [StrategyScore] {
+        let rank = Dictionary(order.enumerated().map { ($1, $0) }, uniquingKeysWith: { a, _ in a })
+        var fastest: [Int: Int] = [:]
+        for x in s { fastest[x.score] = min(fastest[x.score] ?? Int.max, x.latencyMs) }
+        func bucket(_ x: StrategyScore) -> Int { (x.latencyMs - (fastest[x.score] ?? 0)) / latencyBucketMs }
+        return s.sorted {
             if $0.score != $1.score { return $0.score > $1.score }
-            if $0.latencyMs != $1.latencyMs { return $0.latencyMs < $1.latencyMs }
+            let l0 = bucket($0), l1 = bucket($1)
+            if l0 != l1 { return l0 < l1 }
             if $0.args.count != $1.args.count { return $0.args.count < $1.args.count }
+            let r0 = rank[$0.args] ?? Int.max, r1 = rank[$1.args] ?? Int.max
+            if r0 != r1 { return r0 < r1 }
             return $0.name < $1.name
         }
     }
@@ -98,7 +108,7 @@ public final class StrategyAnalyzer {
             guard let m = second[c.args] ?? first[c.args] else { continue }
             scores.append(StrategyScore(name: c.name, args: c.args, passed: m.passed, total: m.total, latencyMs: m.latencyMs))
         }
-        return StrategyRanking.sort(scores)
+        return StrategyRanking.sort(scores, order: candidates.map(\.args))
     }
 
     private func runStage(_ list: [TpwsStrategy], targets: [ProbeTarget], rounds: Int, phase: String) -> [[String]: Measurement] {
