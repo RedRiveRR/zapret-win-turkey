@@ -3,7 +3,7 @@ import Darwin
 
 /// 127.0.0.1:port'ta SOCKS5 CONNECT ve HTTP CONNECT kabul eder, tpws'e (upstreamPort) iletir. Alan adı geldiğinde `resolve`
 /// IP verirse (DoH ile, zehirsiz) tpws'e adın yerine IPv4 gider; tpws hostlist'i yine SNI'dan uygular.
-/// Çözüm yoksa ad olduğu gibi tpws'e geçer (sistem DNS'i). Yalnız CONNECT (HTTP'de düz GET/POST 405); UDP/BIND desteklenmez.
+/// Çözüm yoksa ad `systemResolve` (sistem DNS'i) ile çözülür; tpws'e hiçbir zaman ad gitmez (`--no-resolve`). UDP/BIND desteklenmez.
 public final class DohSocksFront {
     public let port: Int
     /// Her CONNECT denemesi için tek satır ("ad:kapı -> hedef [(DoH)] tamam|hata N"). Ziyaret geçmişi içerir; yalnız hata ayıklamada bağlanır.
@@ -12,6 +12,7 @@ public final class DohSocksFront {
     public var onClient: ((String) -> Void)?
     private let upstreamPort: Int
     private let resolve: (String) -> [String]
+    private let systemResolve: (String) -> [Socks5.Target]
     private let bindAddress: String
     private let allow: ((String) -> Bool)?
     private let sniRecovery: Bool
@@ -22,8 +23,10 @@ public final class DohSocksFront {
 
     /// `bindAddress`: varsayılan yalnız bu Mac; "0.0.0.0" yerel ağ paylaşımı. `allow`: kaynak IP süzgeci (reddedilen kapatılır).
     public init(port: Int, upstreamPort: Int, resolve: @escaping (String) -> [String],
-                bindAddress: String = "127.0.0.1", allow: ((String) -> Bool)? = nil, sniRecovery: Bool = false) {
+                bindAddress: String = "127.0.0.1", allow: ((String) -> Bool)? = nil, sniRecovery: Bool = false,
+                systemResolve: @escaping (String) -> [Socks5.Target] = SystemResolver.resolve) {
         self.sniRecovery = sniRecovery
+        self.systemResolve = systemResolve
         self.port = port
         self.upstreamPort = upstreamPort
         self.resolve = resolve
@@ -140,9 +143,10 @@ public final class DohSocksFront {
         var targets: [(target: Socks5.Target, doh: Bool)] = [(target, false)]
         if case .domain(let name) = target {
             let ips = resolve(name).compactMap(Socks5.ipv4Bytes).prefix(3).map { (target: Socks5.Target.ipv4($0), doh: true) }
-            if !ips.isEmpty { targets = ips + [(target, false)] }
+            targets = ips.isEmpty ? systemResolve(name).prefix(4).map { (target: $0, doh: false) } : Array(ips)
         }
         let asked = "\(Self.describe(target)):\(port)"
+        if targets.isEmpty { onEvent?("\(asked) çözülemedi") }
         var last = Self.failure(4)
         for t in targets {
             let how = "\(asked) -> \(Self.describe(t.target))\(t.doh ? " (DoH)" : "")"

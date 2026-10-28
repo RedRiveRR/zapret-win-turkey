@@ -7,7 +7,8 @@ public enum TpwsArgs {
 
     /// hostlist verilirse atlatma yalnız o listedeki sitelere uygulanır (tpws --hostlist).
     public static func build(tpwsPath: String, port: Int, strategy: TpwsStrategy, hostlist: String?) -> [String] {
-        var argv = [tpwsPath, "--socks", "--bind-addr=127.0.0.1", "--port=\(port)"]
+        // --no-resolve: adları ön proxy çözer (SystemResolver); tpws'in çözücüsü macOS 27'de yığın taşmasıyla çöküyordu.
+        var argv = [tpwsPath, "--socks", "--bind-addr=127.0.0.1", "--port=\(port)", "--no-resolve"]
         if let h = hostlist { argv.append("--hostlist=\(h)") }
         return argv + strategy.args
     }

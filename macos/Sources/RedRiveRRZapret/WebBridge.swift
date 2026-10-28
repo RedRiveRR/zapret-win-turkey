@@ -68,7 +68,7 @@ final class AppController: NSObject, WKScriptMessageHandler {
         let cfg = readConfig()
         selected = Strategies.resolve(savedName: cfg["ActiveStrategy"] ?? "", savedArgs: cfg["ActiveArgs"] ?? "", in: strategies)?.name
             ?? strategies.first?.name ?? ""
-        engine.onUnexpectedExit = { [weak self] in self?.engineDied() }
+        engine.onUnexpectedExit = { [weak self] why in self?.engineDied(why) }
         clearProxyEnv(onlyIfOurs: true) // çökmeden kalan HTTPS_PROXY
         log("=== RedRiveRR Zapret (macOS) başlatıldı, \(strategies.count) strateji")
     }
@@ -161,16 +161,11 @@ final class AppController: NSObject, WKScriptMessageHandler {
                 return "Yönetici yardımcısı çalışmıyor. Parola istendiyse girin; macOS 13 ve sonrasında Sistem Ayarları › Genel › Giriş Öğeleri › \"Arka planda izin ver\" altında RedRiveRR Zapret'i açın."
             }
         }
-        let tpws = Bundle.main.bundleURL.appendingPathComponent("Contents/Resources/bin/tpws").path
         stopFront() // çalışırken strateji değişince eski ön proxy 1080'i bırakmalı
-        // İlk Mac sürümü: atlatma yalnız Discord/Roblox listesine (filtre seçimi sonraki aşamada).
-        let hostlist = Bundle.main.url(forResource: "hostlist", withExtension: "txt")?.path
-        do {
-            try engine.start(tpwsPath: tpws, strategy: strategy, hostlist: hostlist,
-                             logURL: Self.logDir.appendingPathComponent("tpws.log"))
-        } catch {
+        do { try startEngine(strategy) } catch {
             return error.localizedDescription
         }
+        let hostlist = Self.hostlistPath
         // ISS DNS'i Discord/Roblox adlarını bozuyor: yalnız hostlist'tekiler DoH ile çözülür, gerisi sistem DNS'inde kalır.
         let hosts = hostlist.flatMap { try? String(contentsOfFile: $0, encoding: .utf8) }.map(HostMatcher.parseList) ?? []
         let resolver = DohResolver()
@@ -248,11 +243,45 @@ final class AppController: NSObject, WKScriptMessageHandler {
         return String(decoding: data, as: UTF8.self)
     }
 
-    private func engineDied() {
+    // İlk Mac sürümü: atlatma yalnız Discord/Roblox listesine (filtre seçimi sonraki aşamada).
+    private static var hostlistPath: String? { Bundle.main.url(forResource: "hostlist", withExtension: "txt")?.path }
+
+    private func startEngine(_ strategy: TpwsStrategy) throws {
+        try engine.start(tpwsPath: Bundle.main.bundleURL.appendingPathComponent("Contents/Resources/bin/tpws").path,
+                         strategy: strategy, hostlist: Self.hostlistPath,
+                         logURL: Self.logDir.appendingPathComponent("tpws.log"))
+    }
+
+    /// tpws kendiliğinden kapanırsa ön proxy ve sistem proxy'si yerinde kalır, motor yeniden başlatılır (60 sn'de en çok 3 kez);
+    /// sürerse proxy geri alınır ki internet kesilmesin.
+    private var engineRestarts: [Date] = []
+
+    private func engineDied(_ why: String) {
+        log("tpws beklenmedik şekilde kapandı: \(why)")
+        engineRestarts = engineRestarts.filter { $0 > Date().addingTimeInterval(-60) }
+        guard engineRestarts.count < 3, let strategy = strategies.first(where: { $0.name == running }) else {
+            return engineGaveUp()
+        }
+        engineRestarts.append(Date())
+        work.async {
+            guard self.front != nil else { return } // bu arada durduruldu
+            do {
+                try self.startEngine(strategy)
+                self.log("tpws yeniden başlatıldı")
+            } catch {
+                DispatchQueue.main.async {
+                    self.log("tpws yeniden başlatılamadı: \(error.localizedDescription)")
+                    self.engineGaveUp()
+                }
+            }
+        }
+    }
+
+    private func engineGaveUp() {
         status = .error
         running = ""
         errorText = "Zapret beklenmedik şekilde durdu; internet bağlantınız eski hâline getirildi."
-        log("tpws beklenmedik şekilde kapandı; proxy geri alındı")
+        log("tpws durdu; proxy geri alındı")
         sendStatus()
         work.async {
             HelperClient.send(.proxyOff)

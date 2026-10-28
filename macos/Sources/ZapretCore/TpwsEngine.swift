@@ -25,7 +25,8 @@ public enum EngineError: LocalizedError {
 /// (gözden geçirme #2). Süreç kimliği pid dosyasına yazılır; uygulama zorla kapatılıp tpws arkada
 /// kalırsa bir sonraki başlatmada kapatılır (#3).
 public final class TpwsEngine {
-    public var onUnexpectedExit: (() -> Void)?
+    /// Kendiliğinden kapanınca, nedeniyle ("sinyal 10 (SIGBUS)", "çıkış kodu 1").
+    public var onUnexpectedExit: ((String) -> Void)?
     public let port: Int
     let pidFile: URL?
     private let queue = DispatchQueue(label: "com.redriverr.zapret.engine")
@@ -73,7 +74,8 @@ public final class TpwsEngine {
                 self.queue.async {
                     guard self.process === proc else { return } // eski ya da bilinçli durdurulmuş süreç
                     self.clearLocked()
-                    if let cb = self.onUnexpectedExit { DispatchQueue.main.async { cb() } }
+                    let why = Self.describeExit(reason: proc.terminationReason, status: proc.terminationStatus)
+                    if let cb = self.onUnexpectedExit { DispatchQueue.main.async { cb(why) } }
                 }
             }
             try p.run()
@@ -103,6 +105,14 @@ public final class TpwsEngine {
         try? logHandle?.close()
         logHandle = nil
         if let f = pidFile { try? FileManager.default.removeItem(at: f) }
+    }
+
+    static func describeExit(reason: Process.TerminationReason, status: Int32) -> String {
+        guard reason == .uncaughtSignal else { return "çıkış kodu \(status)" }
+        let names: [Int32: String] = [SIGHUP: "SIGHUP", SIGINT: "SIGINT", SIGILL: "SIGILL", SIGTRAP: "SIGTRAP", SIGABRT: "SIGABRT",
+                                      SIGFPE: "SIGFPE", SIGKILL: "SIGKILL", SIGBUS: "SIGBUS", SIGSEGV: "SIGSEGV", SIGPIPE: "SIGPIPE",
+                                      SIGTERM: "SIGTERM"]
+        return "sinyal \(status)" + (names[status].map { " (\($0))" } ?? "")
     }
 
     /// pid dosyasındaki süreç hâlâ çalışıyor ve `expectedPath`'teki program ise kapatır; dosyayı siler.
