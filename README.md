@@ -16,6 +16,7 @@ Bu depo, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-t
 </p>
 
 ## İçindekiler
+- [macOS sürümü](#macos-sürümü)
 - [Öne çıkanlar](#öne-çıkanlar)
 - [İndirme ve kurulum](#i̇ndirme-ve-kurulum)
 - [İlk kullanım](#i̇lk-kullanım)
@@ -29,6 +30,11 @@ Bu depo, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-t
 - [Ayarlar dosyası ve komut satırı](#ayarlar-dosyası-ve-komut-satırı)
 - [Geliştirme](#geliştirme)
 - [Teşekkürler](#teşekkürler)
+
+## macOS sürümü
+Intel ve Apple Silicon Mac'ler için (macOS 12+), menü çubuğunda çalışan ayrı bir uygulama: strateji analizi, şifreli DNS ile Discord adları, konsol/TV için ağ paylaşımı ve otomatik güncelleme. Kurulum ve kullanım: **[docs/macos.md](docs/macos.md)**.
+
+<img src="docs/ekran/macos-panel.png" width="250" alt="macOS menü çubuğu paneli">
 
 ## Öne çıkanlar
 - **Sade, kompakt arayüz** (açık/koyu tema): Bağlantı, Strateji, Servis, DNS ve Diğer ekranları. Durumu tek bakışta gösterir: *Sen → Zapret → Sağlayıcı → Discord*.

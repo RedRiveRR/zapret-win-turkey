@@ -23,6 +23,23 @@ public enum LanShare {
         return (candidates.first { !$0.1.hasPrefix("169.254.") } ?? candidates.first)?.1
     }
 
+    /// `networksetup -listallhardwareports` çıktısından Wi-Fi (eski adı AirPort) aygıtları. `-getairportnetwork` macOS 14.4+'ta
+    /// konum izni olmadan Wi-Fi'yi göstermediği için bu yol kullanılır.
+    public static func wifiDevices(hardwarePorts out: String) -> [String] {
+        var result: [String] = [], isWifi = false
+        for raw in out.components(separatedBy: .newlines) {
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            if line.hasPrefix("Hardware Port:") {
+                let name = line.dropFirst("Hardware Port:".count).trimmingCharacters(in: .whitespaces)
+                isWifi = name == "Wi-Fi" || name == "AirPort"
+            } else if line.hasPrefix("Device:"), isWifi {
+                result.append(line.dropFirst("Device:".count).trimmingCharacters(in: .whitespaces))
+                isWifi = false
+            }
+        }
+        return result
+    }
+
     /// Sistemdeki IPv4 arayüzleri (ad, adres).
     public static func interfaces() -> [(String, String)] {
         var out: [(String, String)] = []

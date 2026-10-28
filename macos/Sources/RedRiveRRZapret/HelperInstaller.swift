@@ -57,7 +57,9 @@ enum HelperInstaller {
         // Soket açılana kadar en fazla 5 sn
         for _ in 0..<50 where !FileManager.default.fileExists(atPath: HelperPaths.socket) { Thread.sleep(forTimeInterval: 0.1) }
         let ok = FileManager.default.fileExists(atPath: HelperPaths.socket)
-        log(ok ? "yönetici yardımcısı kuruldu" : "yardımcı kuruldu ama soket açılmadı")
+        // macOS 13+: LaunchDaemon "arka plan öğesi" sayılır; kullanıcı Giriş Öğeleri'nde kapattıysa hiç başlamaz.
+        log(ok ? "yönetici yardımcısı kuruldu"
+               : "yardımcı kuruldu ama soket açılmadı (macOS 13+: Sistem Ayarları › Genel › Giriş Öğeleri › Arka planda izin ver › RedRiveRR Zapret açık olmalı)")
         return ok
     }
 

@@ -12,6 +12,7 @@
   <key>CFBundleVersion</key><string>__SURUM__</string>
   <key>LSMinimumSystemVersion</key><string>12.0</string>
   <key>LSUIElement</key><true/>
+  <key>NSLocalNetworkUsageDescription</key><string>Ağ paylaşımı açıkken konsol ve TV'nin bu Mac üzerinden Discord'a bağlanabilmesi için yerel ağ erişimi gerekir.</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSHumanReadableCopyright</key><string>RedRiveRR — alimali54/zapret-win-turkey tabanlı</string>
   <key>NSPrincipalClass</key><string>NSApplication</string>

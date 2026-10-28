@@ -158,7 +158,7 @@ final class AppController: NSObject, WKScriptMessageHandler {
         if !HelperClient.isCurrent {
             log(HelperClient.isInstalled ? "yönetici yardımcısı eski sürüm; güncelleniyor" : "yönetici yardımcısı kuruluyor")
             if !HelperInstaller.install(log: log) {
-                return "Yönetici yardımcısı kurulamadı. Proxy ayarı için bir kez yönetici parolası gerekiyor."
+                return "Yönetici yardımcısı çalışmıyor. Parola istendiyse girin; macOS 13 ve sonrasında Sistem Ayarları › Genel › Giriş Öğeleri › \"Arka planda izin ver\" altında RedRiveRR Zapret'i açın."
             }
         }
         let tpws = Bundle.main.bundleURL.appendingPathComponent("Contents/Resources/bin/tpws").path
@@ -365,6 +365,9 @@ final class AppController: NSObject, WKScriptMessageHandler {
         devices.feed(String(decoding: data, as: UTF8.self))
     }
 
+    /// Donanım portları oturum boyunca değişmez; her 5 sn'de bir networksetup çalıştırılmasın.
+    private static let hardwarePorts = run(["/usr/sbin/networksetup", "-listallhardwareports"])
+
     private func sendShare() {
         lanLock.lock()
         let on = shareOn, gw = gatewayOn
@@ -380,7 +383,7 @@ final class AppController: NSObject, WKScriptMessageHandler {
         post(Json.object(["tip": "paylasim", "acik": on, "kullanilabilir": status == .manual, "gecit": gw,
                           "adres": lan ?? "", "port": LanShare.port,
                           "ip": plan.deviceIP, "maske": plan.mask, "agGecidi": plan.gateway, "dns": plan.dns, "dns2": plan.dns2, "mtu": mtu,
-                          "kablosuz": ifName.map { Self.run(["/usr/sbin/networksetup", "-getairportnetwork", $0]).contains("Current Wi-Fi") } ?? false,
+                          "kablosuz": ifName.map { LanShare.wifiDevices(hardwarePorts: Self.hardwarePorts).contains($0) } ?? false,
                           "cihaz": deviceCount, "etkin": activeCount, "cihazlar": Json.Raw(deviceRows), "guvenlikDuvari": firewall]))
         DispatchQueue.main.async {
             if on && self.shareTimer == nil {
