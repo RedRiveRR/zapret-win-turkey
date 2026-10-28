@@ -55,11 +55,12 @@ If $CmdLine[0] >= 5 And $CmdLine[1] = $UPDATE_APPLY_ARG Then
     Exit _UpdateApply(Int($CmdLine[2]), $CmdLine[3], $CmdLine[4], $CmdLine[5], $__sApplyArgs)
 EndIf
 
-; --- BAŞSIZ SAĞLIK KONTROLÜ (Görev Zamanlayıcı: /saglik) ---
+; --- BAŞSIZ SAĞLIK KONTROLÜ (/saglik) ---
 ; Pencere açılmaz; servis modunda Discord bağlantısını kontrol edip gerekirse onarır (lib/Health.au3).
+; Açık program 30 dk'da bir ve ağ gelince kendini "/saglik /uygulamadan" ile başlatır (H32).
 If $CmdLine[0] >= 1 And $CmdLine[1] = $HEALTH_ARG Then
     _LogInit(@ScriptDir & "\logs\app.log")
-    Exit _HealthRun(@ScriptDir, "ZapretService", $APP_NAME)
+    Exit _HealthRun(@ScriptDir, "ZapretService", $APP_NAME, False, $CmdLine[0] >= 2 And $CmdLine[2] = $HEALTH_ARG_CHILD)
 EndIf
 
 ; --- GELİŞTİRİCİ: ARAYÜZ ÖNİZLEMESİ (/arayuz-onizleme <klasör>) ---
@@ -72,8 +73,8 @@ Global $g_hWebStartTimer = 0, $g_hWebSyncTimer = 0, $g_hWebHealthTimer = 0, $g_s
 ; Yeni arayüzün Strateji ekranı: seçilen analiz türü (-1 = seçici penceresi açılır), son gönderilen mesaj
 Global $g_iWebAnalysisChoice = -1, $g_sWebLastStratJson = "", $g_hWebStratTimer = 0, $g_sWebSmartStamp = ""
 Global $g_sWebSmartSummary = "", $g_aWebSmartRows[0][1]
-; Servis ekranı: servis durumu 5 sn'de, onarım görevi 30 sn'de bir okunur (sc/schtasks süreç başlatır)
-Global $g_sWebLastSvcJson = "", $g_hWebSvcTimer = 0, $g_hWebTaskTimer = 0, $g_sWebSvcState = "", $g_bWebTaskExists = False
+; Servis ekranı: servis durumu 5 sn'de bir okunur (sc süreç başlatır)
+Global $g_sWebLastSvcJson = "", $g_hWebSvcTimer = 0, $g_sWebSvcState = ""
 Global $g_bWebHealthIni = True, $g_bWebRestartIni = False, $g_sWebSvcHealth = ""
 ; DNS ekranı: etkin DNS sunucuları ("?" = okunmadı; PowerShell gerektirir, yalnızca sekme açılınca ve değişiklikten sonra okunur)
 Global $g_sWebDnsServers = "?", $g_bWebDnsReread = False, $g_sWebLastDnsJson = ""
@@ -375,8 +376,8 @@ Local $hProcessTimer = TimerInit() ; ZAMANLAYICIYI BAŞLAT (Bunu While 1'in heme
 ; --- AÇILIŞTA DNSCRYPT SERVİS DURUMUNU KONTROL ET ---
 _CheckDnscryptStatus()
 
-; --- Exe adı/yolu değiştiyse otomatik onarım görevini bu programa yönelt ---
-_HealthTaskRepair()
+; --- Eski sürümün zamanlanmış onarım görevi kaldırılır; kontrol artık program içinde (H32) ---
+_HealthRemoveTask()
 
 ; --- SERVİS ÇALIŞIYORSA DISCORD'A GERÇEKTEN ULAŞILIYOR MU? ---
 _StartupServiceCheck()
@@ -395,6 +396,13 @@ While 1
 
     ; Güncellemeden sonra: önceki manuel mod / paylaşım bir kez yeniden başlatılır (en fazla 2 dk denenir).
     If ($g_bResumeManual Or $g_bResumeLan) And $nMsg = 0 Then $nMsg = _AppResumeTick()
+
+    ; Arka plan sağlık kontrolü (30 dk / ağ gelince, alt süreçte). Bitince strateji ve servis ekranı yenilenir.
+    If $nMsg = 0 And _HealthBackgroundTick(@ScriptDir, $serviceName) Then
+        _LoadStrategyList("Analiz Sonucu")
+        _RefreshStrategyLabel()
+        _WebUiServiceRefreshSoon()
+    EndIf
 
     ; DNSCrypt çalışırken kuyruğa alınan tıklamaları da atla.
     If $nMsg = $btnDnscrypt And $bDnscryptBusy Then ContinueLoop
@@ -2140,10 +2148,9 @@ Func _WebUiRefreshNow($iMaxMs = 3000)
     Until $g_bWebPageReady Or (TimerDiff($hT) > $iMaxMs) Or (_WV2_State() <> $WV2_STATE_READY And TimerDiff($hT) > 1000)
 EndFunc
 
-; Servis ekranı bir sonraki turda servis durumunu ve onarım görevini yeniden okusun.
+; Servis ekranı bir sonraki turda servis durumunu yeniden okusun.
 Func _WebUiServiceRefreshSoon()
     $g_hWebSvcTimer = 0
-    $g_hWebTaskTimer = 0
     $g_sWebLastSvcJson = ""
 EndFunc
 
@@ -2151,14 +2158,9 @@ Func _WebUiSyncService()
     If $g_hWebSvcTimer = 0 Or TimerDiff($g_hWebSvcTimer) > 5000 Then
         $g_hWebSvcTimer = TimerInit()
         $g_sWebSvcState = _ServiceGetState($serviceName)
-        If $g_hWebTaskTimer = 0 Or TimerDiff($g_hWebTaskTimer) > 30000 Then
-            $g_hWebTaskTimer = TimerInit()
-            $g_bWebTaskExists = _ScheduleExists($HEALTH_TASK_NAME)
-        EndIf
         Local $sEnabled = IniRead($iniPath, "Health", "Enabled", "1")
         Local $bService = $g_sWebSvcState <> ""
-        ; Ayarlar penceresiyle aynı kural: servis varken görev yoksa onarım kapalı sayılır.
-        $g_bWebHealthIni = $sEnabled = "1" And ($g_bWebTaskExists Or Not $bService)
+        $g_bWebHealthIni = $sEnabled = "1"
         $g_bWebRestartIni = IniRead($iniPath, "Service", "AutoRestart", "0") = "1"
         $g_sWebUpdateIni = IniRead($iniPath, "Settings", "UpdateCheck", "1")
         $g_sWebSvcHealth = _HealthStatusFormat($bService, $sEnabled, IniRead($iniPath, "Health", "LastCheck", ""), _

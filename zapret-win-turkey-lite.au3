@@ -36,11 +36,12 @@
 
 #include <ProgressConstants.au3>
 
-; --- BAŞSIZ SAĞLIK KONTROLÜ (Görev Zamanlayıcı: /saglik) ---
+; --- BAŞSIZ SAĞLIK KONTROLÜ (/saglik) ---
 ; Pencere açılmaz; servis modunda Discord bağlantısını kontrol edip gerekirse onarır (lib/Health.au3).
+; Açık program 30 dk'da bir ve ağ gelince kendini "/saglik /uygulamadan" ile başlatır (H32).
 If $CmdLine[0] >= 1 And $CmdLine[1] = $HEALTH_ARG Then
     _LogInit(@ScriptDir & "\logs\app.log")
-    Exit _HealthRun(@ScriptDir, "ZapretService", $APP_NAME)
+    Exit _HealthRun(@ScriptDir, "ZapretService", $APP_NAME, False, $CmdLine[0] >= 2 And $CmdLine[2] = $HEALTH_ARG_CHILD)
 EndIf
 
 ; --- ZIP / TEMP KLASÖRÜ KONTROLÜ ---
@@ -251,8 +252,7 @@ WEnd
 ; --- GÜNCELLEME KONTROLÜ (arka planda; config.ini'de UpdateCheck=0 ile kapatılır) ---
 If IniRead($iniPath, "Settings", "UpdateCheck", "1") <> "0" Then _UpdateStartCheck($APP_UPDATE_REPO)
 
-; --- Exe adı/yolu değiştiyse otomatik onarım görevini bu programa yönelt ---
-_HealthTaskRepair()
+_HealthRemoveTask() ; eski zamanlanmış onarım görevi (H32); kontrol artık program içinde
 
 ; --- Ana Döngü ---
 Local $hProcessTimer = TimerInit()
@@ -261,6 +261,9 @@ While 1
     Local $nMsg = GUIGetMsg()
     _UiTick($hGUI)
     _LiteUiSync()
+
+    ; Arka plan sağlık kontrolü (30 dk / ağ gelince, alt süreçte, H32). Bitince strateji etiketi yenilenir.
+    If $nMsg = 0 And _HealthBackgroundTick(@ScriptDir, $serviceName) Then _RefreshStrategyLabel()
 
     ; Servis kurulumu sırasında kuyruğa alınan tıklamaları atla.
     If $nMsg = $btnInstallService And $bInstallServiceBusy Then ContinueLoop

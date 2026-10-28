@@ -68,7 +68,7 @@ Elle güncellemek isterseniz (ya da 5.2.0 öncesi bir sürümden):
 
 Ayarlarınız (`config\config.ini`), seçtiğiniz strateji, analiz sonuçları ve site listeleriniz (`hostlist.txt`, `excludelist.txt`, otomatik liste) korunur. 5.1.1'den itibaren paket bu listeleri `config\varsayilan\` altında getirir ve yalnızca eksikse kopyalar. 5.1.0 ve öncesinin ZIP'leri bu listeleri `config\` içinde taşıdığından, onları eski klasöre çıkarırsanız listeleriniz varsayılana döner.
 
-5.0.0'dan önce exe adı `zapret-win-turkey.exe` idi; eski exe'yi silebilirsiniz. Otomatik onarım görevi ilk açılışta kendiliğinden yeni exe'ye yönlendirilir. Eski kurulumun servisleri başka bir klasördeyse program bunu fark eder ve onayınızla temizler.
+5.0.0'dan önce exe adı `zapret-win-turkey.exe` idi; eski exe'yi silebilirsiniz. Eski kurulumun servisleri başka bir klasördeyse program bunu fark eder ve onayınızla temizler.
 
 ## İlk kullanım
 1. Programı açın. Açılışta DNS kontrol edilir; sağlayıcınızın DNS'i Discord'u yanlış gösteriyorsa Cloudflare'e geçmeniz önerilir.
@@ -90,14 +90,14 @@ Ayarlarınız (`config\config.ini`), seçtiğiniz strateji, analiz sonuçları v
 
 ## Servis ve otomatik onarım
 - **Servis** (`ZapretService`) bilgisayar açılınca gecikmesiz başlar. Seçili strateji ve filtre servise yazılır; stratejiyi değiştirmek için servis kuruluyken Strateji ekranından analiz yapmanız yeterlidir, servis yeni stratejiyle kendiliğinden güncellenir.
-- **Otomatik onarım** bir zamanlanmış görevdir: oturum açılışında, 30 dakikada bir ve ağ bağlantısı değişince Discord'a bağlanmayı dener. Sorun varsa sırasıyla şunları dener:
+- **Otomatik onarım** program açıkken (pencere ya da tepside) çalışır: açılışta, 30 dakikada bir ve ağ bağlantısı gelince Discord'a bağlanmayı dener. Program tamamen kapalıyken servis çalışmaya devam eder ama onarım yapılmaz. (5.2.2'ye kadar bu bir zamanlanmış görevdi; Windows Defender onu "Behavior:Win32/Persistence.A!ml" sayıp programı karantinaya aldığı için 5.2.3'ten itibaren görev kurulmaz, eskisi kendiliğinden silinir.) Sorun varsa sırasıyla şunları dener:
   1. DNS düzeltme (zehirlenme varsa Cloudflare),
   2. son analizdeki yedek stratejiler,
   3. gerekirse hızlı akıllı analiz (günde en fazla 2).
   Sonuç Windows bildirimiyle gösterilir. İnternet tamamen kesikse hiçbir şey değiştirilmez; açılışta ağ geç gelirse ~2 dakika beklenir.
 - Programı açtığınızda servis çalıştığı halde Discord'a ulaşılamıyorsa onarım önerilir.
 - **Kapanırsa yeniden başlat** varsayılan olarak kapalıdır: hile korumalı (anti-cheat) oyunlar zapret'i kapatabilir; tekrar tekrar açılması hesabınız için risk olabilir. Açarsanız en fazla 2 kez yeniden başlatılır.
-- **Servisi kaldır / Her şeyi temizle:** servis, onarım görevi, WinDivert/Monkey sürücüleri ve DNSCrypt kaldırılır, DNS otomatiğe (DHCP) döner. İki adımlı onay ister.
+- **Servisi kaldır / Her şeyi temizle:** servis, (eski sürümlerden kalan) onarım görevi, WinDivert/Monkey sürücüleri ve DNSCrypt kaldırılır, DNS otomatiğe (DHCP) döner. İki adımlı onay ister.
 
 ## Akıllı analiz nasıl ölçer?
 Her strateji winws2 ile kısa süre başlatılır ve `gateway.discord.gg`, `discord.com`, `roblox.com`, Discord CDN'ine TLS 1.2 ve 1.3 ile defalarca bağlanılır. Puan; başarı oranı, gecikme, kararlılık ve sadelikten oluşur. Hedefler `config.ini` → `[SmartAnalysis] Targets=` ile değiştirilebilir.
@@ -184,7 +184,7 @@ Ayarlar `config\config.ini` içindedir; çoğu arayüzden değiştirilir.
 | `[SmartAnalysis]` | `Targets` | Ölçüm hedefleri (`host:ağırlık,…`) |
 | `[Arayuz]` | `Yeni`, `Tema` | Yeni arayüz (1/0), tema (`acik`/`koyu`) |
 
-Komut satırı: `/eski-arayuz` (klasik pencere), `/yeni-arayuz`, `/saglik` (otomatik onarım görevinin kullandığı tek seferlik kontrol).
+Komut satırı: `/eski-arayuz` (klasik pencere), `/yeni-arayuz`, `/saglik` (tek seferlik sağlık kontrolü; açık program bunu arka planda kendisi çalıştırır).
 
 ## Geliştirme
 AutoIt3 uygulaması. Ortak mantık `lib/` altında (GUI'den bağımsız, birim testli), pencereler `ui/` altında; yeni arayüz `ui/web/` (HTML/CSS/JS, WebView2 ile `ui/WebView2.au3`).

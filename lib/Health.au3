@@ -11,9 +11,12 @@
 
 ; =========================================================================
 ; --- SAĞLIK KONTROLÜ (kendini onaran servis) ---
-; Görev Zamanlayıcı tarafından pencere açılmadan çalıştırılır:
-;   zapret-win-turkey.exe /saglik
-; Yalnızca servis modunda çalışır. Adımlar (her biri başarısızsa sonrakine geçilir):
+; Program açıkken (pencere ya da tepside) arka planda çalışır: program kendini alt süreç olarak
+; pencere açmadan başlatır ("RedRiveRR Zapret.exe" /saglik /uygulamadan) ki uzun onarım arayüzü
+; dondurmasın. Zamanlanmış görev yok (H32: oturum açılışında kendini UAC'siz yönetici başlatan
+; görev Defender'da "Behavior:Win32/Persistence.A!ml" sayıldı, exe karantinaya alındı).
+; Tetikleyiciler: 30 dakikada bir ve ağ bağlantısı gelince (30 sn sonra). Açılıştaki hızlı
+; kontrol ayrıca _StartupServiceCheck'tedir. Yalnızca servis modunda çalışır. Adımlar (her biri başarısızsa sonrakine geçilir):
 ;   1) gateway.discord.gg / discord.com'a TCP bağlantısı açılıyor mu?  -> sağlıklı
 ;   2) Servis durmuşsa: yalnızca kullanıcı otomatik yeniden başlatmaya izin verdiyse
 ;      başlat (ADR-007: hile koruma kapattıysa inatla açma); yoksa bildir ve çık.
@@ -25,7 +28,10 @@
 
 Global Const $HEALTH_TASK_NAME = "ZapretWinTurkey Saglik Kontrolu"
 Global Const $HEALTH_ARG = "/saglik"
-Global Const $HEALTH_INTERVAL_MIN = 30
+Global Const $HEALTH_ARG_CHILD = "/uygulamadan" ; alt süreç işareti: pencere açık olsa da kontrol et
+Global Const $HEALTH_BG_INTERVAL_MS = 30 * 60000
+Global Const $HEALTH_NET_UP_DELAY_MS = 30000
+Global Const $HEALTH_IP_POLL_MS = 5000
 Global Const $HEALTH_MAX_ANALYZE_PER_DAY = 2
 Global Const $HEALTH_MAX_FALLBACK = 3
 Global Const $HEALTH_PROBE_HOSTS = "gateway.discord.gg,discord.com"
@@ -191,12 +197,13 @@ EndFunc
 
 ; Tam sağlık kontrolü. Dönüş: $HEALTH_* sonuç kodu.
 ;   $bFromGui: ayarlar penceresindeki "Şimdi kontrol et" (pencere açık kontrolü ve Enabled atlanır)
-Func _HealthRun($sRoot, $sName, $sAppName, $bFromGui = False)
+;   $bFromApp: programın başlattığı arka plan alt süreci (pencere açık olsa da çalışır)
+Func _HealthRun($sRoot, $sName, $sAppName, $bFromGui = False, $bFromApp = False)
     Local $sIni = $sRoot & "\config\config.ini"
     If Not $bFromGui And IniRead($sIni, "Health", "Enabled", "1") <> "1" Then Return $HEALTH_SKIPPED
     If Not _ServiceIsInstalled($sName) Then Return $HEALTH_SKIPPED
     _ServiceMigrateDhcpFilter($sName) ; eski servis açılışta DHCP'yi bozuyordu (H31)
-    If Not $bFromGui And _HealthGuiIsOpen($sAppName) Then Return $HEALTH_SKIPPED
+    If Not $bFromGui And Not $bFromApp And _HealthGuiIsOpen($sAppName) Then Return $HEALTH_SKIPPED
 
     Local $sBin = _ServiceParseBinPath(_ServiceGetConfig($sName))
     If Not StringInStr($sBin, "winws2.exe") Then Return $HEALTH_SKIPPED ; yalnız Zapret2 servisi onarılır
@@ -229,7 +236,7 @@ Func _HealthRun($sRoot, $sName, $sAppName, $bFromGui = False)
     EndIf
     ; Kesinti mi engelleme mi? İnternet yoksa hiçbir şeyi değiştirme. Arka plan kontrolünde ağın
     ; gelmesi beklenir (2026-10-24: oturum açılışındaki kontrol ağdan önce çalışıp vazgeçmişti).
-    If Not _HealthInternetUp($sCurl, $sNull) And Not __HealthWaitInternet($sCurl, $sNull, $sAppName, $bFromGui) Then
+    If Not _HealthInternetUp($sCurl, $sNull) And Not __HealthWaitInternet($sCurl, $sNull, $sAppName, $bFromGui, $bFromApp) Then
         If IniRead($sIni, "Health", "LastResult", "") <> "internet yok" Then _LogWarn("Sağlık kontrolü: internet bağlantısı yok; onarım yapılmadı")
         IniWrite($sIni, "Health", "LastResult", "internet yok")
         Return $HEALTH_NO_INTERNET
@@ -299,45 +306,74 @@ Func _HealthRun($sRoot, $sName, $sAppName, $bFromGui = False)
     Return __HealthFail($sIni, "Otomatik onarım başarısız; servis eski stratejisinde bırakıldı. Programı açıp 'ISS Analizi' ile tam analiz yapabilirsiniz.")
 EndFunc
 
-; Servis kurulduktan sonra sorulur: otomatik onarım (sağlık kontrolü görevi) kurulsun mu?
-; Cevap config.ini [Health] Enabled'da saklanır. Kurulduysa True.
+; Servis kurulduktan sonra sorulur: otomatik onarım açılsın mı? Cevap config.ini [Health] Enabled'da.
+; Açıldıysa True.
 Func _HealthOfferSetup($sIni)
     Local $iAns = MsgBox(4 + 32 + 8192, "Otomatik Onarım", _
-            "Zapret'in Discord bağlantısını arka planda kontrol edip sorun olunca kendini onarması istensin mi? (önerilen)" & @CRLF & @CRLF & _
-            "• Oturum açılışında, 30 dakikada bir ve ağ bağlantısı değişince kısa bir kontrol yapılır." & @CRLF & _
+            "Program açıkken (tepside de) Zapret'in Discord bağlantısını kontrol edip sorun olunca kendini onarması istensin mi? (önerilen)" & @CRLF & @CRLF & _
+            "• 30 dakikada bir ve ağ bağlantısı gelince kısa bir kontrol yapılır." & @CRLF & _
             "• Sorun varsa sırasıyla: DNS düzeltme, son analizdeki yedek stratejiler, gerekirse hızlı analiz (günde en fazla " & $HEALTH_MAX_ANALYZE_PER_DAY & ")." & @CRLF & _
-            "• Servis kapatılmışsa (ör. oyun hile koruması) yalnızca 'otomatik yeniden başlatma'ya izin verdiyseniz açılır; aksi halde sadece bildirilir.")
-    If $iAns <> 6 Then
-        IniWrite($sIni, "Health", "Enabled", "0")
-        _ScheduleRemove($HEALTH_TASK_NAME)
-        _LogInfo("Otomatik onarım kullanıcı tarafından kapatıldı")
-        Return False
-    EndIf
-    IniWrite($sIni, "Health", "Enabled", "1")
-    Local $iRc = _HealthInstallTask()
-    If $iRc <> 0 Then
-        MsgBox(48 + 8192, "Otomatik Onarım", "Zamanlanmış görev oluşturulamadı (hata kodu " & $iRc & "). Servis yine de çalışır.")
-        Return False
-    EndIf
-    Return True
+            "• Servis kapatılmışsa (ör. oyun hile koruması) yalnızca 'otomatik yeniden başlatma'ya izin verdiyseniz açılır; aksi halde sadece bildirilir." & @CRLF & _
+            "• Program tamamen kapalıyken servis çalışmaya devam eder, ancak onarım yapılmaz.")
+    IniWrite($sIni, "Health", "Enabled", $iAns = 6 ? "1" : "0")
+    _LogInfo("Otomatik onarım " & ($iAns = 6 ? "açıldı" : "kullanıcı tarafından kapatıldı"))
+    Return $iAns = 6
 EndFunc
 
-; Sağlık kontrolü görevini kurar. Dönüş: schtasks çıkış kodu (0 = başarılı).
-Func _HealthInstallTask()
-    Local $sCmd, $sArgs
-    _ScheduleSelfCommand($sCmd, $sArgs, $HEALTH_ARG)
-    Local $iRc = _ScheduleInstall($HEALTH_TASK_NAME, $sCmd, $sArgs, @ScriptDir, $HEALTH_INTERVAL_MIN, _
-            "RedRiveRR Zapret: Discord bağlantısını kontrol eder, gerekirse servisi onarır.")
-    _LogInfo("Otomatik onarım görevi kuruldu (schtasks çıkış kodu " & $iRc & "): " & $sCmd & " " & $sArgs)
-    Return $iRc
-EndFunc
-
-; Servis kaldırılınca sağlık kontrolü görevi de kaldırılır.
+; Eski sürümlerin kurduğu zamanlanmış görevi kaldırır (H32). Açılışta ve servis kaldırılınca çağrılır.
 Func _HealthRemoveTask()
     If _ScheduleExists($HEALTH_TASK_NAME) Then
         _ScheduleRemove($HEALTH_TASK_NAME)
-        _LogInfo("Otomatik onarım görevi kaldırıldı")
+        _LogInfo("Eski otomatik onarım görevi kaldırıldı (kontrol artık program içinde)")
     EndIf
+EndFunc
+
+; ------------------------------------------------------------------------
+; Program içindeki arka plan kontrolü (H32)
+; ------------------------------------------------------------------------
+Global $__g_hHealthBgTimer = 0, $__g_hHealthNetTimer = 0, $__g_hHealthIpTimer = 0
+Global $__g_sHealthIp = "", $__g_iHealthChildPid = 0
+
+; Arka plan kontrolü zamanı geldi mi? $fSinceNetUpMs: ağ geleli geçen süre, -1 = bekleyen ağ olayı yok.
+Func _HealthBackgroundDue($fSinceCheckMs, $fSinceNetUpMs)
+    If $fSinceCheckMs >= $HEALTH_BG_INTERVAL_MS Then Return True
+    Return $fSinceNetUpMs >= $HEALTH_NET_UP_DELAY_MS
+EndFunc
+
+; Kullanılabilir bir IPv4 adresi geldi ya da değişti mi? (0.0.0.0, geri döngü ve APIPA sayılmaz)
+Func _HealthNetCameUp($sPrevIp, $sNowIp)
+    If $sNowIp = "" Or $sNowIp = "0.0.0.0" Or StringLeft($sNowIp, 4) = "127." Or StringLeft($sNowIp, 8) = "169.254." Then Return False
+    Return $sNowIp <> $sPrevIp
+EndFunc
+
+; Ana döngüden sık çağrılır (ucuz). Zamanı gelince sağlık kontrolünü alt süreçte başlatır.
+; Alt süreç bittiyse 1 döner (çağıran arayüzü/stratejiyi yeniler), yoksa 0.
+Func _HealthBackgroundTick($sRoot, $sServiceName)
+    If $__g_hHealthBgTimer = 0 Then
+        $__g_hHealthBgTimer = TimerInit() ; ilk kontrol açılıştaki hızlı kontrolden 30 dk sonra
+        $__g_sHealthIp = @IPAddress1
+        $__g_hHealthIpTimer = TimerInit()
+    EndIf
+    If $__g_iHealthChildPid <> 0 Then
+        If ProcessExists($__g_iHealthChildPid) Then Return 0
+        $__g_iHealthChildPid = 0
+        Return 1
+    EndIf
+    If TimerDiff($__g_hHealthIpTimer) >= $HEALTH_IP_POLL_MS Then
+        $__g_hHealthIpTimer = TimerInit()
+        Local $sIp = @IPAddress1
+        If _HealthNetCameUp($__g_sHealthIp, $sIp) Then $__g_hHealthNetTimer = TimerInit()
+        $__g_sHealthIp = $sIp
+    EndIf
+    Local $fNet = ($__g_hHealthNetTimer = 0) ? -1 : TimerDiff($__g_hHealthNetTimer)
+    If Not _HealthBackgroundDue(TimerDiff($__g_hHealthBgTimer), $fNet) Then Return 0
+    $__g_hHealthBgTimer = TimerInit()
+    $__g_hHealthNetTimer = 0
+    If IniRead($sRoot & "\config\config.ini", "Health", "Enabled", "1") <> "1" Then Return 0
+    If Not _ServiceIsInstalled($sServiceName) Then Return 0
+    Local $sSelf = @Compiled ? '"' & @ScriptFullPath & '"' : '"' & @AutoItExe & '" "' & @ScriptFullPath & '"'
+    $__g_iHealthChildPid = Run($sSelf & " " & $HEALTH_ARG & " " & $HEALTH_ARG_CHILD, $sRoot, @SW_HIDE)
+    Return 0
 EndFunc
 
 Func __HealthSaveStrategy($sRoot, $sStrategy)
@@ -362,11 +398,11 @@ EndFunc
 
 ; İnternet gelene kadar bekler (yalnızca arka plan kontrolünde). Geldiyse True; program
 ; penceresi açılırsa beklemeyi bırakır (kullanıcı kendisi bakıyor).
-Func __HealthWaitInternet($sCurl, $sNull, $sAppName, $bFromGui)
+Func __HealthWaitInternet($sCurl, $sNull, $sAppName, $bFromGui, $bFromApp = False)
     If $bFromGui Then Return False
     For $i = 1 To $HEALTH_NET_WAIT_TRIES
         Sleep($HEALTH_NET_WAIT_MS)
-        If _HealthGuiIsOpen($sAppName) Then Return False
+        If Not $bFromApp And _HealthGuiIsOpen($sAppName) Then Return False
         If _HealthInternetUp($sCurl, $sNull) Then
             _LogInfo("Sağlık kontrolü: internet " & Int($i * $HEALTH_NET_WAIT_MS / 1000) & " sn sonra geldi")
             Return True
@@ -397,24 +433,3 @@ Func _HealthQuickCheck($sRoot)
     Return _HealthQuickVerdict(False, _HealthInternetUp($sCurl, $sNull))
 EndFunc
 
-; Görev bu programı çalıştırmıyorsa (exe yeniden adlandırıldı/taşındı: 2026-10-24 "zapret-win-turkey.exe" ->
-; "RedRiveRR Zapret.exe") görevi bu exe için yeniden kurar. Yalnız derlenmiş programda. Kurulduysa True.
-Func _HealthTaskRepair()
-    If Not @Compiled Then Return False
-    Local $sXml = _ScheduleQueryXml($HEALTH_TASK_NAME)
-    If $sXml = "" Then Return False
-    Local $sCmd, $sArgs
-    _ScheduleSelfCommand($sCmd, $sArgs, $HEALTH_ARG)
-    Local $sTaskCmd = _ScheduleXmlCommand($sXml)
-    If Not _HealthTaskShouldRepair($sTaskCmd, $sCmd, FileExists($sTaskCmd) = 1) Then Return False
-    _LogInfo("Otomatik onarım görevi " & $sTaskCmd & " gösteriyordu; " & $sCmd & " için yeniden kuruluyor")
-    Return _HealthInstallTask() = 0
-EndFunc
-
-; Görev yeniden kurulmalı mı? Yalnızca görevin exe'si silinmişse ya da aynı klasördeyse (yeniden adlandırma).
-; Başka klasördeki bir kopya (ör. eski yedek, H18) asıl kurulumun görevini kendine çekmez.
-Func _HealthTaskShouldRepair($sTaskCmd, $sOurCmd, $bTaskCmdExists)
-    If $sTaskCmd = "" Or $sTaskCmd = $sOurCmd Then Return False
-    If Not $bTaskCmdExists Then Return True
-    Return StringRegExpReplace($sTaskCmd, "\\[^\\]*$", "") = StringRegExpReplace($sOurCmd, "\\[^\\]*$", "")
-EndFunc

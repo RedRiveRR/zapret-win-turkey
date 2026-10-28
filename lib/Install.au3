@@ -5,7 +5,7 @@
 
 ; =========================================================================
 ; --- KURULUM KONUMU GÜVENLİĞİ ---
-; Servis (winws2, SYSTEM) ve otomatik onarım görevi (yönetici) bu klasördeki
+; Servis (winws2, SYSTEM) ve yönetici olarak açılan program bu klasördeki
 ; dosyaları yükseltilmiş yetkiyle çalıştırır. Klasör kullanıcının yazabildiği bir
 ; yerdeyse (ör. C:\Users\...), kullanıcı hesabıyla çalışan herhangi bir program
 ; exe'yi değiştirip UAC'siz yönetici/SYSTEM yetkisi kazanabilir. Yalnız klasörün

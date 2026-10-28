@@ -54,15 +54,20 @@ Func _TestHealth()
     _AssertTrue(StringInStr(_HealthResultText($HEALTH_SERVICE_STOPPED), "yeniden başlatma kapalı") > 0, "servis durmuş metni")
     _AssertTrue(StringInStr(_HealthResultText(99), "Bilinmeyen") > 0, "bilinmeyen kod")
 
-    ; --- Görev XML'i: Windows XML ayrıştırıcısıyla geçerli mi? ---
-    Local $sXml = _ScheduleBuildXml("C:\A & B\zapret-win-turkey.exe", "/saglik", "C:\A & B", "PC\Ali", 30, "Açıklama <test>")
-    Local $oDoc = ObjCreate("Msxml2.DOMDocument.6.0")
-    _AssertTrue(IsObj($oDoc) And $oDoc.loadXML(StringReplace($sXml, 'encoding="UTF-16"', "")), "görev XML'i geçerli")
-    _AssertTrue(StringInStr($sXml, "<Command>C:\A &amp; B\zapret-win-turkey.exe</Command>") > 0, "yol XML-kaçışlı")
-    _AssertTrue(StringInStr($sXml, "<Interval>PT30M</Interval>") > 0, "30 dk aralık")
-    _AssertTrue(StringInStr($sXml, "EventID=10000") > 0, "ağ bağlantısı tetikleyicisi")
-    _AssertTrue(StringInStr($sXml, "<RunLevel>HighestAvailable</RunLevel>") > 0, "en yüksek ayrıcalık")
-    _AssertTrue(StringInStr($sXml, "<MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>") > 0, "tek örnek")
+    ; --- Arka plan kontrolü program içinde (H32: zamanlanmış görev yok) ---
+    _AssertFalse(_HealthBackgroundDue(29 * 60000, -1), "29 dk: henüz değil")
+    _AssertTrue(_HealthBackgroundDue(30 * 60000, -1), "30 dk dolunca kontrol")
+    _AssertFalse(_HealthBackgroundDue(5 * 60000, 10000), "ağ geleli 10 sn: bekle")
+    _AssertTrue(_HealthBackgroundDue(5 * 60000, 30000), "ağ geleli 30 sn: kontrol")
+    _AssertFalse(_HealthBackgroundDue(5 * 60000, -1), "ağ olayı yok, süre dolmadı")
+    _AssertTrue(_HealthNetCameUp("0.0.0.0", "192.168.1.50"), "adres geldi")
+    _AssertTrue(_HealthNetCameUp("", "192.168.1.50"), "ilk adres")
+    _AssertTrue(_HealthNetCameUp("127.0.0.1", "10.0.0.5"), "geri döngüden gerçek adrese")
+    _AssertTrue(_HealthNetCameUp("192.168.1.50", "192.168.0.20"), "başka ağa geçildi")
+    _AssertFalse(_HealthNetCameUp("192.168.1.50", "192.168.1.50"), "değişiklik yok")
+    _AssertFalse(_HealthNetCameUp("192.168.1.50", "0.0.0.0"), "ağ gitti")
+    _AssertFalse(_HealthNetCameUp("192.168.1.50", "169.254.10.1"), "DHCP alınamadı (APIPA) gelmiş sayılmaz")
+    _AssertEq($HEALTH_ARG_CHILD, "/uygulamadan", "alt süreç işareti")
     _AssertFalse(_ScheduleExists("zwt-olmayan-gorev-123"), "olmayan görev yok sayılır")
 
     ; --- _HealthGuiIsOpen: görünür pencere sayılır, gizli (tepsideki) sayılmaz ---
@@ -80,18 +85,6 @@ Func _TestHealth()
     _AssertEq(_HealthQuickVerdict(False, True), "onar", "Discord kapalı, internet var: onar")
     _AssertEq(_HealthQuickVerdict(False, False), "internet yok", "internet yoksa onarım önerilmez")
 
-    ; --- Görev komutu (exe yeniden adlandırma geçişi) ---
-    Local $sTaskXml = _ScheduleBuildXml("C:\Program Files\Z\zapret-win-turkey.exe", "/saglik", "C:\Program Files\Z", "PC\Ali", 30, "x")
-    _AssertTrue(_ScheduleXmlHasCommand($sTaskXml, "C:\Program Files\Z\zapret-win-turkey.exe"), "görev aynı exe'yi gösteriyor")
-    _AssertFalse(_ScheduleXmlHasCommand($sTaskXml, "C:\Program Files\Z\RedRiveRR Zapret.exe"), "yeniden adlandırılan exe'yi göstermiyor")
-    _AssertTrue(_ScheduleXmlHasCommand(_ScheduleBuildXml("C:\A & B\x.exe", "", "C:\", "PC\A", 30, ""), "C:\A & B\x.exe"), "özel karakterli yol")
-    _AssertEq(_ScheduleXmlCommand(_ScheduleBuildXml("C:\A & B\x.exe", "", "C:\", "PC\A", 30, "")), "C:\A & B\x.exe", "görev komutu çözülür")
-    _AssertEq(_ScheduleXmlCommand("<Task></Task>"), "", "komut yoksa boş")
-    Local $sOld = "C:\Program Files\Z\zapret-win-turkey.exe", $sNew = "C:\Program Files\Z\RedRiveRR Zapret.exe"
-    _AssertTrue(_HealthTaskShouldRepair($sOld, $sNew, True), "aynı klasörde yeniden adlandırma: onar")
-    _AssertTrue(_HealthTaskShouldRepair("D:\Eski\zapret-win-turkey.exe", $sNew, False), "görevin exe'si silinmiş: onar")
-    _AssertFalse(_HealthTaskShouldRepair($sNew, "D:\Yedek\RedRiveRR Zapret.exe", True), "başka klasördeki kopya görevi çekmez (H18)")
-    _AssertFalse(_HealthTaskShouldRepair($sNew, $sNew, True), "zaten bu exe")
 EndFunc
 
 Func __TestHealthRow(ByRef $a, $i, $s, $fScore)

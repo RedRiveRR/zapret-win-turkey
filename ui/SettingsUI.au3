@@ -11,14 +11,14 @@
 ; =========================================================================
 ; --- AYARLAR PENCERESİ (koyu tema) ---
 ; config.ini'deki otomatik onarım, servis yeniden başlatma ve güncelleme
-; seçeneklerini değiştirir; servis kuruluysa görevi ve kurtarma ayarını hemen
-; uygular. "Şimdi kontrol et" sağlık kontrolünü elle çalıştırır.
+; seçeneklerini değiştirir; servis kuruluysa kurtarma ayarını hemen uygular.
+; Onarım program açıkken (tepside de) çalışır; zamanlanmış görev yoktur (H32). "Şimdi kontrol et" sağlık kontrolünü elle çalıştırır.
 ; =========================================================================
 
-Func __SettingsUI_StatusText($sIni, $bService, $bTask)
+Func __SettingsUI_StatusText($sIni, $bService)
     Local $sLast = IniRead($sIni, "Health", "LastCheck", "")
     Local $sRes = IniRead($sIni, "Health", "LastResult", "")
-    Return "Servis: " & ($bService ? "kurulu" : "kurulu değil") & "   ·   Onarım görevi: " & ($bTask ? "kurulu" : "yok") & @CRLF & _
+    Return "Servis: " & ($bService ? "kurulu" : "kurulu değil") & @CRLF & _
             "Son kontrol: " & ($sLast = "" ? "henüz yok" : $sLast & ($sRes = "" ? "" : " — " & $sRes))
 EndFunc
 
@@ -27,7 +27,6 @@ EndFunc
 Func _SettingsUI_Show($sRoot, $sServiceName, $sAppName, $hParent, $bWebUiOption = False)
     Local $sIni = $sRoot & "\config\config.ini"
     Local $bService = _ServiceIsInstalled($sServiceName)
-    Local $bTask = _ScheduleExists($HEALTH_TASK_NAME)
 
     GUISetState(@SW_DISABLE, $hParent)
     Local $aMark = _UiMark()
@@ -39,8 +38,8 @@ Func _SettingsUI_Show($sRoot, $sServiceName, $sAppName, $hParent, $bWebUiOption 
     _UiCard(24, 62, 512, 200)
     _UiLabel("OTOMATİK ONARIM (SERVİS MODUNDA)", 44, 78, 460, 18, 8.5, $UI_MUTED, 700)
     Local $tglHealth = _UiToggle("Discord bağlantısını arka planda kontrol et ve onar", 44, 104, 470, _
-            IniRead($sIni, "Health", "Enabled", "1") = "1" And ($bTask Or Not $bService))
-    _UiLabel("Oturum açılışında, 30 dakikada bir ve ağ bağlantısı değişince.", 96, 128, 420, 18, 8.5, $UI_MUTED)
+            IniRead($sIni, "Health", "Enabled", "1") = "1")
+    _UiLabel("Program açıkken (tepside de): 30 dakikada bir ve ağ bağlantısı gelince.", 96, 128, 420, 18, 8.5, $UI_MUTED)
     Local $tglDns = _UiToggle("DNS zehirlenmesi varsa DNS'i Cloudflare'e al", 44, 156, 470, IniRead($sIni, "Health", "AutoFixDns", "1") = "1")
     Local $tglAnalyze = _UiToggle("Gerekirse hızlı akıllı analiz yap (günde en fazla " & $HEALTH_MAX_ANALYZE_PER_DAY & ")", 44, 192, 470, _
             IniRead($sIni, "Health", "AutoAnalyze", "1") = "1")
@@ -58,7 +57,7 @@ Func _SettingsUI_Show($sRoot, $sServiceName, $sAppName, $hParent, $bWebUiOption 
     Local $tglWebUi = 0
     If $bWebUiOption Then $tglWebUi = _UiToggle("Yeni arayüz (kapatırsan eski arayüz açılır, sonraki açılışta)", 44, 434, 470, IniRead($sIni, "Arayuz", "Yeni", "1") = "1")
 
-    Local $lblStatus = _UiLabel(__SettingsUI_StatusText($sIni, $bService, $bTask), 24, 448 + $iExtra, 512, 36, 8.5, $UI_TEXT2)
+    Local $lblStatus = _UiLabel(__SettingsUI_StatusText($sIni, $bService), 24, 448 + $iExtra, 512, 36, 8.5, $UI_TEXT2)
 
     Local $btnCheck = _UiButton("Şimdi kontrol et", 24, 494 + $iExtra, 150, 36, $UI_KIND_SECONDARY, 9.5, 8, $UI_BG)
     Local $btnSave = _UiButton("Kaydet", 300, 494 + $iExtra, 116, 36, $UI_KIND_PRIMARY, 10, 8, $UI_BG)
@@ -80,7 +79,7 @@ Func _SettingsUI_Show($sRoot, $sServiceName, $sAppName, $hParent, $bWebUiOption 
                 Local $iR = _HealthRun($sRoot, $sServiceName, $sAppName, True)
                 _LogInfo("Ayarlar: elle sağlık kontrolü sonucu " & $iR)
                 MsgBox(64 + 8192, "Sağlık Kontrolü", _HealthResultText($iR), 0, $h)
-                GUICtrlSetData($lblStatus, __SettingsUI_StatusText($sIni, $bService, _ScheduleExists($HEALTH_TASK_NAME)))
+                GUICtrlSetData($lblStatus, __SettingsUI_StatusText($sIni, $bService))
                 GUICtrlSetState($btnCheck, $GUI_ENABLE)
             Case $btnSave
                 Local $bHealth = _UiToggleGet($tglHealth)
@@ -111,19 +110,11 @@ Func _SettingsUI_Show($sRoot, $sServiceName, $sAppName, $hParent, $bWebUiOption 
     Return $bSaved
 EndFunc
 
-; Otomatik onarımı açar/kapatır; servis kuruluysa onarım görevini hemen kurar/kaldırır.
+; Otomatik onarımı açar/kapatır (config.ini; program içindeki arka plan kontrolü bunu okur).
 ; Dönüş: kullanıcıya gösterilecek not ("" = not yok). Yeni arayüzün Servis ekranı da kullanır.
 Func _SettingsApplyHealth($sIni, $bService, $bHealth)
     IniWrite($sIni, "Health", "Enabled", $bHealth ? "1" : "0")
-    If $bService Then
-        If $bHealth And Not _ScheduleExists($HEALTH_TASK_NAME) Then
-            If _HealthInstallTask() <> 0 Then Return "Uyarı: onarım görevi oluşturulamadı."
-        ElseIf Not $bHealth Then
-            _HealthRemoveTask()
-        EndIf
-    ElseIf $bHealth Then
-        Return "Otomatik onarım, servis kurulunca etkinleşir."
-    EndIf
+    If $bHealth And Not $bService Then Return "Otomatik onarım, servis kurulunca etkinleşir."
     Return ""
 EndFunc
 
