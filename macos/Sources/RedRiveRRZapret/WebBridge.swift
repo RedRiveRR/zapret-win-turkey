@@ -12,6 +12,9 @@ final class AppController: NSObject, WKScriptMessageHandler {
     /// Motor ve yardımcı çağrıları ana iş parçacığını kilitlemesin; sırayla çalışsın (gözden geçirme #2).
     private let work = DispatchQueue(label: "com.redriverr.zapret.work")
     private var strategies: [TpwsStrategy] = []
+    private var bundled: [TpwsStrategy] = [] // paketteki strategies-macos.ini
+    private var report: AnalysisReport?      // son strateji analizi (analiz.json)
+    private var analyzing = false
     private var selected = ""
     private var running = "" // çalışan strateji (seçili olandan farklı olabilir)
     private var status: AppStatus = .ready
@@ -31,12 +34,15 @@ final class AppController: NSObject, WKScriptMessageHandler {
         return u
     }()
     private var configURL: URL { Self.supportDir.appendingPathComponent("config.ini") }
+    private var analysisURL: URL { Self.supportDir.appendingPathComponent("analiz.json") }
 
     override init() {
         super.init()
         let ini = Bundle.main.url(forResource: "strategies-macos", withExtension: "ini")
             .flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? ""
-        strategies = Strategies.parse(ini)
+        bundled = Strategies.parse(ini)
+        if let d = try? Data(contentsOf: analysisURL), let r = try? JSONDecoder().decode(AnalysisReport.self, from: d) { report = r }
+        strategies = AnalysisReport.strategies(bundled: bundled, scores: report?.scores ?? [])
         let saved = readConfig()["ActiveStrategy"] ?? ""
         selected = strategies.contains { $0.name == saved } ? saved : (strategies.first?.name ?? "")
         engine.onUnexpectedExit = { [weak self] in self?.engineDied() }
@@ -52,13 +58,15 @@ final class AppController: NSObject, WKScriptMessageHandler {
             post(Json.object(["tip": "platform", "ad": "macos"]))
             post(Json.object(["tip": "tema", "tema": readConfig()["Tema"] ?? systemTheme()]))
             sendStatus()
-            post(WebState.strategyJson(options: strategies.map(\.name), selected: selected))
+            sendStrategy()
         case "tema":
             writeConfig("Tema", Json.get(text, "tema") == "koyu" ? "koyu" : "acik")
         case "komut":
             switch Json.get(text, "ad") {
             case "baslat": start()
             case "durdur": stop()
+            case "analiz": analyze()
+            case "sonuclar": openReport()
             case "kayitlar": NSWorkspace.shared.open(Self.logDir)
             case "github": NSWorkspace.shared.open(URL(string: "https://github.com/RedRiveRR/zapret-win-turkey")!)
             default: break
@@ -67,7 +75,7 @@ final class AppController: NSObject, WKScriptMessageHandler {
             // Başlatma/durdurma sürerken seçim yok sayılır; sayfa eski seçime döndürülür (gözden geçirme #6).
             if busy {
                 sendStatus()
-                post(WebState.strategyJson(options: strategies.map(\.name), selected: selected))
+                sendStrategy()
             } else if Json.get(text, "alan") == "strateji", let v = Json.get(text, "deger"), strategies.contains(where: { $0.name == v }) {
                 selected = v
                 writeConfig("ActiveStrategy", v)
@@ -113,6 +121,7 @@ final class AppController: NSObject, WKScriptMessageHandler {
             }
         }
         let tpws = Bundle.main.bundleURL.appendingPathComponent("Contents/Resources/bin/tpws").path
+        stopFront() // çalışırken strateji değişince eski ön proxy 1080'i bırakmalı
         // İlk Mac sürümü: atlatma yalnız Discord/Roblox listesine (filtre seçimi sonraki aşamada).
         let hostlist = Bundle.main.url(forResource: "hostlist", withExtension: "txt")?.path
         do {
@@ -206,6 +215,80 @@ final class AppController: NSObject, WKScriptMessageHandler {
             self.stopFront()
         }
     }
+
+    // MARK: Strateji analizi
+    /// Sağlayıcıya göre en iyi stratejiyi ölçer (sistem proxy'sine dokunmaz; adaylar geçici tpws kapılarında sınanır).
+    func analyze() {
+        guard !analyzing else { return }
+        analyzing = true
+        sendStrategy()
+        info("Strateji analizi: adlar çözülüyor…")
+        log("strateji analizi başladı")
+        let tpws = Bundle.main.bundleURL.appendingPathComponent("Contents/Resources/bin/tpws").path
+        let hostlist = Bundle.main.url(forResource: "hostlist", withExtension: "txt")?.path
+        let candidates = StrategyCandidates.generate(including: bundled)
+        DispatchQueue.global(qos: .userInitiated).async {
+            let plan = AnalysisPlan.make(resolve: DohResolver().resolve)
+            guard !plan.detail.isEmpty else {
+                DispatchQueue.main.async { self.analysisDone(nil, error: "Discord adları çözülemedi; şifreli DNS'e (DoH) ulaşılamıyor.") }
+                return
+            }
+            let base = TpwsMeasure.direct(plan.detail)
+            let analyzer = StrategyAnalyzer(concurrency: 4, measure: TpwsMeasure.make(tpwsPath: tpws, hostlist: hostlist, logDir: Self.logDir))
+            analyzer.onProgress = { done, total, phase in
+                DispatchQueue.main.async {
+                    let t = "Strateji analizi (\(phase)): \(done)/\(total)"
+                    self.info(t)
+                    self.notify(t) // Strateji sayfasında da görünsün
+                }
+            }
+            let scores = analyzer.run(candidates: candidates, screen: plan.screen, detail: plan.detail)
+            let f = DateFormatter()
+            f.dateFormat = "dd.MM HH:mm"
+            let r = AnalysisReport(time: f.string(from: Date()), baselinePassed: base.passed, baselineTotal: base.total, scores: scores)
+            DispatchQueue.main.async { self.analysisDone(r, error: nil) }
+        }
+    }
+
+    private func analysisDone(_ r: AnalysisReport?, error: String?) {
+        analyzing = false
+        info("")
+        if let r = r {
+            report = r
+            if let d = try? JSONEncoder().encode(r) { try? d.write(to: analysisURL, options: .atomic) }
+            strategies = AnalysisReport.strategies(bundled: bundled, scores: r.scores)
+            let summary = r.scores.prefix(3).map { "\($0.score) \($0.args.joined(separator: " "))" }.joined(separator: "; ")
+            log("strateji analizi bitti: taban \(r.baselinePassed)/\(r.baselineTotal), \(r.scores.count) aday; ilk: \(summary)")
+            if let best = AnalysisReport.best(bundled: bundled, scores: r.scores) {
+                selected = best.name
+                writeConfig("ActiveStrategy", best.name)
+                notify("En iyi strateji seçildi: \(best.name)" + (status == .manual ? " — uygulanıyor" : ""))
+                if status == .manual { start() }
+            } else {
+                notify("Bu ağda çalışan strateji bulunamadı. Tüm sonuçlar'dan ayrıntıya bakabilirsiniz.")
+            }
+        } else if let e = error {
+            log("strateji analizi başarısız: \(e)")
+            notify(e)
+        }
+        sendStrategy()
+        sendStatus()
+    }
+
+    private func openReport() {
+        guard let r = report else { return notify("Henüz analiz yapılmadı.") }
+        let url = Self.logDir.appendingPathComponent("strateji-analizi.txt")
+        try? r.text(bundled: bundled).write(to: url, atomically: true, encoding: .utf8)
+        NSWorkspace.shared.open(url)
+    }
+
+    private func sendStrategy() {
+        post(WebState.strategyJson(options: strategies.map(\.name), selected: selected, analysisEnabled: !analyzing,
+                                   time: report?.time ?? "", results: AnalysisReport.rows(bundled: bundled, scores: report?.scores ?? [])))
+    }
+
+    private func info(_ s: String) { post(Json.object(["tip": "bilgi", "metin": s])) }
+    private func notify(_ s: String) { post(Json.object(["tip": "bildirim", "metin": s])) }
 
     // MARK: Sayfaya gidenler
     private func sendStatus() {
