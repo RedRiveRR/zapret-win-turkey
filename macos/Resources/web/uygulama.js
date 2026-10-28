@@ -5,7 +5,7 @@
 //   {tip:"strateji", secenekler[], secili, secimAcik, analizAcik, zaman, sonuclar[{puan, ad, durum, tam, calisti, secim, secili}]}
 //   {tip:"analiz", calisiyor:bool, metin, oran:0..1}
 //   {tip:"discord", yenidenBaslat:bool}   (Discord, Zapret'ten önce açılmışsa yeniden başlatılmalı)
-//   {tip:"paylasim", acik:bool, kullanilabilir:bool, gecit:bool, ip, maske, agGecidi, dns, mtu, adres, port, cihaz:int,
+//   {tip:"paylasim", acik:bool, kullanilabilir:bool, gecit:bool, ip, maske, agGecidi, dns, dns2, mtu, adres, port, cihaz:int,
 //    kablosuz:bool, guvenlikDuvari:bool}   (gecit: ağ geçidi açık — cihaza IP elle; değilse yedek proxy yolu)
 //   {tip:"guncelleme", surum:"5.3.0|", durum:"hazir|indiriliyor|hata", metin}
 //   {tip:"surum", surum}, {tip:"bildirim", metin}
@@ -140,6 +140,7 @@ function paylasimUygula(m) {
   $('gecit-maske').textContent = m.maske || '—';
   $('gecit-gecit').textContent = m.agGecidi || '—';
   $('gecit-dns').textContent = m.dns || '—';
+  $('gecit-dns2').textContent = m.dns2 || '—';
   $('gecit-mtu').textContent = m.mtu || '—';
   $('paylasim-kablosuz').hidden = !(paylasimAcik && m.kablosuz);
   $('paylasim-adres').textContent = m.adres || 'Yerel ağ bulunamadı';

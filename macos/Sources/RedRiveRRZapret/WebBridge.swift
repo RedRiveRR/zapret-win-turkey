@@ -357,11 +357,11 @@ final class AppController: NSObject, WKScriptMessageHandler {
         let lan = LanShare.pickAddress(ifs)
         let plan = GatewayPlan.make(lanAddress: lan)
         let ifName = ifs.first { $0.1 == lan }?.0
-        let mtu = ifName.flatMap { GatewayPlan.mtu(ifconfig: Self.run(["/sbin/ifconfig", $0])) } ?? 1500
+        let mtu = GatewayPlan.deviceMTU(interfaceMTU: ifName.flatMap { GatewayPlan.mtu(ifconfig: Self.run(["/sbin/ifconfig", $0])) } ?? 1500)
         let gwDevices = gw ? GatewayPlan.devices(inLog: (try? String(contentsOfFile: HelperPaths.gatewayLog, encoding: .utf8)) ?? "").count : 0
         post(Json.object(["tip": "paylasim", "acik": on, "kullanilabilir": status == .manual, "gecit": gw,
                           "adres": lan ?? "", "port": LanShare.port,
-                          "ip": plan.deviceIP, "maske": plan.mask, "agGecidi": plan.gateway, "dns": plan.dns, "mtu": mtu,
+                          "ip": plan.deviceIP, "maske": plan.mask, "agGecidi": plan.gateway, "dns": plan.dns, "dns2": plan.dns2, "mtu": mtu,
                           "kablosuz": ifName.map { Self.run(["/usr/sbin/networksetup", "-getairportnetwork", $0]).contains("Current Wi-Fi") } ?? false,
                           "cihaz": proxyDevices + gwDevices, "guvenlikDuvari": firewall]))
         DispatchQueue.main.async {
