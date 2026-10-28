@@ -90,6 +90,17 @@ final class AnalyzerTests: XCTestCase {
         XCTAssertEqual(s.map(\.name), ["a", "b"])
     }
 
+    func testLatencyNoiseDoesNotBeatSimplicityOrCandidateOrder() {
+        // Saha: 37–41 ms farkı gürültü; 20 ms dilim içinde sade olan, eşitse aday listesinde önce gelen kazanır.
+        let s = StrategyRanking.sort([
+            StrategyScore(name: "karmaşık", args: ["--hostcase", "--tlsrec=midsld"], passed: 4, total: 4, latencyMs: 37),
+            StrategyScore(name: "ikinci", args: ["--tlsrec=host"], passed: 4, total: 4, latencyMs: 39),
+            StrategyScore(name: "paket", args: ["--tlsrec=midsld"], passed: 4, total: 4, latencyMs: 40),
+            StrategyScore(name: "yavaş", args: ["--tlsrec=sld"], passed: 4, total: 4, latencyMs: 95),
+        ], order: [["--tlsrec=midsld"], ["--tlsrec=host"]])
+        XCTAssertEqual(s.map(\.name), ["paket", "ikinci", "karmaşık", "yavaş"])
+    }
+
     func testProgressAndCancel() {
         let cands = (0..<10).map { TpwsStrategy(name: "s\($0)", args: ["--s\($0)"]) }
         var seen: [Int] = []
