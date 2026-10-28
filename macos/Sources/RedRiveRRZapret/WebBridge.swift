@@ -5,7 +5,10 @@ import ZapretCore
 /// Sayfa (ui/web) <-> program. Mesaj sözleşmesi ui/web/uygulama.js başındaki listeyle aynı.
 final class AppController: NSObject, WKScriptMessageHandler {
     weak var webView: WKWebView?
-    private let engine = TpwsEngine(pidFile: AppController.supportDir.appendingPathComponent("tpws.pid"))
+    /// Sistem proxy'si `TpwsArgs.defaultPort`'taki ön proxy'ye (DoH ile ad çözer) gider; tpws iç kapıdadır.
+    private static let tpwsPort = TpwsArgs.defaultPort + 1
+    private let engine = TpwsEngine(port: AppController.tpwsPort, pidFile: AppController.supportDir.appendingPathComponent("tpws.pid"))
+    private var front: DohSocksFront? // yalnız `work` kuyruğunda
     /// Motor ve yardımcı çağrıları ana iş parçacığını kilitlemesin; sırayla çalışsın (gözden geçirme #2).
     private let work = DispatchQueue(label: "com.redriverr.zapret.work")
     private var strategies: [TpwsStrategy] = []
@@ -106,15 +109,28 @@ final class AppController: NSObject, WKScriptMessageHandler {
             return "Yönetici yardımcısı kurulamadı. Proxy ayarı için bir kez yönetici parolası gerekiyor."
         }
         let tpws = Bundle.main.bundleURL.appendingPathComponent("Contents/Resources/bin/tpws").path
+        // İlk Mac sürümü: atlatma yalnız Discord/Roblox listesine (filtre seçimi sonraki aşamada).
+        let hostlist = Bundle.main.url(forResource: "hostlist", withExtension: "txt")?.path
         do {
-            // İlk Mac sürümü: atlatma yalnız Discord/Roblox listesine (filtre seçimi sonraki aşamada).
-            let hostlist = Bundle.main.url(forResource: "hostlist", withExtension: "txt")?.path
             try engine.start(tpwsPath: tpws, strategy: strategy, hostlist: hostlist,
                              logURL: Self.logDir.appendingPathComponent("tpws.log"))
         } catch {
             return error.localizedDescription
         }
-        if case .failure(let e) = HelperClient.send(.proxyOn(port: engine.port, ownerPid: getpid())) {
+        // ISS DNS'i Discord/Roblox adlarını bozuyor: yalnız hostlist'tekiler DoH ile çözülür, gerisi sistem DNS'inde kalır.
+        let hosts = hostlist.flatMap { try? String(contentsOfFile: $0, encoding: .utf8) }.map(HostMatcher.parseList) ?? []
+        let resolver = DohResolver()
+        let f = DohSocksFront(port: TpwsArgs.defaultPort, upstreamPort: engine.port,
+                              resolve: { HostMatcher.matches($0, hosts) ? resolver.resolve($0) : [] })
+        // config.ini'ye Ayrinti=1 yazılırsa her SOCKS isteği günlüğe düşer (ziyaret geçmişi içerir, varsayılan kapalı).
+        if readConfig()["Ayrinti"] == "1" { f.onEvent = { [weak self] in self?.log("socks \($0)") } }
+        do { try f.start() } catch {
+            engine.stop()
+            return error.localizedDescription
+        }
+        front = f
+        if case .failure(let e) = HelperClient.send(.proxyOn(port: f.port, ownerPid: getpid())) {
+            stopFront()
             engine.stop()
             return e.localizedDescription
         }
@@ -127,6 +143,7 @@ final class AppController: NSObject, WKScriptMessageHandler {
         sendStatus()
         work.async {
             HelperClient.send(.proxyOff)
+            self.stopFront()
             self.engine.stop()
             DispatchQueue.main.async {
                 self.busy = false
@@ -143,8 +160,14 @@ final class AppController: NSObject, WKScriptMessageHandler {
     func stopForQuit() {
         work.sync {
             HelperClient.send(.proxyOff)
+            stopFront()
             engine.stop()
         }
+    }
+
+    private func stopFront() {
+        front?.stop()
+        front = nil
     }
 
     private func engineDied() {
@@ -153,7 +176,10 @@ final class AppController: NSObject, WKScriptMessageHandler {
         errorText = "Zapret beklenmedik şekilde durdu; internet bağlantınız eski hâline getirildi."
         log("tpws beklenmedik şekilde kapandı; proxy geri alındı")
         sendStatus()
-        work.async { HelperClient.send(.proxyOff) }
+        work.async {
+            HelperClient.send(.proxyOff)
+            self.stopFront()
+        }
     }
 
     // MARK: Sayfaya gidenler
@@ -190,7 +216,10 @@ final class AppController: NSObject, WKScriptMessageHandler {
         NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? "koyu" : "acik"
     }
 
+    private static let logLock = NSLock() // ön proxy iş parçacıkları da yazar
+
     func log(_ s: String) {
+        Self.logLock.lock(); defer { Self.logLock.unlock() }
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd HH:mm:ss"
         let line = "\(f.string(from: Date())) \(s)\n"

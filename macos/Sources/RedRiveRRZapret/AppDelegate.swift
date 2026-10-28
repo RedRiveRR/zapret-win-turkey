@@ -99,8 +99,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let e = NSAlert(); e.messageText = "Taşınamadı"; e.informativeText = error.localizedDescription; e.runModal()
             return false
         }
-        NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: dest), configuration: .init()) { _, _ in
-            DispatchQueue.main.async { NSApp.terminate(nil) }
+        // copyItem karantina işaretini de taşır; hedefte temizle (kullanıcı zaten taşı dedi).
+        let x = Process()
+        x.executableURL = URL(fileURLWithPath: "/usr/bin/xattr")
+        x.arguments = ["-dr", "com.apple.quarantine", dest]
+        try? x.run()
+        x.waitUntilExit()
+        // Aynı bundle id çalışırken varsayılan açış yeni kopyayı başlatmaz, bu örneği öne getirir;
+        // sonra biz kapanınca uygulama ortadan kaybolurdu.
+        let cfg = NSWorkspace.OpenConfiguration()
+        cfg.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: dest), configuration: cfg) { app, error in
+            DispatchQueue.main.async {
+                // Yeni örnek başlamadıysa kendimizi kapatma; kullanıcı uygulamasız kalmasın.
+                if app != nil { NSApp.terminate(nil) } else if let error = error { NSLog("taşıma sonrası açılamadı: \(error.localizedDescription)") }
+            }
         }
         return true
     }
