@@ -86,19 +86,50 @@ final class DohSocksFrontTests: XCTestCase {
         XCTAssertEqual(Socks5.parseRequest(seenReq)?.target, .ipv4([162, 159, 128, 233]))
     }
 
-    func testUnresolvedDomainPassesThroughByName() {
+    func testUnlistedDomainIsResolvedBySystemResolver() {
         let up = freePort(), fp = freePort()
         let lock = NSLock(); var seenReq: [UInt8] = []
         let ls = startFakeUpstream(port: up) { lock.lock(); seenReq = $0; lock.unlock() }
         defer { close(ls) }
-        let front = DohSocksFront(port: fp, upstreamPort: up, resolve: { _ in [] })
+        let front = DohSocksFront(port: fp, upstreamPort: up, resolve: { _ in [] }, systemResolve: { $0 == "example.org" ? [.ipv4([93, 184, 215, 14])] : [] })
         XCTAssertNoThrow(try front.start()); defer { front.stop() }
         let c = connectLocal(fp); defer { close(c) }
         writeAll(c, [5, 1, 0]); _ = readN(c, 2)
         writeAll(c, Socks5.encodeConnect(target: .domain("example.org"), port: 443))
         XCTAssertEqual(readN(c, 10)[1], 0)
         lock.lock(); defer { lock.unlock() }
-        XCTAssertEqual(Socks5.parseRequest(seenReq)?.target, .domain("example.org"))
+        XCTAssertEqual(Socks5.parseRequest(seenReq)?.target, .ipv4([93, 184, 215, 14])) // tpws'e ad gitmez (--no-resolve)
+    }
+
+    func testUnresolvableDomainFailsWithoutReachingUpstream() {
+        let up = freePort(), fp = freePort()
+        let lock = NSLock(); var seenReq: [UInt8] = []
+        let ls = startFakeUpstream(port: up) { lock.lock(); seenReq = $0; lock.unlock() }
+        defer { close(ls) }
+        let front = DohSocksFront(port: fp, upstreamPort: up, resolve: { _ in [] }, systemResolve: { _ in [] })
+        XCTAssertNoThrow(try front.start()); defer { front.stop() }
+        let c = connectLocal(fp); defer { close(c) }
+        writeAll(c, [5, 1, 0]); _ = readN(c, 2)
+        writeAll(c, Socks5.encodeConnect(target: .domain("yok.invalid"), port: 443))
+        XCTAssertEqual(readN(c, 10)[1], 4) // host unreachable
+        lock.lock(); defer { lock.unlock() }
+        XCTAssertTrue(seenReq.isEmpty)
+    }
+
+    func testIPv6OnlyDomainIsForwardedAsIPv6() {
+        let up = freePort(), fp = freePort()
+        let lock = NSLock(); var seenReq: [UInt8] = []
+        let ls = startFakeUpstream(port: up) { lock.lock(); seenReq = $0; lock.unlock() }
+        defer { close(ls) }
+        let v6: [UInt8] = [0x26, 0x06, 0x47, 0x00] + [UInt8](repeating: 0, count: 11) + [1]
+        let front = DohSocksFront(port: fp, upstreamPort: up, resolve: { _ in [] }, systemResolve: { _ in [.ipv6(v6)] })
+        XCTAssertNoThrow(try front.start()); defer { front.stop() }
+        let c = connectLocal(fp); defer { close(c) }
+        writeAll(c, [5, 1, 0]); _ = readN(c, 2)
+        writeAll(c, Socks5.encodeConnect(target: .domain("v6.example"), port: 443))
+        XCTAssertEqual(readN(c, 10)[1], 0)
+        lock.lock(); defer { lock.unlock() }
+        XCTAssertEqual(Socks5.parseRequest(seenReq)?.target, .ipv6(v6))
     }
 
     func testUnsupportedCommandIsRefused() {
@@ -183,18 +214,18 @@ final class DohSocksFrontTests: XCTestCase {
         XCTAssertEqual(events, ["updates.discord.com:443 -> 162.159.138.232 (DoH) tamam"])
     }
 
-    func testHttpConnectUnresolvedPassesNameThrough() {
+    func testHttpConnectUnlistedDomainIsResolvedBySystemResolver() {
         let up = freePort(), fp = freePort()
         let lock = NSLock(); var seenReq: [UInt8] = []
         let ls = startFakeUpstream(port: up) { lock.lock(); seenReq = $0; lock.unlock() }
         defer { close(ls) }
-        let front = DohSocksFront(port: fp, upstreamPort: up, resolve: { _ in [] })
+        let front = DohSocksFront(port: fp, upstreamPort: up, resolve: { _ in [] }, systemResolve: { $0 == "example.org" ? [.ipv4([93, 184, 215, 14])] : [] })
         XCTAssertNoThrow(try front.start()); defer { front.stop() }
         let c = connectLocal(fp); defer { close(c) }
         writeAll(c, Array("CONNECT example.org:443 HTTP/1.1\r\n\r\n".utf8))
         XCTAssertTrue(readHead(c).hasPrefix("HTTP/1.1 200"))
         lock.lock(); defer { lock.unlock() }
-        XCTAssertEqual(Socks5.parseRequest(seenReq)?.target, .domain("example.org"))
+        XCTAssertEqual(Socks5.parseRequest(seenReq)?.target, .ipv4([93, 184, 215, 14])) // tpws'e ad gitmez (--no-resolve)
     }
 
     func testHttpPlainRequestIsRefused() {
@@ -211,7 +242,7 @@ final class DohSocksFrontTests: XCTestCase {
         let lock = NSLock(); var seenReq: [UInt8] = []
         let ls = startFakeUpstream(port: up) { lock.lock(); seenReq = $0; lock.unlock() }
         defer { close(ls) }
-        let front = DohSocksFront(port: fp, upstreamPort: up, resolve: { _ in [] })
+        let front = DohSocksFront(port: fp, upstreamPort: up, resolve: { _ in [] }, systemResolve: { $0 == "example.org" ? [.ipv4([93, 184, 215, 14])] : [] })
         XCTAssertNoThrow(try front.start()); defer { front.stop() }
         let c = connectLocal(fp); defer { close(c) }
         let req = "GET http://example.org/a HTTP/1.1\r\nHost: example.org\r\n\r\n"
@@ -220,7 +251,7 @@ final class DohSocksFrontTests: XCTestCase {
         let expect = "GET /a HTTP/1.1\r\nHost: example.org\r\nConnection: close\r\n\r\n"
         XCTAssertEqual(String(decoding: readN(c, expect.utf8.count), as: UTF8.self), expect)
         lock.lock(); defer { lock.unlock() }
-        XCTAssertEqual(Socks5.parseRequest(seenReq)?.target, .domain("example.org"))
+        XCTAssertEqual(Socks5.parseRequest(seenReq)?.target, .ipv4([93, 184, 215, 14])) // tpws'e ad gitmez (--no-resolve)
         XCTAssertEqual(Socks5.parseRequest(seenReq)?.port, 80)
     }
 

@@ -23,7 +23,7 @@ final class ReviewFixTests: XCTestCase {
     func testIntentionalStopDoesNotReportUnexpectedExit() throws {
         let e = TpwsEngine(port: 1, pidFile: tmpURL("pid"))
         var fired = false
-        e.onUnexpectedExit = { fired = true }
+        e.onUnexpectedExit = { _ in fired = true }
         try e.launch(argv: ["/bin/sleep", "30"], logURL: tmpURL("log"))
         XCTAssertTrue(e.isRunning)
         e.stop()
@@ -36,10 +36,31 @@ final class ReviewFixTests: XCTestCase {
     func testUnexpectedExitReported() throws {
         let e = TpwsEngine(port: 1, pidFile: tmpURL("pid"))
         let exp = expectation(description: "beklenmedik kapanma")
-        e.onUnexpectedExit = { exp.fulfill() }
+        e.onUnexpectedExit = { _ in exp.fulfill() }
         try e.launch(argv: ["/bin/sleep", "0.3"], logURL: tmpURL("log"))
         wait(for: [exp], timeout: 5)
         XCTAssertFalse(e.isRunning)
+    }
+
+    // macOS 27 tpws çökmesi kayıtta görünmüyordu: kapanma nedeni (sinyal / çıkış kodu) bildirilmeli.
+    func testUnexpectedExitReportsSignal() throws {
+        let e = TpwsEngine(port: 1, pidFile: tmpURL("pid"))
+        let exp = expectation(description: "neden")
+        var why = ""
+        e.onUnexpectedExit = { why = $0; exp.fulfill() }
+        try e.launch(argv: ["/bin/sh", "-c", "kill -BUS $$"], logURL: tmpURL("log"))
+        wait(for: [exp], timeout: 5)
+        XCTAssertEqual(why, "sinyal 10 (SIGBUS)")
+    }
+
+    func testUnexpectedExitReportsExitCode() throws {
+        let e = TpwsEngine(port: 1, pidFile: tmpURL("pid"))
+        let exp = expectation(description: "neden")
+        var why = ""
+        e.onUnexpectedExit = { why = $0; exp.fulfill() }
+        try e.launch(argv: ["/bin/sh", "-c", "exit 3"], logURL: tmpURL("log"))
+        wait(for: [exp], timeout: 5)
+        XCTAssertEqual(why, "çıkış kodu 3")
     }
 
     // #3: zorla kapatmadan arta kalan tpws, pid dosyasından bulunup kapatılmalı.
