@@ -216,4 +216,17 @@ final class DohSocksFrontTests: XCTestCase {
         writeAll(c, Array("CONNECT example.org:443 HTTP/1.1\r\n\r\n".utf8))
         XCTAssertTrue(readHead(c).hasPrefix("HTTP/1.1 502"))
     }
+
+    func testEventLogReportsRefusedHttpRequestLine() {
+        let fp = freePort()
+        let lock = NSLock(); var events: [String] = []
+        let front = DohSocksFront(port: fp, upstreamPort: freePort(), resolve: { _ in [] })
+        front.onEvent = { lock.lock(); events.append($0); lock.unlock() }
+        XCTAssertNoThrow(try front.start()); defer { front.stop() }
+        let c = connectLocal(fp); defer { close(c) }
+        writeAll(c, Array("GET http://example.org/ HTTP/1.1\r\nHost: example.org\r\n\r\n".utf8))
+        XCTAssertTrue(readHead(c).hasPrefix("HTTP/1.1 405"))
+        lock.lock(); defer { lock.unlock() }
+        XCTAssertEqual(events, ["http reddedildi (405): GET http://example.org/ HTTP/1.1"])
+    }
 }
