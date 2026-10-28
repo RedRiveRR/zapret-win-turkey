@@ -152,4 +152,68 @@ final class DohSocksFrontTests: XCTestCase {
         lock.lock(); defer { lock.unlock() }
         XCTAssertEqual(events, ["195.175.254.2:443 -> 195.175.254.2 hata 5"])
     }
+
+    // MARK: HTTP CONNECT (Discord güncelleyicisi gibi SOCKS bilmeyen istemciler; sistem "Güvenli Web Proxy")
+
+    private func readHead(_ fd: Int32) -> String {
+        var out = [UInt8]()
+        while !(out.count >= 4 && Array(out.suffix(4)) == [13, 10, 13, 10]) {
+            let b = readN(fd, 1)
+            if b.isEmpty { break }
+            out += b
+        }
+        return String(decoding: out, as: UTF8.self)
+    }
+
+    func testHttpConnectDomainIsResolvedAndTunnelled() {
+        let up = freePort(), fp = freePort()
+        let lock = NSLock(); var seenReq: [UInt8] = []; var events: [String] = []
+        let ls = startFakeUpstream(port: up) { lock.lock(); seenReq = $0; lock.unlock() }
+        defer { close(ls) }
+        let front = DohSocksFront(port: fp, upstreamPort: up, resolve: { $0 == "updates.discord.com" ? ["162.159.138.232"] : [] })
+        front.onEvent = { lock.lock(); events.append($0); lock.unlock() }
+        XCTAssertNoThrow(try front.start()); defer { front.stop() }
+        let c = connectLocal(fp); defer { close(c) }
+        writeAll(c, Array("CONNECT updates.discord.com:443 HTTP/1.1\r\nHost: updates.discord.com:443\r\n\r\n".utf8))
+        XCTAssertEqual(readHead(c), "HTTP/1.1 200 Connection Established\r\n\r\n")
+        writeAll(c, [0x42]); XCTAssertEqual(readN(c, 1), [0x42]) // tünel çalışıyor
+        lock.lock(); defer { lock.unlock() }
+        XCTAssertEqual(Socks5.parseRequest(seenReq)?.target, .ipv4([162, 159, 138, 232]))
+        XCTAssertEqual(Socks5.parseRequest(seenReq)?.port, 443)
+        XCTAssertEqual(events, ["updates.discord.com:443 -> 162.159.138.232 (DoH) tamam"])
+    }
+
+    func testHttpConnectUnresolvedPassesNameThrough() {
+        let up = freePort(), fp = freePort()
+        let lock = NSLock(); var seenReq: [UInt8] = []
+        let ls = startFakeUpstream(port: up) { lock.lock(); seenReq = $0; lock.unlock() }
+        defer { close(ls) }
+        let front = DohSocksFront(port: fp, upstreamPort: up, resolve: { _ in [] })
+        XCTAssertNoThrow(try front.start()); defer { front.stop() }
+        let c = connectLocal(fp); defer { close(c) }
+        writeAll(c, Array("CONNECT example.org:443 HTTP/1.1\r\n\r\n".utf8))
+        XCTAssertTrue(readHead(c).hasPrefix("HTTP/1.1 200"))
+        lock.lock(); defer { lock.unlock() }
+        XCTAssertEqual(Socks5.parseRequest(seenReq)?.target, .domain("example.org"))
+    }
+
+    func testHttpPlainRequestIsRefused() {
+        let fp = freePort()
+        let front = DohSocksFront(port: fp, upstreamPort: freePort(), resolve: { _ in [] })
+        XCTAssertNoThrow(try front.start()); defer { front.stop() }
+        let c = connectLocal(fp); defer { close(c) }
+        writeAll(c, Array("GET http://example.org/ HTTP/1.1\r\nHost: example.org\r\n\r\n".utf8))
+        XCTAssertTrue(readHead(c).hasPrefix("HTTP/1.1 405"))
+    }
+
+    func testHttpConnectUpstreamFailureIs502() {
+        let up = freePort(), fp = freePort()
+        let ls = startFakeUpstream(port: up, replyCode: 5) { _ in }
+        defer { close(ls) }
+        let front = DohSocksFront(port: fp, upstreamPort: up, resolve: { _ in [] })
+        XCTAssertNoThrow(try front.start()); defer { front.stop() }
+        let c = connectLocal(fp); defer { close(c) }
+        writeAll(c, Array("CONNECT example.org:443 HTTP/1.1\r\n\r\n".utf8))
+        XCTAssertTrue(readHead(c).hasPrefix("HTTP/1.1 502"))
+    }
 }

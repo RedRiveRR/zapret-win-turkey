@@ -36,4 +36,21 @@ final class HelperProtocolTests: XCTestCase {
         XCTAssertEqual(Json.get(r, "ok"), "true")
         XCTAssertEqual(Json.get(r, "mesaj"), "tamam")
     }
+
+    func testStatusMessageCarriesHelperVersion() {
+        XCTAssertEqual(HelperProtocol.statusMessage(on: true), "acik v\(HelperProtocol.version)")
+        XCTAssertEqual(HelperProtocol.statusMessage(on: false), "kapali v\(HelperProtocol.version)")
+        XCTAssertEqual(HelperProtocol.parseVersion(HelperProtocol.statusMessage(on: false)), HelperProtocol.version)
+        XCTAssertEqual(HelperProtocol.parseVersion("acik v12"), 12)
+    }
+
+    func testOldHelperHasNoVersion() {
+        XCTAssertNil(HelperProtocol.parseVersion("kapali"))
+        XCTAssertNil(HelperProtocol.parseVersion("acik"))
+        XCTAssertNil(HelperProtocol.parseVersion("kapali vX"))
+    }
+
+    func testVersionTwoOrLaterManagesSecureWebProxy() {
+        XCTAssertGreaterThanOrEqual(HelperProtocol.version, 2)
+    }
 }
