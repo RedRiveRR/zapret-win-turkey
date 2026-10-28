@@ -8,7 +8,6 @@ Bu araç yönetici yetkisiyle çalışır ve aşağıdaki programları kullanır
 |---|---|---|---|---|---|
 | dnscrypt-proxy | 2.1.18 | [DNSCrypt/dnscrypt-proxy](https://github.com/DNSCrypt/dnscrypt-proxy) | ISC (`bin/dnscrypt-proxy/LICENSE`) | `bin/dnscrypt-proxy/dnscrypt-proxy.exe` | `d847f834aef02f8705a649dc1060f520cdb7931d7361035728770dce2c16eeb6` |
 | go-pcap2socks | bilinmiyor | [DaniilSokolyuk/go-pcap2socks](https://github.com/DaniilSokolyuk/go-pcap2socks) | kaynak repoya bakın | `bin/go-pcap2socks/go-pcap2socks.exe` | `9e0aee0c7d65d09dc0e7063c589f7224b720f29a743c3226c9daa1b493f94b25` |
-| go-pcap2socks (macOS) | GPL-3.0 | [DaniilSokolyuk/go-pcap2socks](https://github.com/DaniilSokolyuk/go-pcap2socks) v0.2.0 | kaynaktan derlenir (`macos/scripts/build-pcap2socks.sh`, Go sağlama veritabanı), universal | `RedRiveRR Zapret.app/Contents/Resources/bin/pcap2socks` | sürüm sabit (v0.2.0) |
 | blockcheck betikleri | zapret / zapret2 ile gelen | [bol-van/zapret](https://github.com/bol-van/zapret) | MIT | `bin/zapret/blockcheck/*/blockcheck*.sh` | — |
 | oui.txt | — | IEEE OUI kaydı | IEEE | `oui.txt` | — |
 
@@ -29,6 +28,15 @@ Bu araç yönetici yetkisiyle çalışır ve aşağıdaki programları kullanır
 | WebView2Loader.dll (x64) | 1.0.2903.40 | [Microsoft.Web.WebView2 NuGet](https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.2903.40) | BSD 3 maddeli (`bin/webview2/LICENSE.txt`) | `bin/webview2/WebView2Loader.dll` | `462b36fd1be6ca9f7563466a89e57c41ef4a4def3e0a84fa885d203aea4a3aaf` |
 
 Yeni arayüz Windows'un WebView2 çalışma zamanını kullanır (Windows 11'de yüklü gelir). Yoksa program eski arayüzle açılır.
+
+## macOS paketi (`RedRiveRR-Zapret-macOS-….zip`)
+
+Repoda ikili yoktur; `macos/scripts/build-app.sh` derleme sırasında indirir ya da kaynaktan derler.
+
+| Bileşen | Sürüm | Kaynak | Lisans | Pakette | Doğrulama |
+|---|---|---|---|---|---|
+| tpws (universal) | zapret v72.13 | [bol-van/zapret](https://github.com/bol-van/zapret/releases/tag/v72.13) | MIT | `RedRiveRR Zapret.app/Contents/Resources/bin/tpws` | SHA256 `441524a76f52597a0e5c816d25ed1adfd93e5c34cc56c56e0dc00533929d1761` |
+| go-pcap2socks | v0.2.0 | [DaniilSokolyuk/go-pcap2socks](https://github.com/DaniilSokolyuk/go-pcap2socks) | GPL-3.0 | `RedRiveRR Zapret.app/Contents/Resources/bin/pcap2socks` | kaynaktan universal derlenir (`macos/scripts/build-pcap2socks.sh`, Go sağlama veritabanı) |
 
 ## Harici gereksinimler
 

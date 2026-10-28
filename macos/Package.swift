@@ -1,5 +1,5 @@
 // swift-tools-version:5.7
-// RedRiveRR Zapret — macOS sürümü (tasarım: docs/superpowers/specs/2026-10-27-macos-design.md).
+// RedRiveRR Zapret — macOS sürümü (kullanıcı rehberi: docs/macos.md).
 // GitHub Actions (macos.yml) ve Monterey (Xcode 14.2, Swift 5.7) ile derlenir.
 import PackageDescription
 

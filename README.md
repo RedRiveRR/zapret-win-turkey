@@ -32,9 +32,19 @@ Bu depo, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-t
 - [Teşekkürler](#teşekkürler)
 
 ## macOS sürümü
-Intel ve Apple Silicon Mac'ler için (macOS 12+), menü çubuğunda çalışan ayrı bir uygulama: strateji analizi, şifreli DNS ile Discord adları, konsol/TV için ağ paylaşımı ve otomatik güncelleme. Kurulum ve kullanım: **[docs/macos.md](docs/macos.md)**.
+Intel ve Apple Silicon (M1, M2, M3, M4…) Mac'ler için, macOS 12 Monterey ve sonrası. Menü çubuğunda yaşayan ayrı bir uygulama; kilit simgesine tıklayınca panel açılır.
 
-<img src="docs/ekran/macos-panel.png" width="250" alt="macOS menü çubuğu paneli">
+<p>
+<img src="docs/ekran/macos-panel.png" width="250" alt="macOS paneli, açık tema: Zapret çalışıyor, strateji analizi sonuçları, ağ paylaşımı ve bağlı cihazlar">
+<img src="docs/ekran/macos-panel-koyu.png" width="250" alt="macOS paneli, koyu tema">
+</p>
+
+- **Tek düğme:** güç düğmesine basın, Discord açılsın. Discord ve Roblox adları şifreli DNS (DoH) ile çözülür, bağlantı zapret `tpws` ile DPI'den geçirilir; diğer siteler olduğu gibi çalışır.
+- **Strateji analizi:** sağlayıcınızda çalışan yöntemi yaklaşık 20 saniyede ölçer ve en iyisini seçer.
+- **Ağ paylaşımı:** PS5, PS4, Xbox, Switch ve TV bu Mac üzerinden Discord'a bağlanır; bağlı cihazlar panelde listelenir.
+- **Discord'u yeniden başlat** düğmesi ve doğrulamalı **otomatik güncelleme**.
+
+İndirme: [Releases](https://github.com/RedRiveRR/zapret-win-turkey/releases/latest) sayfasından `RedRiveRR-Zapret-macOS-v5.2.3.zip`. Kurulum, ilk açılış onayı ve ayrıntılar: **[docs/macos.md](docs/macos.md)**.
 
 ## Öne çıkanlar
 - **Sade, kompakt arayüz** (açık/koyu tema): Bağlantı, Strateji, Servis, DNS ve Diğer ekranları. Durumu tek bakışta gösterir: *Sen → Zapret → Sağlayıcı → Discord*.
@@ -209,5 +219,11 @@ AutoIt'in ASCII karakterli bir yolda olması gerekir (Au3Check Türkçe karakter
 - [@cagritaskn](https://github.com/cagritaskn) — otomatik blockcheck fikri ([splitwire-turkey](https://github.com/cagritaskn/splitwire-turkey)).
 - [@DaniilSokolyuk](https://github.com/DaniilSokolyuk) — [go-pcap2socks](https://github.com/DaniilSokolyuk/go-pcap2socks).
 - [@jedisct1](https://github.com/jedisct1) — [dnscrypt-proxy](https://github.com/dnscrypt/dnscrypt-proxy).
+
+macOS sürümü için:
+- [@bol-van](https://github.com/bol-van) — [zapret](https://github.com/bol-van/zapret)'in macOS `tpws` aracı (pakette yer alır).
+- [@DaniilSokolyuk](https://github.com/DaniilSokolyuk) — [go-pcap2socks](https://github.com/DaniilSokolyuk/go-pcap2socks) (konsol/TV ağ paylaşımı; macOS için kaynaktan derlenir).
+- [@aliemrevezir](https://github.com/aliemrevezir) — [spoofmac](https://github.com/aliemrevezir/spoofmac): macOS'ta Discord'un "Checking for updates" takılmasına dair yaklaşım.
+- [@anilsoylu](https://github.com/anilsoylu) — [SpoofDPI-Turkiye](https://github.com/anilsoylu/SpoofDPI-Turkiye) ve [@xvzc](https://github.com/xvzc) — [SpoofDPI](https://github.com/xvzc/spoofdpi): Türkiye'de DNS + DPI engelini macOS'ta proxy ile aşma fikri.
 
 Üçüncü taraf bileşenler ve lisansları: [THIRD_PARTY.md](THIRD_PARTY.md).

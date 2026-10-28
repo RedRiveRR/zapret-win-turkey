@@ -7,6 +7,9 @@ Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-
 ### Düzeltme
 - **Windows Güvenliği programı "Behavior:Win32/Persistence.A!ml" diye karantinaya alıyordu.** Otomatik onarım, oturum açılışında programı yönetici olarak kendiliğinden başlatan bir zamanlanmış görevdi; Defender bunu zararlı yazılımların "kendini kalıcı kılma" davranışı saydı (servisli kurulumda yeniden başlatınca exe, kısayol ve görev silindi). Artık görev yok: otomatik onarım program açıkken (pencere ya da tepside) çalışır — açılışta, 30 dakikada bir ve ağ bağlantısı gelince; uzun onarım pencereyi dondurmaz. Eski sürümün görevi program açılınca kendiliğinden silinir. Program tamamen kapalıyken servis çalışmaya devam eder, ancak strateji onarımı yapılmaz. Ana ve Lite.
 
+### macOS (ilk sürüm)
+- **RedRiveRR Zapret macOS** (`RedRiveRR-Zapret-macOS-v5.2.3.zip`): Intel ve Apple Silicon, macOS 12+. Menü çubuğu uygulaması; Discord/Roblox adları şifreli DNS (DoH) ile çözülür, bağlantı zapret `tpws` ile DPI'den geçirilir (Discord güncelleyicisi dahil). Strateji analizi, konsol/TV için ağ paylaşımı (go-pcap2socks) ve bağlı cihazlar listesi, Discord'u yeniden başlat düğmesi, doğrulamalı otomatik güncelleme. Rehber: [docs/macos.md](docs/macos.md).
+
 ## [v5.2.2] — 2026-10-28 — kararlı (düzeltme)
 
 ### Düzeltme
