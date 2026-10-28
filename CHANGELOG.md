@@ -2,6 +2,11 @@
 
 Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-turkey) üzerine bu fork'ta (`gelistirme` dalı) yapılan değişiklikleri listeler. Temel: upstream `9eeac04` (v4.5 kaynakları).
 
+## [v5.2.3] — 2026-10-28 — kararlı (düzeltme)
+
+### Düzeltme
+- **Windows Güvenliği programı "Behavior:Win32/Persistence.A!ml" diye karantinaya alıyordu.** Otomatik onarım, oturum açılışında programı yönetici olarak kendiliğinden başlatan bir zamanlanmış görevdi; Defender bunu zararlı yazılımların "kendini kalıcı kılma" davranışı saydı (servisli kurulumda yeniden başlatınca exe, kısayol ve görev silindi). Artık görev yok: otomatik onarım program açıkken (pencere ya da tepside) çalışır — açılışta, 30 dakikada bir ve ağ bağlantısı gelince; uzun onarım pencereyi dondurmaz. Eski sürümün görevi program açılınca kendiliğinden silinir. Program tamamen kapalıyken servis çalışmaya devam eder, ancak strateji onarımı yapılmaz. Ana ve Lite.
+
 ## [v5.2.2] — 2026-10-28 — kararlı (düzeltme)
 
 ### Düzeltme

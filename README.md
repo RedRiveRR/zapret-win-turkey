@@ -45,8 +45,8 @@ Bu depo, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-t
 **Gereksinimler:** Windows 10 veya 11 (64 bit), yönetici yetkisi. Yeni arayüz Microsoft Edge **WebView2** kullanır; Windows 11'de yerleşiktir, Windows 10'da çoğunlukla Windows Update ile gelir. Bulunamazsa program klasik arayüzle açılır.
 
 1. [Releases](https://github.com/RedRiveRR/zapret-win-turkey/releases) sayfasından son sürümü indirin:
-   - `RedRiveRR-Zapret-v5.2.2.zip` — tam sürüm (önerilen).
-   - `RedRiveRR-Zapret-Lite-v5.2.2.zip` — yalnızca temel işlevler, küçük pencere.
+   - `RedRiveRR-Zapret-v5.2.3.zip` — tam sürüm (önerilen).
+   - `RedRiveRR-Zapret-Lite-v5.2.3.zip` — yalnızca temel işlevler, küçük pencere.
    - `SHA256SUMS.txt` ile indirdiğiniz dosyayı doğrulayabilirsiniz.
 2. ZIP'i bir klasöre çıkarın (ör. `Belgeler\RedRiveRR Zapret`). ZIP'in içinden çalıştırmayın.
 3. **`RedRiveRR Zapret.exe`** dosyasını çalıştırın; yönetici izni istenir.
