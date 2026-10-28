@@ -90,15 +90,15 @@ final class AnalyzerTests: XCTestCase {
         XCTAssertEqual(s.map(\.name), ["a", "b"])
     }
 
-    func testLatencyNoiseDoesNotBeatSimplicityOrCandidateOrder() {
-        // Saha: 37–41 ms farkı gürültü; 20 ms dilim içinde sade olan, eşitse aday listesinde önce gelen kazanır.
+    func testFasterAlwaysRanksHigherThenSimplerThenCandidateOrder() {
+        // Kullanıcı 2026-10-28: "40 ms olan aşağıda, 42 olan 1." — gecikme dilimi kaldırıldı, düz sıralama.
         let s = StrategyRanking.sort([
-            StrategyScore(name: "karmaşık", args: ["--hostcase", "--tlsrec=midsld"], passed: 4, total: 4, latencyMs: 37),
-            StrategyScore(name: "ikinci", args: ["--tlsrec=host"], passed: 4, total: 4, latencyMs: 39),
-            StrategyScore(name: "paket", args: ["--tlsrec=midsld"], passed: 4, total: 4, latencyMs: 40),
-            StrategyScore(name: "yavaş", args: ["--tlsrec=sld"], passed: 4, total: 4, latencyMs: 95),
+            StrategyScore(name: "sade-yavaş", args: ["--tlsrec=host"], passed: 4, total: 4, latencyMs: 42),
+            StrategyScore(name: "hızlı", args: ["--hostcase", "--tlsrec=midsld"], passed: 4, total: 4, latencyMs: 40),
+            StrategyScore(name: "paket", args: ["--tlsrec=midsld"], passed: 4, total: 4, latencyMs: 42),
+            StrategyScore(name: "eksik", args: ["--tlsrec=sld"], passed: 3, total: 4, latencyMs: 10),
         ], order: [["--tlsrec=midsld"], ["--tlsrec=host"]])
-        XCTAssertEqual(s.map(\.name), ["paket", "ikinci", "karmaşık", "yavaş"])
+        XCTAssertEqual(s.map(\.name), ["hızlı", "paket", "sade-yavaş", "eksik"])
     }
 
     func testProgressAndCancel() {

@@ -14,13 +14,21 @@ final class AnalysisUiTests: XCTestCase {
         XCTAssertEqual(list.map(\.name), ["TLS kaydı orta alan adı", "TLS kaydı SNI sonrası", "Analiz: --tlsrec=host"])
     }
 
+    func testEverySelectableRowIsInTheStrategyList() {
+        let many = (0..<12).map { StrategyScore(name: "--tlsrec=\($0)", args: ["--tlsrec=\($0)"], passed: 4, total: 4, latencyMs: 40 + $0) }
+        let names = Set(AnalysisReport.strategies(bundled: bundled, scores: many).map(\.name))
+        for r in AnalysisReport.rows(bundled: bundled, scores: many) where !r.secim.isEmpty {
+            XCTAssertTrue(names.contains(r.secim), r.secim)
+        }
+    }
+
     func testBestUsesBundledNameWhenSameArgs() {
         XCTAssertEqual(AnalysisReport.best(bundled: bundled, scores: scores)?.name, "TLS kaydı orta alan adı")
         XCTAssertNil(AnalysisReport.best(bundled: bundled, scores: [scores[3]]))
     }
 
     func testRows() {
-        let rows = AnalysisReport.rows(bundled: bundled, scores: scores, limit: 3)
+        let rows = AnalysisReport.rows(bundled: bundled, scores: scores, limit: 3, selected: "Analiz: --tlsrec=host")
         XCTAssertEqual(rows.count, 3)
         XCTAssertEqual(rows[0].puan, "100")
         XCTAssertEqual(rows[0].ad, "★ TLS kaydı orta alan adı")
@@ -29,6 +37,9 @@ final class AnalysisUiTests: XCTestCase {
         XCTAssertTrue(rows[0].calisti)
         XCTAssertEqual(rows[2].ad, "TLS kaydı SNI sonrası")
         XCTAssertFalse(rows[2].calisti)
+        // tam puanlılar seçilebilir (strateji listesindeki adla), eksikler seçilemez; seçili olan işaretli
+        XCTAssertEqual(rows.map(\.secim), ["TLS kaydı orta alan adı", "Analiz: --tlsrec=host", ""])
+        XCTAssertEqual(rows.map(\.secili), [false, true, false])
     }
 
     func testStrategyJsonCarriesAnalysisState() {
@@ -38,6 +49,8 @@ final class AnalysisUiTests: XCTestCase {
         XCTAssertEqual(Json.get(j, "zaman"), "28.10 17:30")
         XCTAssertTrue(j.contains(#""puan":"100""#))
         XCTAssertTrue(j.contains(#""calisti":true"#))
+        XCTAssertTrue(j.contains(#""secim":"TLS kaydı orta alan adı""#))
+        XCTAssertTrue(j.contains(#""secili":false"#))
         // eski çağrı biçimi bozulmaz
         XCTAssertEqual(Json.get(WebState.strategyJson(options: ["A"], selected: "A"), "analizAcik"), "false")
     }
