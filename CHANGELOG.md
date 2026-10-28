@@ -2,6 +2,14 @@
 
 Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-turkey) üzerine bu fork'ta (`gelistirme` dalı) yapılan değişiklikleri listeler. Temel: upstream `9eeac04` (v4.5 kaynakları).
 
+## [v5.2.4] — 2026-10-29 — kararlı (macOS düzeltmesi)
+
+### macOS
+- **macOS 27'de Zapret başlatıldıktan birkaç saniye sonra bağlantı kesiliyordu.** zapret motoru (tpws) site adlarını çözerken çöküyordu (çözücü iş parçacığının yığını macOS 27'de yetmiyor). Artık adları uygulama çözer, motora yalnız IP gider. Motor yine de kapanırsa nedeni kayda yazılır ve uygulama onu kendiliğinden yeniden başlatır.
+
+### Windows
+- Değişiklik yok (sürüm numarası Mac düzeltmesi için arttı).
+
 ## [v5.2.3] — 2026-10-28 — kararlı (düzeltme)
 
 ### Düzeltme

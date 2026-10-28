@@ -1,6 +1,6 @@
 ## macOS (ilk sürüm)
 
-**İndir:** `RedRiveRR-Zapret-macOS-v5.2.3.zip` — Intel ve Apple Silicon (universal), macOS 12 Monterey ve sonrası. Kurulum ve ilk açılış (macOS 15'te "Yine de Aç"): [docs/macos.md](https://github.com/RedRiveRR/zapret-win-turkey/blob/master/docs/macos.md)
+**İndir:** `RedRiveRR-Zapret-macOS-v5.2.4.zip` — Intel ve Apple Silicon (universal), macOS 12 Monterey ve sonrası. Kurulum ve ilk açılış (macOS 15'te "Yine de Aç"): [docs/macos.md](https://github.com/RedRiveRR/zapret-win-turkey/blob/master/docs/macos.md)
 
 - Menü çubuğu uygulaması: kilit simgesinden açılan panel; açık kilit = Zapret çalışıyor.
 - Discord ve Roblox: adlar şifreli DNS (DoH) ile çözülür (Mac'in DNS ayarı değişmez), bağlantı zapret `tpws` ile TLS kaydı bölünerek DPI'den geçirilir. Discord güncelleyicisi dahil.
