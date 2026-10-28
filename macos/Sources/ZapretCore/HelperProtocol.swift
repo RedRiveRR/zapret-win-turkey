@@ -5,6 +5,9 @@ public enum HelperCommand: Equatable {
     case proxyOn(port: Int, ownerPid: Int32)
     case proxyOff
     case status
+    /// Ağ paylaşımı (v3): go-pcap2socks sabit konumdan, yardımcının yazdığı yapılandırmayla; sahip ölünce durur.
+    case gatewayOn(ownerPid: Int32)
+    case gatewayOff
 }
 
 public enum HelperError: Error, Equatable {
@@ -20,12 +23,15 @@ public enum HelperPaths {
     public static let binary = "/Library/PrivilegedHelperTools/com.redriverr.zapret.helper"
     public static let plist = "/Library/LaunchDaemons/com.redriverr.zapret.helper.plist"
     public static let backup = "/Library/Application Support/RedRiveRR Zapret/proxy-yedek.json"
+    public static let gatewayBinary = "/Library/PrivilegedHelperTools/com.redriverr.zapret.pcap2socks"
+    public static let gatewayConfig = "/Library/Application Support/RedRiveRR Zapret/pcap2socks.json"
+    public static let gatewayLog = "/var/log/com.redriverr.zapret.pcap2socks.log"
 }
 
-/// Yardımcının sürümü. Sürüm 2: Güvenli Web Proxy'yi de yönetir (Discord güncelleyicisi için).
+/// Yardımcının sürümü. 2: Güvenli Web Proxy'yi de yönetir (Discord güncelleyicisi için). 3: ağ geçidi (go-pcap2socks).
 /// Eski (sürümsüz) yardımcı `status` yanıtında sürüm vermez; uygulama onu yeniden kurar.
 extension HelperProtocol {
-    public static let version = 2
+    public static let version = 3
 
     public static func statusMessage(on: Bool) -> String { "\(on ? "acik" : "kapali") v\(version)" }
 
@@ -49,6 +55,10 @@ public enum HelperProtocol {
             guard let p = obj["pid"] as? NSNumber, p.int32Value > 0 else { return .failure(.missingPid) }
             return .success(.proxyOn(port: n.intValue, ownerPid: p.int32Value))
         case "proxyOff": return .success(.proxyOff)
+        case "gatewayOn":
+            guard let p = obj["pid"] as? NSNumber, p.int32Value > 0 else { return .failure(.missingPid) }
+            return .success(.gatewayOn(ownerPid: p.int32Value))
+        case "gatewayOff": return .success(.gatewayOff)
         case "status": return .success(.status)
         default: return .failure(.unknownCommand(cmd))
         }
@@ -58,6 +68,8 @@ public enum HelperProtocol {
         switch cmd {
         case .proxyOn(let port, let pid): return Json.object(["cmd": "proxyOn", "port": port, "pid": Int(pid)])
         case .proxyOff: return Json.object(["cmd": "proxyOff"])
+        case .gatewayOn(let pid): return Json.object(["cmd": "gatewayOn", "pid": Int(pid)])
+        case .gatewayOff: return Json.object(["cmd": "gatewayOff"])
         case .status: return Json.object(["cmd": "status"])
         }
     }

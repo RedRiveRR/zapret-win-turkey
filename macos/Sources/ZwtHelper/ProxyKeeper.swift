@@ -9,6 +9,8 @@ final class ProxyKeeper {
     private var ownerPid: Int32 = 0
     private var port = 0
     private var failures = 0
+    private var gateway: Process?
+    private var gatewayOwner: Int32 = 0
 
     func handle(_ cmd: HelperCommand) -> String {
         switch cmd {
@@ -20,10 +22,23 @@ final class ProxyKeeper {
             return HelperProtocol.encodeReply(ok: true, message: "proxy kapalı")
         case .status:
             return HelperProtocol.encodeReply(ok: true, message: HelperProtocol.statusMessage(on: on))
+        case .gatewayOn(let pid):
+            let err = gatewayOn(ownerPid: pid)
+            return HelperProtocol.encodeReply(ok: err == nil, message: err ?? "ağ geçidi açık")
+        case .gatewayOff:
+            gatewayOff()
+            return HelperProtocol.encodeReply(ok: true, message: "ağ geçidi kapalı")
         }
     }
 
     func tick() {
+        if let g = gateway {
+            let ownerAlive = kill(gatewayOwner, 0) == 0 || errno == EPERM
+            if !g.isRunning || !ownerAlive {
+                log("ağ geçidi durduruluyor (süreç çalışıyor: \(g.isRunning), sahip yaşıyor: \(ownerAlive))")
+                gatewayOff()
+            }
+        }
         guard on else { return }
         let ownerAlive = kill(ownerPid, 0) == 0 || errno == EPERM
         failures = TpwsArgs.isPortFree(port) ? failures + 1 : 0
@@ -78,6 +93,52 @@ final class ProxyKeeper {
         }
         on = false
         failures = 0
+    }
+
+    /// go-pcap2socks'u başlatır: yalnız root'a ait sabit ikili, yapılandırmayı yardımcı yazar (istemciden yol/argüman alınmaz).
+    private func gatewayOn(ownerPid pid: Int32) -> String? {
+        if let g = gateway, g.isRunning { gatewayOwner = pid; return nil }
+        let fm = FileManager.default
+        guard let attrs = try? fm.attributesOfItem(atPath: HelperPaths.gatewayBinary),
+              (attrs[.ownerAccountID] as? NSNumber)?.intValue == 0, fm.isExecutableFile(atPath: HelperPaths.gatewayBinary) else {
+            return "Ağ geçidi aracı kurulu değil; yardımcı yeniden kurulmalı."
+        }
+        let lan = LanShare.pickAddress(LanShare.interfaces())
+        let plan = GatewayPlan.make(lanAddress: lan)
+        try? fm.createDirectory(atPath: (HelperPaths.gatewayConfig as NSString).deletingLastPathComponent, withIntermediateDirectories: true)
+        guard fm.createFile(atPath: HelperPaths.gatewayConfig, contents: Data(plan.config(socksPort: GatewayPorts.socks, interfaceAddress: lan).utf8),
+                            attributes: [.posixPermissions: 0o644]) else { return "Ağ geçidi yapılandırması yazılamadı." }
+        fm.createFile(atPath: HelperPaths.gatewayLog, contents: nil, attributes: [.posixPermissions: 0o644])
+        guard let logHandle = FileHandle(forWritingAtPath: HelperPaths.gatewayLog) else { return "Ağ geçidi günlüğü açılamadı." }
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: HelperPaths.gatewayBinary)
+        p.arguments = [HelperPaths.gatewayConfig]
+        p.environment = ["SLOG_LEVEL": "info", "PATH": "/usr/bin:/bin:/usr/sbin:/sbin"]
+        p.standardOutput = logHandle
+        p.standardError = logHandle
+        do { try p.run() } catch { return "Ağ geçidi başlatılamadı: \(error.localizedDescription)" }
+        Thread.sleep(forTimeInterval: 1.5)
+        guard p.isRunning else {
+            let tail = (try? String(contentsOfFile: HelperPaths.gatewayLog, encoding: .utf8))?
+                .split(separator: "\n").suffix(3).joined(separator: " | ") ?? ""
+            return "Ağ geçidi hemen kapandı. " + tail
+        }
+        gateway = p
+        gatewayOwner = pid
+        log("ağ geçidi açıldı: \(plan.gateway) (\(plan.network)), arayüz \(lan ?? "otomatik"), sahip pid \(pid)")
+        return nil
+    }
+
+    private func gatewayOff() {
+        guard let p = gateway else { return }
+        gateway = nil
+        if p.isRunning {
+            p.terminate()
+            let deadline = Date().addingTimeInterval(3)
+            while p.isRunning && Date() < deadline { Thread.sleep(forTimeInterval: 0.05) }
+            if p.isRunning { kill(p.processIdentifier, SIGKILL) }
+        }
+        log("ağ geçidi kapandı")
     }
 
     private func run(_ argv: [String]) -> String {
