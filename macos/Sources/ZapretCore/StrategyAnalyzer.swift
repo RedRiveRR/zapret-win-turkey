@@ -65,9 +65,13 @@ public enum StrategyCandidates {
                  ["--hostcase", "--tlsrec=midsld"]]
         var out = bundled
         var seen = Set(bundled.map(\.args))
+        var names = Set(bundled.map(\.name))
         for a in args where !seen.contains(a) {
             seen.insert(a)
-            out.append(TpwsStrategy(name: a.joined(separator: " "), args: a))
+            var name = StrategyNames.label(a)
+            if names.contains(name) { name += " #\(out.count + 1)" }
+            names.insert(name)
+            out.append(TpwsStrategy(name: name, args: a))
         }
         return out
     }

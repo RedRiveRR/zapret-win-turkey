@@ -14,7 +14,7 @@ public enum WebState {
     static func parts(_ status: AppStatus, error: String?) -> (String, String, String, String) {
         switch status {
         case .manual:
-            return ("aktif", "Zapret çalışıyor", "Discord'a yol açık", "Program kapanınca Zapret de durur. Kalıcı kullanım için servisi kurun.")
+            return ("aktif", "Zapret çalışıyor", "Discord'a yol açık", "Discord'u şimdi açın; zaten açıksa yeniden başlatın.")
         case .ready:
             return ("hazir", "Çalışmaya hazır", "Zapret kapalı", "Başlatmak için düğmeye basın.")
         case .starting:
@@ -29,7 +29,7 @@ public enum WebState {
         let p = parts(status, error: error)
         return Json.object(["tip": "durum", "durum": p.0, "rozet": p.1, "baslik": p.2, "aciklama": p.3,
                             "calisiyor": running, "dugme": buttonEnabled, "strateji": strategy,
-                            "stratejiDetay": detail, "onarim": "Servis kurulunca etkinleşir"])
+                            "stratejiDetay": detail, "onarim": ""])
     }
 
     public static func strategyJson(options: [String], selected: String) -> String {

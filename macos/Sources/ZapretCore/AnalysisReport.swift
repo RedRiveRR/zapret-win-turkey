@@ -45,7 +45,7 @@ public struct AnalysisReport: Codable, Equatable {
     public static let rowLimit = 8
 
     static func displayName(_ s: StrategyScore, bundled: [TpwsStrategy]) -> String {
-        bundled.first { $0.args == s.args }?.name ?? "Analiz: " + s.args.joined(separator: " ")
+        bundled.first { $0.args == s.args }?.name ?? StrategyNames.label(s.args)
     }
 
     /// Paketteki stratejiler + gösterilen satırlardaki, paketle aynı olmayan tam puanlı analiz sonuçları.
