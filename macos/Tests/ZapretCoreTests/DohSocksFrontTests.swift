@@ -202,8 +202,26 @@ final class DohSocksFrontTests: XCTestCase {
         let front = DohSocksFront(port: fp, upstreamPort: freePort(), resolve: { _ in [] })
         XCTAssertNoThrow(try front.start()); defer { front.stop() }
         let c = connectLocal(fp); defer { close(c) }
-        writeAll(c, Array("GET http://example.org/ HTTP/1.1\r\nHost: example.org\r\n\r\n".utf8))
+        writeAll(c, Array("GET /yerel HTTP/1.1\r\nHost: example.org\r\n\r\n".utf8))
         XCTAssertTrue(readHead(c).hasPrefix("HTTP/1.1 405"))
+    }
+
+    func testPlainHttpIsForwardedThroughUpstream() {
+        let up = freePort(), fp = freePort()
+        let lock = NSLock(); var seenReq: [UInt8] = []
+        let ls = startFakeUpstream(port: up) { lock.lock(); seenReq = $0; lock.unlock() }
+        defer { close(ls) }
+        let front = DohSocksFront(port: fp, upstreamPort: up, resolve: { _ in [] })
+        XCTAssertNoThrow(try front.start()); defer { front.stop() }
+        let c = connectLocal(fp); defer { close(c) }
+        let req = "GET http://example.org/a HTTP/1.1\r\nHost: example.org\r\n\r\n"
+        writeAll(c, Array(req.utf8))
+        // sahte yukarı akış yankılar: istemci yeniden yazılmış isteği geri almalı (yanıt yerine)
+        let expect = "GET /a HTTP/1.1\r\nHost: example.org\r\nConnection: close\r\n\r\n"
+        XCTAssertEqual(String(decoding: readN(c, expect.utf8.count), as: UTF8.self), expect)
+        lock.lock(); defer { lock.unlock() }
+        XCTAssertEqual(Socks5.parseRequest(seenReq)?.target, .domain("example.org"))
+        XCTAssertEqual(Socks5.parseRequest(seenReq)?.port, 80)
     }
 
     func testHttpConnectUpstreamFailureIs502() {
@@ -224,9 +242,9 @@ final class DohSocksFrontTests: XCTestCase {
         front.onEvent = { lock.lock(); events.append($0); lock.unlock() }
         XCTAssertNoThrow(try front.start()); defer { front.stop() }
         let c = connectLocal(fp); defer { close(c) }
-        writeAll(c, Array("GET http://example.org/ HTTP/1.1\r\nHost: example.org\r\n\r\n".utf8))
+        writeAll(c, Array("GET /yerel HTTP/1.1\r\nHost: example.org\r\n\r\n".utf8))
         XCTAssertTrue(readHead(c).hasPrefix("HTTP/1.1 405"))
         lock.lock(); defer { lock.unlock() }
-        XCTAssertEqual(events, ["http reddedildi (405): GET http://example.org/ HTTP/1.1"])
+        XCTAssertEqual(events, ["http reddedildi (405): GET /yerel HTTP/1.1"])
     }
 }
