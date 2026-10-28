@@ -49,8 +49,11 @@ public struct AnalysisReport: Codable, Equatable {
     }
 
     /// Paketteki stratejiler + gösterilen satırlardaki, paketle aynı olmayan tam puanlı analiz sonuçları.
+    /// Seçim listesine girecek en çok kazanan (satırlar `rowLimit`'te kalır).
+    public static let listLimit = 20
+
     public static func strategies(bundled: [TpwsStrategy], scores: [StrategyScore]) -> [TpwsStrategy] {
-        let extra = scores.prefix(rowLimit).filter { $0.score == 100 && !bundled.map(\.args).contains($0.args) }
+        let extra = scores.prefix(listLimit).filter { $0.score == 100 && !bundled.map(\.args).contains($0.args) }
         return bundled + extra.map { TpwsStrategy(name: displayName($0, bundled: bundled), args: $0.args) }
     }
 

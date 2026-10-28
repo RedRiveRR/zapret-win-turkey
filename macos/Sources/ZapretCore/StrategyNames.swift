@@ -9,6 +9,7 @@ public enum StrategyNames {
     public static func label(_ args: [String]) -> String {
         var tlsrec: String?, split: String?
         var extras: [String] = [], unknown: [String] = []
+        var oobData: String?
         for a in args {
             let kv = a.split(separator: "=", maxSplits: 1).map(String.init)
             switch kv[0] {
@@ -17,9 +18,12 @@ public enum StrategyNames {
             case "--oob": extras.append("OOB")
             case "--disorder": extras.append("sıra bozma")
             case "--hostcase": extras.append("harf karıştırma")
+            case "--oob-data": oobData = kv.count > 1 ? kv[1] : nil
+            case "--tamper-cutoff": extras.append("yalnız ilk paket")
             default: unknown.append(a.hasPrefix("--") ? String(a.dropFirst(2)) : a)
             }
         }
+        if let d = oobData, let i = extras.firstIndex(of: "OOB") { extras[i] = "OOB (\(d))" }
         var parts: [String] = []
         if let t = tlsrec {
             parts.append("TLS kaydı · \(t)")

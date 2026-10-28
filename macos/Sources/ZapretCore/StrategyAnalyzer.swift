@@ -63,6 +63,22 @@ public enum StrategyCandidates {
         args += [["--split-pos=1"], ["--split-pos=2"], ["--split-pos=midsld"], ["--split-pos=1,midsld", "--disorder=tls"],
                  ["--oob=tls", "--split-pos=1"], ["--oob=tls", "--split-pos=midsld"], ["--disorder=tls", "--split-pos=2"],
                  ["--hostcase", "--tlsrec=midsld"]]
+        // Genişletme (2026-10-29): eskilerin arkasına — eşit puanda eski adaylar önde kalır. Hepsi tpws v72.13'te denendi.
+        args += [["--tlsrec=sniext+3"], ["--tlsrec=midsld-2"], ["--tlsrec=host+3"], ["--tlsrec=sld+3"], ["--tlsrec=endsld-2"],
+                 ["--split-pos=sniext+1"], ["--split-pos=sniext+4"], ["--split-pos=1,midsld"], ["--split-pos=1,sniext+1,midsld"],
+                 ["--split-pos=host,midsld,endhost"], ["--oob=tls", "--split-pos=sniext+1"], ["--oob=tls", "--split-pos=1,midsld"],
+                 ["--disorder=tls", "--split-pos=1"], ["--disorder=tls", "--split-pos=midsld"], ["--disorder=tls", "--split-pos=sniext+1"]]
+        for t in ["midsld", "sniext+1", "sld+1"] { args.append(["--tlsrec=\(t)", "--split-pos=1,midsld"]) }
+        args += [["--tlsrec=sld+1", "--split-pos=1"], ["--tlsrec=sld+1", "--split-pos=midsld"], ["--tlsrec=sld+1", "--oob=tls"],
+                 ["--tlsrec=sniext+1", "--oob=tls", "--split-pos=midsld"],
+                 ["--tlsrec=midsld-1", "--split-pos=1"], ["--tlsrec=endsld-1", "--split-pos=1"],
+                 ["--tlsrec=midsld-1", "--oob=tls"], ["--tlsrec=endsld-1", "--oob=tls"]]
+        for t in ["midsld", "sld+1", "host+1"] { args.append(["--tlsrec=\(t)", "--split-pos=1", "--disorder=tls"]) }
+        args += [["--tlsrec=midsld", "--split-pos=midsld", "--disorder=tls"], ["--tlsrec=sniext+1", "--split-pos=midsld", "--disorder=tls"],
+                 ["--oob=tls", "--oob-data=0x16", "--split-pos=1"], ["--tlsrec=midsld", "--oob=tls", "--oob-data=0x16"],
+                 ["--oob=tls", "--oob-data=a", "--split-pos=midsld"],
+                 ["--tlsrec=midsld", "--tamper-cutoff=n2"], ["--tlsrec=sld+1", "--tamper-cutoff=n2"],
+                 ["--split-pos=1", "--disorder=tls", "--tamper-cutoff=n2"]]
         var out = bundled
         var seen = Set(bundled.map(\.args))
         var names = Set(bundled.map(\.name))

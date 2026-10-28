@@ -525,7 +525,7 @@ final class AppController: NSObject, WKScriptMessageHandler {
                 return
             }
             let base = TpwsMeasure.direct(plan.detail)
-            let analyzer = StrategyAnalyzer(concurrency: 4, measure: TpwsMeasure.make(tpwsPath: tpws, hostlist: hostlist, logDir: Self.logDir))
+            let analyzer = StrategyAnalyzer(concurrency: 6, measure: TpwsMeasure.make(tpwsPath: tpws, hostlist: hostlist, logDir: Self.logDir))
             analyzer.onProgress = { done, total, phase in
                 let screening = phase == "eleme"
                 let ratio = screening ? 0.05 + 0.55 * Double(done) / Double(max(total, 1)) : 0.6 + 0.4 * Double(done) / Double(max(total, 1))
