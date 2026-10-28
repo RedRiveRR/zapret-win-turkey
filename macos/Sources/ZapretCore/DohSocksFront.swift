@@ -8,17 +8,25 @@ public final class DohSocksFront {
     public let port: Int
     /// Her CONNECT denemesi için tek satır ("ad:kapı -> hedef [(DoH)] tamam|hata N"). Ziyaret geçmişi içerir; yalnız hata ayıklamada bağlanır.
     public var onEvent: ((String) -> Void)?
+    /// Kabul edilen her bağlantının kaynak IPv4'ü (paylaşımda bağlı cihazlar).
+    public var onClient: ((String) -> Void)?
     private let upstreamPort: Int
     private let resolve: (String) -> [String]
+    private let bindAddress: String
+    private let allow: ((String) -> Bool)?
     private let lock = NSLock()
     private var listenFD: Int32 = -1
     private var clients = Set<Int32>()
     private var loopDone: DispatchSemaphore?
 
-    public init(port: Int, upstreamPort: Int, resolve: @escaping (String) -> [String]) {
+    /// `bindAddress`: varsayılan yalnız bu Mac; "0.0.0.0" yerel ağ paylaşımı. `allow`: kaynak IP süzgeci (reddedilen kapatılır).
+    public init(port: Int, upstreamPort: Int, resolve: @escaping (String) -> [String],
+                bindAddress: String = "127.0.0.1", allow: ((String) -> Bool)? = nil) {
         self.port = port
         self.upstreamPort = upstreamPort
         self.resolve = resolve
+        self.bindAddress = bindAddress
+        self.allow = allow
     }
 
     public func start() throws {
@@ -29,6 +37,7 @@ public final class DohSocksFront {
         var one: Int32 = 1
         setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, socklen_t(MemoryLayout<Int32>.size))
         var addr = Self.loopback(port)
+        addr.sin_addr.s_addr = inet_addr(bindAddress)
         let rc = withUnsafePointer(to: &addr) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size)) }
         }
@@ -61,8 +70,13 @@ public final class DohSocksFront {
             var p = pollfd(fd: fd, events: Int16(POLLIN), revents: 0)
             guard poll(&p, 1, 200) >= 0 || errno == EINTR else { return }
             guard p.revents & Int16(POLLIN) != 0 else { continue }
-            let c = accept(fd, nil, nil)
+            var peer = sockaddr_in()
+            var len = socklen_t(MemoryLayout<sockaddr_in>.size)
+            let c = withUnsafeMutablePointer(to: &peer) { $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { accept(fd, $0, &len) } }
             if c < 0 { continue }
+            let ip = String(cString: inet_ntoa(peer.sin_addr))
+            if let allow = allow, !allow(ip) { close(c); continue }
+            onClient?(ip)
             lock.lock(); clients.insert(c); lock.unlock()
             Thread.detachNewThread { [weak self] in self?.handle(c) }
         }
