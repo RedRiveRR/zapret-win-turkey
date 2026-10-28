@@ -36,15 +36,21 @@ public struct AnalysisReport: Codable, Equatable {
         public let durum: String
         public let tam: String
         public let calisti: Bool
+        /// Tıklanınca seçilecek strateji adı (tam puanlı satırlar); boşsa satır seçilemez.
+        public let secim: String
+        public let secili: Bool
     }
+
+    /// Arayüzde gösterilen satır sayısı; tam puanlı her satır strateji listesinde de bulunur.
+    public static let rowLimit = 8
 
     static func displayName(_ s: StrategyScore, bundled: [TpwsStrategy]) -> String {
         bundled.first { $0.args == s.args }?.name ?? "Analiz: " + s.args.joined(separator: " ")
     }
 
-    /// Paketteki stratejiler + paketle aynı olmayan, tam puanlı en iyi 5 analiz sonucu.
+    /// Paketteki stratejiler + gösterilen satırlardaki, paketle aynı olmayan tam puanlı analiz sonuçları.
     public static func strategies(bundled: [TpwsStrategy], scores: [StrategyScore]) -> [TpwsStrategy] {
-        let extra = scores.filter { $0.score == 100 && !bundled.map(\.args).contains($0.args) }.prefix(5)
+        let extra = scores.prefix(rowLimit).filter { $0.score == 100 && !bundled.map(\.args).contains($0.args) }
         return bundled + extra.map { TpwsStrategy(name: displayName($0, bundled: bundled), args: $0.args) }
     }
 
@@ -53,11 +59,13 @@ public struct AnalysisReport: Codable, Equatable {
         return TpwsStrategy(name: displayName(s, bundled: bundled), args: s.args)
     }
 
-    public static func rows(bundled: [TpwsStrategy], scores: [StrategyScore], limit: Int = 8) -> [Row] {
-        scores.prefix(limit).enumerated().map { i, s in
-            Row(puan: "\(s.score)", ad: (i == 0 && s.score == 100 ? "★ " : "") + displayName(s, bundled: bundled),
-                durum: "\(s.passed)/\(s.total) geçti" + (s.passed > 0 ? " · \(s.latencyMs) ms" : ""),
-                tam: s.args.joined(separator: " "), calisti: s.score == 100)
+    public static func rows(bundled: [TpwsStrategy], scores: [StrategyScore], limit: Int = rowLimit, selected: String = "") -> [Row] {
+        scores.prefix(min(limit, rowLimit)).enumerated().map { i, s in
+            let name = displayName(s, bundled: bundled)
+            return Row(puan: "\(s.score)", ad: (i == 0 && s.score == 100 ? "★ " : "") + name,
+                       durum: "\(s.passed)/\(s.total) geçti" + (s.passed > 0 ? " · \(s.latencyMs) ms" : ""),
+                       tam: s.args.joined(separator: " "), calisti: s.score == 100,
+                       secim: s.score == 100 ? name : "", secili: s.score == 100 && name == selected)
         }
     }
 
@@ -78,7 +86,8 @@ extension WebState {
     public static func strategyJson(options: [String], selected: String, analysisEnabled: Bool, time: String,
                                     results: [AnalysisReport.Row]) -> String {
         let rows = "[" + results.map {
-            Json.object(["puan": $0.puan, "ad": $0.ad, "durum": $0.durum, "tam": $0.tam, "calisti": $0.calisti])
+            Json.object(["puan": $0.puan, "ad": $0.ad, "durum": $0.durum, "tam": $0.tam, "calisti": $0.calisti,
+                         "secim": $0.secim, "secili": $0.secili])
         }.joined(separator: ",") + "]"
         return Json.object(["tip": "strateji", "secenekler": Json.Raw(list(options)), "secili": selected,
                             "motorlar": Json.Raw(list(["tpws (macOS)"])), "motor": "tpws (macOS)",

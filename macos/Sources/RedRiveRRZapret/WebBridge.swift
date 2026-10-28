@@ -41,7 +41,11 @@ final class AppController: NSObject, WKScriptMessageHandler {
         let ini = Bundle.main.url(forResource: "strategies-macos", withExtension: "ini")
             .flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? ""
         bundled = Strategies.parse(ini)
-        if let d = try? Data(contentsOf: analysisURL), let r = try? JSONDecoder().decode(AnalysisReport.self, from: d) { report = r }
+        if let d = try? Data(contentsOf: analysisURL), let r = try? JSONDecoder().decode(AnalysisReport.self, from: d) {
+            // eski kayıtlar başka kuralla sıralanmış olabilir
+            report = AnalysisReport(time: r.time, baselinePassed: r.baselinePassed, baselineTotal: r.baselineTotal,
+                                    scores: StrategyRanking.sort(r.scores, order: bundled.map(\.args)))
+        }
         strategies = AnalysisReport.strategies(bundled: bundled, scores: report?.scores ?? [])
         let saved = readConfig()["ActiveStrategy"] ?? ""
         selected = strategies.contains { $0.name == saved } ? saved : (strategies.first?.name ?? "")
@@ -284,7 +288,7 @@ final class AppController: NSObject, WKScriptMessageHandler {
 
     private func sendStrategy() {
         post(WebState.strategyJson(options: strategies.map(\.name), selected: selected, analysisEnabled: !analyzing,
-                                   time: report?.time ?? "", results: AnalysisReport.rows(bundled: bundled, scores: report?.scores ?? [])))
+                                   time: report?.time ?? "", results: AnalysisReport.rows(bundled: bundled, scores: report?.scores ?? [], selected: running.isEmpty ? selected : running)))
     }
 
     private func info(_ s: String) { post(Json.object(["tip": "bilgi", "metin": s])) }
@@ -292,6 +296,7 @@ final class AppController: NSObject, WKScriptMessageHandler {
 
     // MARK: Sayfaya gidenler
     private func sendStatus() {
+        defer { sendStrategy() } // sonuç listesindeki "seçili" işareti çalışan stratejiyi izler
         post(WebState.statusJson(status: status, running: status == .manual, buttonEnabled: !busy,
                                  strategy: running.isEmpty ? selected : running, detail: "tpws (macOS), Discord ve Roblox siteleri", error: errorText))
     }
