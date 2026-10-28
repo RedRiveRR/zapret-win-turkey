@@ -57,6 +57,14 @@ final class ShareTests: XCTestCase {
         XCTAssertNil(LanShare.pickAddress([("lo0", "127.0.0.1"), ("utun0", "10.8.0.2")]))
     }
 
+    /// macOS 14.4+'ta `-getairportnetwork` konum izni olmadan Wi-Fi'yi göstermiyor; donanım port listesi her sürümde çalışır.
+    func testWifiDevicesFromHardwarePorts() {
+        let out = "\nHardware Port: Ethernet\nDevice: en0\nEthernet Address: aa\n\nHardware Port: Wi-Fi\nDevice: en1\nEthernet Address: bb\n\nHardware Port: Thunderbolt Bridge\nDevice: bridge0\n"
+        XCTAssertEqual(LanShare.wifiDevices(hardwarePorts: out), ["en1"])
+        XCTAssertEqual(LanShare.wifiDevices(hardwarePorts: "Hardware Port: AirPort\nDevice: en0\n"), ["en0"]) // eski adlandırma
+        XCTAssertEqual(LanShare.wifiDevices(hardwarePorts: ""), [])
+    }
+
     func testClientsAreActiveForAMinute() {
         var c = LanClients()
         let t = Date(timeIntervalSince1970: 1000)
