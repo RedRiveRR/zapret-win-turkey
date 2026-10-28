@@ -11,11 +11,11 @@ final class WebStateTests: XCTestCase {
         XCTAssertEqual(field(j, "durum"), "aktif")
         XCTAssertEqual(field(j, "rozet"), "Zapret çalışıyor")
         XCTAssertEqual(field(j, "baslik"), "Discord'a yol açık")
-        XCTAssertEqual(field(j, "aciklama"), "Program kapanınca Zapret de durur. Kalıcı kullanım için servisi kurun.")
+        XCTAssertEqual(field(j, "aciklama"), "Discord'u şimdi açın; zaten açıksa yeniden başlatın.")
         XCTAssertEqual(field(j, "calisiyor"), "true")
         XCTAssertEqual(field(j, "strateji"), "Orta alan adında bölme")
         XCTAssertEqual(field(j, "stratejiDetay"), "tpws (macOS)")
-        XCTAssertEqual(field(j, "onarim"), "Servis kurulunca etkinleşir")
+        XCTAssertFalse(j.contains("Servis")) // Mac'te servis yok
     }
 
     func testReady() {

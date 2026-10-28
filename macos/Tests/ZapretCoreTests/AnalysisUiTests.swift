@@ -11,7 +11,7 @@ final class AnalysisUiTests: XCTestCase {
 
     func testBundledArgsKeepTheirNameAndNewWinnersAreAdded() {
         let list = AnalysisReport.strategies(bundled: bundled, scores: scores)
-        XCTAssertEqual(list.map(\.name), ["TLS kaydı orta alan adı", "TLS kaydı SNI sonrası", "Analiz: --tlsrec=host"])
+        XCTAssertEqual(list.map(\.name), ["TLS kaydı orta alan adı", "TLS kaydı SNI sonrası", "TLS kaydı · ad başı"])
     }
 
     func testEverySelectableRowIsInTheStrategyList() {
@@ -28,7 +28,7 @@ final class AnalysisUiTests: XCTestCase {
     }
 
     func testRows() {
-        let rows = AnalysisReport.rows(bundled: bundled, scores: scores, limit: 3, selected: "Analiz: --tlsrec=host")
+        let rows = AnalysisReport.rows(bundled: bundled, scores: scores, limit: 3, selected: "TLS kaydı · ad başı")
         XCTAssertEqual(rows.count, 3)
         XCTAssertEqual(rows[0].puan, "100")
         XCTAssertEqual(rows[0].ad, "★ TLS kaydı orta alan adı")
@@ -38,7 +38,7 @@ final class AnalysisUiTests: XCTestCase {
         XCTAssertEqual(rows[2].ad, "TLS kaydı SNI sonrası")
         XCTAssertFalse(rows[2].calisti)
         // tam puanlılar seçilebilir (strateji listesindeki adla), eksikler seçilemez; seçili olan işaretli
-        XCTAssertEqual(rows.map(\.secim), ["TLS kaydı orta alan adı", "Analiz: --tlsrec=host", ""])
+        XCTAssertEqual(rows.map(\.secim), ["TLS kaydı orta alan adı", "TLS kaydı · ad başı", ""])
         XCTAssertEqual(rows.map(\.secili), [false, true, false])
     }
 
