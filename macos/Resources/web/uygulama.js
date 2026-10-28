@@ -6,7 +6,7 @@
 //   {tip:"analiz", calisiyor:bool, metin, oran:0..1}
 //   {tip:"discord", yenidenBaslat:bool}   (Discord, Zapret'ten önce açılmışsa yeniden başlatılmalı)
 //   {tip:"paylasim", acik:bool, kullanilabilir:bool, gecit:bool, ip, maske, agGecidi, dns, dns2, mtu, adres, port, cihaz:int,
-//    kablosuz:bool, guvenlikDuvari:bool}   (gecit: ağ geçidi açık — cihaza IP elle; değilse yedek proxy yolu)
+//    kablosuz:bool, guvenlikDuvari:bool, etkin:int, cihazlar:[{ip, tur, durum, etkin:bool, baglanti}]}   (gecit: ağ geçidi açık — cihaza IP elle; değilse yedek proxy yolu)
 //   {tip:"guncelleme", surum:"5.3.0|", durum:"hazir|indiriliyor|hata", metin}
 //   {tip:"surum", surum}, {tip:"bildirim", metin}
 // Sayfa -> program (postMessage):
@@ -146,7 +146,7 @@ function paylasimUygula(m) {
   $('paylasim-adres').textContent = m.adres || 'Yerel ağ bulunamadı';
   $('paylasim-port').textContent = m.port || 8080;
   $('paylasim-kopyala').hidden = !m.adres;
-  $('paylasim-cihaz').textContent = m.cihaz > 0 ? m.cihaz + ' cihaz bağlı' : 'Henüz bağlanan cihaz yok';
+  cihazlarUygula(m.cihazlar || [], m.etkin || 0);
   $('paylasim-duvar').hidden = !m.guvenlikDuvari;
 }
 
@@ -154,6 +154,50 @@ function paylasimUygula(m) {
 document.querySelector('#paylasim details').addEventListener('toggle', (e) => {
   if (e.target.open) setTimeout(() => e.target.scrollIntoView({ block: 'end', behavior: 'smooth' }), 120);
 });
+
+// Bağlı cihazlar: türüne göre simge, ad (üretici), IP, durum. Liste açık/kapalı durumu yeniden çizimde korunur.
+const SIMGE = {
+  konsol: '<path d="M6 9h12a3 3 0 0 1 3 3v2.5a2.5 2.5 0 0 1-4.6 1.3L15 14H9l-1.4 1.8A2.5 2.5 0 0 1 3 14.5V12a3 3 0 0 1 3-3z"/><path d="M8 11v2M7 12h2M16 11.5h.01M18 12.5h.01"/>',
+  tv: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 20h8"/>',
+  telefon: '<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/>',
+  bilgisayar: '<rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/>',
+  baglanti: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+  cihaz: '<rect x="5" y="4" width="14" height="16" rx="2"/><circle cx="12" cy="15" r="1"/>',
+};
+function cihazSimgesi(tur) {
+  const t = (tur || '').toLowerCase();
+  if (/playstation|sony|xbox|microsoft|nintendo|valve|steam/.test(t)) return SIMGE.konsol;
+  if (/samsung|lg|vestel|tcl|hisense|philips|roku|google|android tv|chromecast|amazon|fire|apple tv|tv/.test(t)) return SIMGE.tv;
+  if (/gizli adres|telefon|tablet|xiaomi|huawei|oppo|realme|apple|iphone/.test(t)) return SIMGE.telefon;
+  if (/proxy/.test(t)) return SIMGE.baglanti;
+  if (/intel|dell|lenovo|hp|asus|acer|msi|gigabyte|realtek/.test(t)) return SIMGE.bilgisayar;
+  return SIMGE.cihaz;
+}
+function cihazlarUygula(liste, etkin) {
+  $('cihazlar-baslik').textContent = liste.length
+    ? liste.length + ' cihaz bağlı' + (etkin ? ', ' + etkin + ' etkin' : '')
+    : 'Henüz bağlanan cihaz yok';
+  $('cihaz-liste').replaceChildren(...liste.map((d) => {
+    const li = document.createElement('li');
+    if (d.etkin) li.className = 'etkin';
+    const i = document.createElement('span');
+    i.className = 'cihaz-simge';
+    i.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + cihazSimgesi(d.tur) + '</svg>';
+    const ad = document.createElement('span');
+    ad.className = 'cihaz-ad';
+    const a1 = document.createElement('b');
+    a1.textContent = d.tur || 'Bilinmeyen cihaz';
+    const a2 = document.createElement('span');
+    a2.textContent = d.ip;
+    ad.append(a1, a2);
+    const du = document.createElement('span');
+    du.className = 'cihaz-durum';
+    du.textContent = d.durum || '';
+    li.append(i, ad, du);
+    li.title = d.baglanti + ' bağlantı';
+    return li;
+  }));
+}
 
 // --- Güncelleme ---
 $('guncelle').addEventListener('click', () => gonder({ tip: 'komut', ad: 'guncelle' }));

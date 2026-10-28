@@ -18,7 +18,9 @@ final class AppController: NSObject, WKScriptMessageHandler {
     private var gatewayFront: DohSocksFront?       // ağ geçidi trafiği (127.0.0.1:1082, SNI kurtarmalı), yalnız `work` kuyruğunda
     private var gatewayOn = false                  // lanLock ile
     private var frontResolve: ((String) -> [String])?
-    private var lanClients = LanClients()
+    private lazy var devices = LanDevices(vendors: Bundle.main.url(forResource: "cihaz-ureticileri", withExtension: "txt", subdirectory: "veri")
+        .flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? "")
+    private var gatewayLogOffset: UInt64 = 0 // lanLock ile
     private var shareOn = false // lanLock ile; ana iş parçacığı work kuyruğunu beklemesin (başlatma parola bekleyebilir)
     private let lanLock = NSLock()
     private var shareTimer: Timer?
@@ -296,11 +298,11 @@ final class AppController: NSObject, WKScriptMessageHandler {
         f.onEvent = { [weak self] e in if all || e.contains("DoH") || e.contains("hata") { self?.log("paylaşım \(e)") } }
         f.onClient = { [weak self] ip in
             guard let self = self, ip != "127.0.0.1" else { return }
-            self.lanLock.lock(); self.lanClients.seen(ip); self.lanLock.unlock()
+            self.lanLock.lock(); self.devices.seenViaProxy(ip); self.lanLock.unlock()
         }
         do { try f.start() } catch { return "Paylaşım kapısı \(LanShare.port) başka bir program tarafından kullanılıyor." }
         lanFront = f
-        lanLock.lock(); shareOn = true; lanLock.unlock()
+        lanLock.lock(); shareOn = true; devices.reset(); gatewayLogOffset = 0; lanLock.unlock()
         log("ağ paylaşımı açık: \(LanShare.port)")
         return startGatewayLocked(resolve: resolve, notifyOnly: true)
     }
@@ -350,23 +352,39 @@ final class AppController: NSObject, WKScriptMessageHandler {
         lanLock.lock(); shareOn = false; gatewayOn = false; lanLock.unlock()
     }
 
+    /// Araç günlüğünün yeni kısmını cihaz listesine işler (dosya yeniden başladıysa sıfırdan). lanLock tutulurken çağrılır.
+    private func pollGatewayLogLocked() {
+        guard let h = FileHandle(forReadingAtPath: HelperPaths.gatewayLog) else { return }
+        defer { try? h.close() }
+        let size = h.seekToEndOfFile()
+        if size < gatewayLogOffset { devices.reset(); gatewayLogOffset = 0 }
+        guard size > gatewayLogOffset else { return }
+        h.seek(toFileOffset: gatewayLogOffset)
+        let data = h.readData(ofLength: Int(min(size - gatewayLogOffset, 4 * 1024 * 1024)))
+        gatewayLogOffset += UInt64(data.count)
+        devices.feed(String(decoding: data, as: UTF8.self))
+    }
+
     private func sendShare() {
-        lanLock.lock(); let on = shareOn, gw = gatewayOn, proxyDevices = lanClients.activeCount(); lanLock.unlock()
+        lanLock.lock()
+        let on = shareOn, gw = gatewayOn
+        if gw { pollGatewayLogLocked() }
+        let deviceRows = devices.json(), deviceCount = devices.devices.count, activeCount = devices.activeCount()
+        lanLock.unlock()
         let firewall = on && Self.run(["/usr/libexec/ApplicationFirewall/socketfilterfw", "--getglobalstate"]).contains("enabled")
         let ifs = LanShare.interfaces()
         let lan = LanShare.pickAddress(ifs)
         let plan = GatewayPlan.make(lanAddress: lan)
         let ifName = ifs.first { $0.1 == lan }?.0
         let mtu = GatewayPlan.deviceMTU(interfaceMTU: ifName.flatMap { GatewayPlan.mtu(ifconfig: Self.run(["/sbin/ifconfig", $0])) } ?? 1500)
-        let gwDevices = gw ? GatewayPlan.devices(inLog: (try? String(contentsOfFile: HelperPaths.gatewayLog, encoding: .utf8)) ?? "").count : 0
         post(Json.object(["tip": "paylasim", "acik": on, "kullanilabilir": status == .manual, "gecit": gw,
                           "adres": lan ?? "", "port": LanShare.port,
                           "ip": plan.deviceIP, "maske": plan.mask, "agGecidi": plan.gateway, "dns": plan.dns, "dns2": plan.dns2, "mtu": mtu,
                           "kablosuz": ifName.map { Self.run(["/usr/sbin/networksetup", "-getairportnetwork", $0]).contains("Current Wi-Fi") } ?? false,
-                          "cihaz": proxyDevices + gwDevices, "guvenlikDuvari": firewall]))
+                          "cihaz": deviceCount, "etkin": activeCount, "cihazlar": Json.Raw(deviceRows), "guvenlikDuvari": firewall]))
         DispatchQueue.main.async {
             if on && self.shareTimer == nil {
-                self.shareTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in self?.sendShare() }
+                self.shareTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in self?.sendShare() }
             } else if !on {
                 self.shareTimer?.invalidate(); self.shareTimer = nil
             }

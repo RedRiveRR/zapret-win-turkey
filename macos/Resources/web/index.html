@@ -85,7 +85,11 @@
           <button class="metin-dugme" id="paylasim-kopyala">Kopyala</button>
         </div>
       </div>
-      <p class="not" id="paylasim-cihaz">Henüz bağlanan cihaz yok</p>
+      <details class="cihazlar" id="cihazlar">
+        <summary id="cihazlar-baslik">Henüz bağlanan cihaz yok</summary>
+        <ul id="cihaz-liste"></ul>
+        <p class="not">"Etkin": son bir dakikada yeni bağlantı açtı. Boşta bekleyen cihaz da "dk önce" görünebilir.</p>
+      </details>
       <p class="uyari" id="paylasim-kablosuz" hidden>Mac Wi-Fi'de; paylaşım kabloyla daha hızlı ve kararlı.</p>
       <p class="uyari" id="paylasim-duvar" hidden>macOS güvenlik duvarı açık. Cihaz ilk bağlandığında çıkan pencerede "İzin ver"i seç.</p>
       <details>
