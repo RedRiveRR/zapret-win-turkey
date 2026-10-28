@@ -14,6 +14,15 @@ final class AppController: NSObject, WKScriptMessageHandler {
     private static let tpwsPort = TpwsArgs.defaultPort + 1
     private let engine = TpwsEngine(port: AppController.tpwsPort, pidFile: AppController.supportDir.appendingPathComponent("tpws.pid"))
     private var front: DohSocksFront? // yalnız `work` kuyruğunda
+    private var lanFront: DohSocksFront?           // ağ paylaşımı (0.0.0.0:8080), yalnız `work` kuyruğunda
+    private var frontResolve: ((String) -> [String])?
+    private var lanClients = LanClients()
+    private var shareOn = false // lanLock ile; ana iş parçacığı work kuyruğunu beklemesin (başlatma parola bekleyebilir)
+    private let lanLock = NSLock()
+    private var shareTimer: Timer?
+    private var update: SelfUpdate.Release?
+    private var updating = false
+    private static var appVersion: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.0.0" }
     /// Motor ve yardımcı çağrıları ana iş parçacığını kilitlemesin; sırayla çalışsın (gözden geçirme #2).
     private let work = DispatchQueue(label: "com.redriverr.zapret.work")
     private var strategies: [TpwsStrategy] = []
@@ -65,7 +74,17 @@ final class AppController: NSObject, WKScriptMessageHandler {
         guard let text = message.body as? String else { return }
         switch Json.get(text, "tip") {
         case "hazir":
+            post(Json.object(["tip": "surum", "surum": Self.appVersion]))
             sendStatus()
+            sendShare()
+            sendUpdate()
+            checkUpdate()
+        case "kopyala":
+            if let t = Json.get(text, "metin") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(t, forType: .string)
+                notify("Kopyalandı")
+            }
         case "boyut":
             if let h = Json.get(text, "yukseklik").flatMap(Double.init), h > 0 { onResize?(CGFloat(h)) }
         case "komut":
@@ -79,6 +98,9 @@ final class AppController: NSObject, WKScriptMessageHandler {
             case "cikis": NSApp.terminate(nil)
             case "gizle": onHide?()
             case "discordYenile": restartDiscord()
+            case "paylasimAc": setShare(true)
+            case "paylasimKapat": setShare(false)
+            case "guncelle": installUpdate()
             default: break
             }
         case "secim":
@@ -148,8 +170,9 @@ final class AppController: NSObject, WKScriptMessageHandler {
         // ISS DNS'i Discord/Roblox adlarını bozuyor: yalnız hostlist'tekiler DoH ile çözülür, gerisi sistem DNS'inde kalır.
         let hosts = hostlist.flatMap { try? String(contentsOfFile: $0, encoding: .utf8) }.map(HostMatcher.parseList) ?? []
         let resolver = DohResolver()
-        let f = DohSocksFront(port: TpwsArgs.defaultPort, upstreamPort: engine.port,
-                              resolve: { HostMatcher.matches($0, hosts) ? resolver.resolve($0) : [] })
+        let resolve: (String) -> [String] = { HostMatcher.matches($0, hosts) ? resolver.resolve($0) : [] }
+        frontResolve = resolve
+        let f = DohSocksFront(port: TpwsArgs.defaultPort, upstreamPort: engine.port, resolve: resolve)
         // config.ini'ye Ayrinti=1 yazılırsa her SOCKS isteği günlüğe düşer (ziyaret geçmişi içerir, varsayılan kapalı).
         if readConfig()["Ayrinti"] == "1" { f.onEvent = { [weak self] in self?.log("socks \($0)") } }
         do { try f.start() } catch {
@@ -163,6 +186,7 @@ final class AppController: NSObject, WKScriptMessageHandler {
             return e.localizedDescription
         }
         for c in ProxyEnv.setCommands(port: f.port) { _ = Self.run(c) }
+        if readConfig()["Paylasim"] == "1" { _ = startShareLocked() }
         return nil
     }
 
@@ -195,6 +219,7 @@ final class AppController: NSObject, WKScriptMessageHandler {
     }
 
     private func stopFront() {
+        stopShareLocked()
         clearProxyEnv(onlyIfOurs: false)
         front?.stop()
         front = nil
@@ -255,6 +280,140 @@ final class AppController: NSObject, WKScriptMessageHandler {
                 self.log(error == nil ? "Discord yeniden başlatıldı" : "Discord açılamadı")
             }
         }
+    }
+
+    // MARK: Ağ paylaşımı
+    /// `work` kuyruğunda: Zapret çalışıyorsa ön proxy'nin yerel ağa açık kopyası. Hata metni ya da nil.
+    private func startShareLocked() -> String? {
+        guard lanFront == nil else { return nil }
+        guard let resolve = frontResolve, front != nil else { return "Önce Zapret'i başlatın." }
+        let f = DohSocksFront(port: LanShare.port, upstreamPort: engine.port, resolve: resolve, bindAddress: "0.0.0.0", allow: LanShare.isLocal)
+        f.onClient = { [weak self] ip in
+            guard let self = self, ip != "127.0.0.1" else { return }
+            self.lanLock.lock(); self.lanClients.seen(ip); self.lanLock.unlock()
+        }
+        do { try f.start() } catch { return "Paylaşım kapısı \(LanShare.port) başka bir program tarafından kullanılıyor." }
+        lanFront = f
+        lanLock.lock(); shareOn = true; lanLock.unlock()
+        log("ağ paylaşımı açık: \(LanShare.port)")
+        return nil
+    }
+
+    private func setShare(_ on: Bool) {
+        writeConfig("Paylasim", on ? "1" : "0")
+        work.async {
+            var err: String?
+            if on { err = self.startShareLocked() } else { self.stopShareLocked(); self.log("ağ paylaşımı kapalı") }
+            DispatchQueue.main.async {
+                if let e = err { self.writeConfig("Paylasim", "0"); self.notify(e) }
+                self.sendShare()
+            }
+        }
+    }
+
+    private func stopShareLocked() {
+        lanFront?.stop()
+        lanFront = nil
+        lanLock.lock(); shareOn = false; lanLock.unlock()
+    }
+
+    private func sendShare() {
+        lanLock.lock(); let on = shareOn, devices = lanClients.activeCount(); lanLock.unlock()
+        let firewall = on && Self.run(["/usr/libexec/ApplicationFirewall/socketfilterfw", "--getglobalstate"]).contains("enabled")
+        post(Json.object(["tip": "paylasim", "acik": on, "kullanilabilir": status == .manual,
+                          "adres": LanShare.pickAddress(LanShare.interfaces()) ?? "", "port": LanShare.port,
+                          "cihaz": devices, "guvenlikDuvari": firewall]))
+        DispatchQueue.main.async {
+            if on && self.shareTimer == nil {
+                self.shareTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in self?.sendShare() }
+            } else if !on {
+                self.shareTimer?.invalidate(); self.shareTimer = nil
+            }
+        }
+    }
+
+    // MARK: Kendini güncelleme (Windows ADR-019 sözleşmesi)
+    private func checkUpdate() {
+        var req = URLRequest(url: URL(string: "https://api.github.com/repos/\(SelfUpdate.repo)/releases/latest")!, timeoutInterval: 10)
+        req.setValue("RedRiveRR-Zapret-macOS", forHTTPHeaderField: "User-Agent")
+        URLSession.shared.dataTask(with: req) { data, _, _ in
+            guard let d = data, let r = SelfUpdate.parseRelease(d), SelfUpdate.isNewer(r.version, than: Self.appVersion) else { return }
+            DispatchQueue.main.async {
+                self.update = r
+                self.log("yeni sürüm var: \(r.version)")
+                self.sendUpdate()
+            }
+        }.resume()
+    }
+
+    private func sendUpdate(_ state: String? = nil, _ text: String = "") {
+        post(Json.object(["tip": "guncelleme", "surum": update?.version ?? "", "durum": state ?? (updating ? "indiriliyor" : "hazir"), "metin": text]))
+    }
+
+    /// İndirir, özeti doğrular, imzayı ve paket kimliğini denetler, eski paketin yerine koyar, yeniden açar.
+    private func installUpdate() {
+        guard let r = update, !updating else { return }
+        updating = true
+        sendUpdate("indiriliyor", "İndiriliyor…")
+        DispatchQueue.global(qos: .userInitiated).async {
+            let err = self.performUpdate(r)
+            DispatchQueue.main.async {
+                self.updating = false
+                if let e = err {
+                    self.log("güncelleme başarısız: \(e)")
+                    self.sendUpdate("hata", e)
+                }
+            }
+        }
+    }
+
+    private func performUpdate(_ r: SelfUpdate.Release) -> String? {
+        func get(_ u: URL) -> Data? {
+            var data: Data?
+            let sem = DispatchSemaphore(value: 0)
+            URLSession.shared.dataTask(with: URLRequest(url: u, timeoutInterval: 120)) { d, resp, _ in
+                if (resp as? HTTPURLResponse)?.statusCode == 200 { data = d }
+                sem.signal()
+            }.resume()
+            sem.wait()
+            return data
+        }
+        guard let sums = get(r.sumsURL).map({ String(decoding: $0, as: UTF8.self) }),
+              let want = SelfUpdate.sum(in: sums, for: r.assetName) else { return "Özet dosyasında Mac paketi yok." }
+        guard let zip = get(r.assetURL) else { return "Paket indirilemedi." }
+        guard SelfUpdate.sha256Hex(zip) == want else { return "Paketin özeti tutmuyor; kurulmadı." }
+        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("zwt-guncelleme-\(r.version)", isDirectory: true)
+        try? FileManager.default.removeItem(at: tmp)
+        try? FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+        let zipURL = tmp.appendingPathComponent(r.assetName)
+        guard (try? zip.write(to: zipURL)) != nil else { return "Geçici klasöre yazılamadı." }
+        _ = Self.run(["/usr/bin/ditto", "-xk", zipURL.path, tmp.appendingPathComponent("acik").path])
+        let newApp = tmp.appendingPathComponent("acik/RedRiveRR Zapret.app")
+        guard let info = NSDictionary(contentsOf: newApp.appendingPathComponent("Contents/Info.plist")),
+              info["CFBundleIdentifier"] as? String == Bundle.main.bundleIdentifier,
+              info["CFBundleShortVersionString"] as? String == r.version else { return "Paket beklenen uygulama değil." }
+        _ = Self.run(["/usr/bin/xattr", "-cr", newApp.path])
+        let verify = Process()
+        verify.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
+        verify.arguments = ["--verify", "--deep", "--strict", newApp.path]
+        try? verify.run(); verify.waitUntilExit()
+        guard verify.terminationStatus == 0 else { return "Paketin imzası bozuk." }
+        let current = Bundle.main.bundleURL
+        let backup = tmp.appendingPathComponent("eski.app")
+        do {
+            try FileManager.default.moveItem(at: current, to: backup)
+            do { try FileManager.default.moveItem(at: newApp, to: current) } catch {
+                try? FileManager.default.moveItem(at: backup, to: current)
+                return "Uygulama değiştirilemedi: \(error.localizedDescription)"
+            }
+        } catch { return "Uygulama değiştirilemedi: \(error.localizedDescription)" }
+        log("güncellendi: \(Self.appVersion) → \(r.version)")
+        let relaunch = Process()
+        relaunch.executableURL = URL(fileURLWithPath: "/bin/sh")
+        relaunch.arguments = ["-c", "sleep 1.5; /usr/bin/open -n \"$0\"", current.path]
+        try? relaunch.run()
+        DispatchQueue.main.async { NSApp.terminate(nil) }
+        return nil
     }
 
     // MARK: Strateji analizi
@@ -334,7 +493,10 @@ final class AppController: NSObject, WKScriptMessageHandler {
     private func sendStatus() {
         defer { sendStrategy() } // sonuç listesindeki "seçili" işareti çalışan stratejiyi izler
         let on = status == .manual
-        DispatchQueue.main.async { self.onRunningChange?(on) }
+        DispatchQueue.main.async {
+            self.onRunningChange?(on)
+            self.sendShare() // paylaşım Zapret'e bağlı
+        }
         post(WebState.statusJson(status: status, running: status == .manual, buttonEnabled: !busy,
                                  strategy: running.isEmpty ? selected : running, detail: "tpws (macOS), Discord ve Roblox siteleri", error: errorText))
     }

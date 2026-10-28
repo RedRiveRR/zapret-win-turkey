@@ -12,19 +12,25 @@
   <header>
     <div class="marka">
       <svg width="22" height="22" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="var(--accent)"></rect><path d="M40 30 V21 A 8 8 0 0 0 24 21 V18" fill="none" stroke="#FFFFFF" stroke-width="5.5" stroke-linecap="round"></path><rect x="17" y="30" width="30" height="22" rx="6" fill="#FFFFFF"></rect><path d="M26 41 L30 45 L38 37" fill="none" stroke="var(--accent)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-      <span>RedRiveRR <b>Zapret</b></span>
+      <span>RedRiveRR Zapret</span>
     </div>
     <button class="ikon" id="menu-ac" aria-label="Menü" aria-haspopup="menu" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button>
     <div class="menu" id="menu" role="menu" hidden>
       <button role="menuitem" data-komut="kayitlar">Kayıtları aç</button>
-      <button role="menuitem" data-komut="sonuclar">Analiz raporu</button>
+      <button role="menuitem" data-komut="sonuclar">Analiz raporunu aç</button>
       <button role="menuitem" data-komut="github">GitHub sayfası</button>
       <hr>
       <button role="menuitem" data-komut="cikis">Zapret'ten çık</button>
+      <p class="surum" id="surum"></p>
     </div>
   </header>
 
-  <section class="kart kahraman" id="kahraman" data-durum="bekliyor">
+  <div class="guncelleme" id="guncelleme" hidden>
+    <span id="guncelleme-metin">Yeni sürüm hazır</span>
+    <button class="metin-dugme" id="guncelle">Güncelle</button>
+  </div>
+
+  <section class="modul kahraman" id="kahraman" data-durum="bekliyor">
     <div class="ust">
       <div class="metin">
         <span class="rozet"><i></i><span id="rozet">Hazırlanıyor…</span></span>
@@ -39,10 +45,10 @@
     <button class="ikincil" id="discord-yenile" hidden>Discord'u yeniden başlat</button>
   </section>
 
-  <section class="kart strateji">
-    <div class="baslik-satir">
+  <section class="modul strateji">
+    <div class="modul-bas">
       <h2>Strateji</h2>
-      <span class="kucuk" id="zaman"></span>
+      <button class="metin-dugme" id="analiz" disabled>Analiz et</button>
     </div>
     <label class="secici">
       <select id="sec-strateji" aria-label="Strateji" disabled></select>
@@ -50,7 +56,34 @@
     </label>
     <div class="ilerleme" id="ilerleme" hidden><div><i id="ilerleme-cubuk"></i></div><span id="ilerleme-metin"></span></div>
     <ul class="sonuclar" id="sonuclar" aria-label="Analiz sonuçları"></ul>
-    <button class="birincil" id="analiz" disabled>Sağlayıcıma göre analiz et</button>
+    <p class="not" id="zaman"></p>
+  </section>
+
+  <section class="modul paylasim" id="paylasim" data-acik="false">
+    <div class="modul-bas">
+      <h2>Ağ paylaşımı</h2>
+      <button class="anahtar" id="paylasim-anahtar" role="switch" aria-checked="false" aria-label="Ağ paylaşımı" disabled><span></span></button>
+    </div>
+    <p class="not" id="paylasim-not">PS5, PS4 ve Switch bu Mac üzerinden Discord'a bağlansın.</p>
+    <div class="paylasim-govde" id="paylasim-govde" hidden>
+      <p class="not">Cihazın ağ ayarında <b>proxy sunucusu</b> olarak gir:</p>
+      <div class="adres">
+        <div><span class="deger" id="paylasim-adres">—</span><span class="not">Port <b id="paylasim-port">8080</b></span></div>
+        <button class="metin-dugme" id="paylasim-kopyala">Kopyala</button>
+      </div>
+      <p class="not" id="paylasim-cihaz">Henüz bağlanan cihaz yok</p>
+      <p class="uyari" id="paylasim-duvar" hidden>macOS güvenlik duvarı açık. Cihaz ilk bağlandığında çıkan pencerede "İzin ver"i seç.</p>
+      <details>
+        <summary>Cihazda nasıl ayarlanır</summary>
+        <dl>
+          <dt>PS5</dt><dd>Ayarlar › Ağ › Ayarlar › İnternet bağlantısını kur › bağlantın › Gelişmiş ayarlar › Proxy sunucusu: Kullan.</dd>
+          <dt>PS4</dt><dd>Ayarlar › Ağ › İnternet bağlantısını kur › Özel › … › Proxy sunucusu: Kullan.</dd>
+          <dt>Switch</dt><dd>Sistem ayarları › İnternet › ağın › Ayarı değiştir › Proxy ayarları: Açık.</dd>
+          <dt>Xbox, TV</dt><dd>Proxy ayarı olmadığı için bu yolla bağlanamaz.</dd>
+        </dl>
+        <p class="not">Mac açık, Zapret çalışıyor ve paylaşım açık olmalı; yoksa cihaz internete çıkamaz. Bilgisayarsız oynarken cihazda proxy'yi kapat.</p>
+      </details>
+    </div>
   </section>
 
   <div class="bildirim" id="bildirim" role="status" aria-live="polite"></div>

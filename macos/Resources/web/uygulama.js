@@ -5,10 +5,13 @@
 //   {tip:"strateji", secenekler[], secili, secimAcik, analizAcik, zaman, sonuclar[{puan, ad, durum, tam, calisti, secim, secili}]}
 //   {tip:"analiz", calisiyor:bool, metin, oran:0..1}
 //   {tip:"discord", yenidenBaslat:bool}   (Discord, Zapret'ten önce açılmışsa yeniden başlatılmalı)
-//   {tip:"bildirim", metin}
+//   {tip:"paylasim", acik:bool, kullanilabilir:bool, adres, port, cihaz:int, guvenlikDuvari:bool}
+//   {tip:"guncelleme", surum:"5.3.0|", durum:"hazir|indiriliyor|hata", metin}
+//   {tip:"surum", surum}, {tip:"bildirim", metin}
 // Sayfa -> program (postMessage):
-//   {tip:"hazir"}, {tip:"komut", ad:"baslat|durdur|analiz|sonuclar|kayitlar|github|cikis|gizle|discordYenile"}
-//   {tip:"secim", alan:"strateji", deger}, {tip:"boyut", yukseklik}   (panel içeriğe göre boyutlanır)
+//   {tip:"hazir"}, {tip:"komut", ad:"baslat|durdur|analiz|sonuclar|kayitlar|github|cikis|gizle|discordYenile|
+//                                   paylasimAc|paylasimKapat|guncelle"}
+//   {tip:"secim", alan:"strateji", deger}, {tip:"kopyala", metin}, {tip:"boyut", yukseklik}   (panel içeriğe göre boyutlanır)
 'use strict';
 
 const wv = window.chrome && window.chrome.webview;
@@ -73,8 +76,9 @@ function stratejiUygula(m) {
   sel.value = m.secili || '';
   sel.disabled = !m.secimAcik;
   $('analiz').disabled = !m.analizAcik;
-  $('analiz').textContent = (m.sonuclar || []).length ? 'Yeniden analiz et' : 'Sağlayıcıma göre analiz et';
-  $('zaman').textContent = m.zaman ? 'Son analiz ' + m.zaman : '';
+  $('analiz').textContent = (m.sonuclar || []).length ? 'Yeniden analiz et' : 'Analiz et';
+  $('zaman').textContent = m.zaman ? 'Son analiz ' + m.zaman + '. Bir satıra tıklayarak seçebilirsin.'
+    : 'Analiz, sağlayıcında en iyi çalışan yöntemi ölçüp seçer (yaklaşık 20 sn).';
   $('sonuclar').replaceChildren(...(m.sonuclar || []).slice(0, 5).map(satir));
 }
 
@@ -92,10 +96,7 @@ function satir(r) {
   ms.className = 'ms';
   const m = /(\d+) ms/.exec(r.durum || '');
   ms.textContent = m ? m[1] + ' ms' : (r.durum || '').replace(' geçti', '');
-  const tik = document.createElement('span');
-  tik.className = 'tik';
-  tik.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>';
-  li.append(puan, ad, ms, tik);
+  li.append(puan, ad, ms);
   if (r.secim) {
     li.dataset.secim = r.secim;
     li.tabIndex = 0;
@@ -112,6 +113,42 @@ function analizUygula(m) {
   $('ilerleme').hidden = !m.calisiyor;
   $('ilerleme-cubuk').style.width = Math.round((m.oran || 0) * 100) + '%';
   $('ilerleme-metin').textContent = m.metin || '';
+}
+
+// --- Ağ paylaşımı ---
+let paylasimAcik = false;
+$('paylasim-anahtar').addEventListener('click', () => {
+  $('paylasim-anahtar').disabled = true;
+  gonder({ tip: 'komut', ad: paylasimAcik ? 'paylasimKapat' : 'paylasimAc' });
+});
+$('paylasim-kopyala').addEventListener('click', () => gonder({ tip: 'kopyala', metin: $('paylasim-adres').textContent }));
+
+function paylasimUygula(m) {
+  paylasimAcik = !!m.acik;
+  const a = $('paylasim-anahtar');
+  a.setAttribute('aria-checked', String(paylasimAcik));
+  a.disabled = !m.kullanilabilir && !paylasimAcik;
+  $('paylasim').dataset.acik = String(paylasimAcik);
+  $('paylasim-govde').hidden = !paylasimAcik;
+  $('paylasim-not').textContent = paylasimAcik ? ''
+    : (m.kullanilabilir ? 'PS5, PS4 ve Switch bu Mac üzerinden Discord\'a bağlansın.' : 'Paylaşım için önce Zapret\'i başlat.');
+  $('paylasim-adres').textContent = m.adres || 'Yerel ağ bulunamadı';
+  $('paylasim-port').textContent = m.port || 8080;
+  $('paylasim-kopyala').hidden = !m.adres;
+  $('paylasim-cihaz').textContent = m.cihaz > 0 ? m.cihaz + ' cihaz bağlı' : 'Henüz bağlanan cihaz yok';
+  $('paylasim-duvar').hidden = !m.guvenlikDuvari;
+}
+
+// --- Güncelleme ---
+$('guncelle').addEventListener('click', () => gonder({ tip: 'komut', ad: 'guncelle' }));
+function guncellemeUygula(m) {
+  const g = $('guncelleme');
+  g.hidden = !m.surum;
+  g.dataset.durum = m.durum || 'hazir';
+  $('guncelleme-metin').textContent = m.durum === 'hata' ? (m.metin || 'Güncelleme kurulamadı')
+    : m.durum === 'indiriliyor' ? 'Sürüm ' + m.surum + ' indiriliyor…' : 'Sürüm ' + m.surum + ' hazır';
+  $('guncelle').hidden = m.durum === 'indiriliyor';
+  $('guncelle').textContent = m.durum === 'hata' ? 'Yeniden dene' : 'Güncelle';
 }
 
 // --- Bildirim ---
@@ -137,6 +174,9 @@ if (wv) wv.addEventListener('message', (e) => {
   else if (m.tip === 'strateji') stratejiUygula(m);
   else if (m.tip === 'analiz') analizUygula(m);
   else if (m.tip === 'discord') { $('discord-yenile').hidden = !m.yenidenBaslat; $('discord-yenile').disabled = false; }
+  else if (m.tip === 'paylasim') paylasimUygula(m);
+  else if (m.tip === 'guncelleme') guncellemeUygula(m);
+  else if (m.tip === 'surum') $('surum').textContent = 'Sürüm ' + m.surum;
   else if (m.tip === 'bildirim') bildirimGoster(m.metin || '');
 });
 
