@@ -52,4 +52,24 @@ Func _TestBlockcheck()
     _AssertEq(_ParseSummaryStrategy("* SUMMARY" & @LF & "--dpi-desync=eski" & @LF & "* SUMMARY" & @LF & "strateji yok"), _
             "--dpi-desync=eski", "son SUMMARY'de strateji yoksa öncekine bakılır")
     _AssertEq(_ParseSummaryStrategy(""), "", "boş log")
+
+    ; --- H38: analiz yalnız roblox.com'u deniyordu; Roblox açık, Discord engelli hatlarda "engel yok" deyip bitiyordu ---
+    _AssertEq(StringLeft($BLOCKCHECK_DOMAINS, 12), "discord.com ", "H38: önce discord.com denenir")
+    _AssertTrue(StringInStr(" " & $BLOCKCHECK_DOMAINS & " ", " roblox.com ") > 0, "H38: roblox.com da denenir")
+    Local $sFreeLog2 = "* SUMMARY" & @LF & "curl_test_https_tls12 ipv4 roblox.com : working without bypass" & @LF
+    _AssertFalse(_BlockcheckNoBypassNeeded($sFreeLog2, "discord.com roblox.com"), "H38: yalnız roblox engelsizse engel yok denmez")
+    _AssertTrue(_BlockcheckNoBypassNeeded($sFreeLog2, "roblox.com"), "tek hedef engelsizse engel yok")
+    _AssertTrue(_BlockcheckNoBypassNeeded("curl_test_https_tls12 ipv4 discord.com : working without bypass" & @LF & $sFreeLog2, "discord.com roblox.com"), _
+            "iki hedef de engelsizse engel yok (Zapret2 biçimi)")
+    _AssertTrue(_BlockcheckNoBypassNeeded("ipv4 discord.com curl_test_https_tls12 : working without bypass" & @CRLF & _
+            "ipv4 roblox.com curl_test_https_tls12 : working without bypass" & @CRLF, "discord.com roblox.com"), "Zapret1 biçimi")
+    _AssertFalse(_BlockcheckNoBypassNeeded("ipv4 cdn.discord.com.tr x : working without bypass", "discord.com"), "alan adı tam eşleşir")
+    _AssertFalse(_BlockcheckNoBypassNeeded("", "discord.com"), "boş log engel yok sayılmaz")
+    ; Engelsiz hedefin "- checking without DPI bypass" ardından gelen AVAILABLE'ı okunamayan sonuç değildir.
+    _AssertFalse(_BlockcheckLooksUnparsed("* curl_test_https_tls12 ipv4 roblox.com" & @LF & "- checking without DPI bypass" & @LF & "!!!!! AVAILABLE !!!!!", 0), _
+            "H38: engelsiz hedefin AVAILABLE satırı 'okunamadı' sayılmaz")
+    ; Zapret1: iki hedefte SUMMARY'nin ilk satırı engelsiz hedef olabilir; bloktaki strateji alınır.
+    _AssertEq(_ParseSummaryStrategy("* SUMMARY" & @LF & "ipv4 roblox.com curl_test_https_tls12 : working without bypass" & @LF & _
+            "ipv4 discord.com curl_test_https_tls12 : winws --wf-tcp=443 --dpi-desync=fake --dpi-desync-ttl=4" & @LF & @LF & "Please note"), _
+            "--dpi-desync=fake --dpi-desync-ttl=4", "H38: SUMMARY bloğunun ikinci satırındaki strateji alınır")
 EndFunc

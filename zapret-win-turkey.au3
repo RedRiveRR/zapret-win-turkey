@@ -1092,7 +1092,9 @@ Func RunBlockcheck($ctrlID)
     Local $bashPath = @ScriptDir & "\bin\zapret\cygwin\bin\bash.exe"
     Local $shScriptPath = @ScriptDir & "\bin\zapret\blockcheck\zapret\blog.sh"
     Local $sCommand = '"' & $bashPath & '" -i "' & $shScriptPath & '"'
+    EnvSet("DOMAINS", $BLOCKCHECK_DOMAINS) ; H38: paketteki betik yalnız roblox.com'u dener
     Local $iPidBash = Run($sCommand, @ScriptDir & "\bin\zapret\blockcheck", @SW_HIDE)
+    EnvSet("DOMAINS")
     If $iPidBash = 0 Then
         MsgBox(16 + 8192, "Analiz Başlatılamadı", "Blockcheck süreci başlatılamadı.")
         Return
@@ -1109,7 +1111,7 @@ Func RunBlockcheck($ctrlID)
         If $hFile <> -1 Then
             Local $sContent = FileRead($hFile)
             FileClose($hFile)
-            If StringInStr($sContent, "working without bypass") Or StringInStr($sContent, "not blocked") Then
+            If _BlockcheckNoBypassNeeded($sContent, $BLOCKCHECK_DOMAINS) Then
                 $isNoBypassNeeded = True
                 ExitLoop
             EndIf
@@ -1217,7 +1219,9 @@ Func RunBlockcheck2($ctrlID)
     Local $bashPath = @ScriptDir & "\bin\zapret\cygwin\bin\bash.exe"
     Local $shScriptPath = @ScriptDir & "\bin\zapret\blockcheck\zapret2\blog.sh"
     Local $sCommand = '"' & $bashPath & '" -i "' & $shScriptPath & '"'
+    EnvSet("DOMAINS", $BLOCKCHECK_DOMAINS) ; H38: paketteki betik yalnız roblox.com'u dener
     Local $iPidBash = Run($sCommand, @ScriptDir & "\bin\zapret\blockcheck", @SW_HIDE)
+    EnvSet("DOMAINS")
 
     If $iPidBash = 0 Then
         GUIDelete($hScanGUI)
@@ -1250,9 +1254,7 @@ Func RunBlockcheck2($ctrlID)
                 If StringInStr($sFiltered, "!!!!! AVAILABLE !!!!!") Then
                     _CollectStrategiesFromText($sContent, $aStrategies)
                 EndIf
-                If StringInStr($sContent, "working without bypass") Or StringInStr($sContent, "not blocked") Then
-                    $isNoBypassNeeded = True
-                EndIf
+                If _BlockcheckNoBypassNeeded($sContent, $BLOCKCHECK_DOMAINS) Then $isNoBypassNeeded = True
             EndIf
         EndIf
 
