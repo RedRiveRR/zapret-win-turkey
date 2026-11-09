@@ -13,7 +13,7 @@ Türkiye'de Discord'u (ve Roblox'u) macOS'ta açar. Menü çubuğunda yaşar: ki
 - Bir kez yönetici parolası (sistem proxy ayarı ve ağ paylaşımı için küçük bir yardımcı kurulur).
 
 ## Kurulum
-1. [Sürümler](https://github.com/RedRiveRR/zapret-win-turkey/releases/latest) sayfasından `RedRiveRR-Zapret-macOS-….zip` dosyasını indirin ve açın.
+1. [Sürümler](https://github.com/RedRiveRR/zapret-win-turkey/releases) sayfasında `RedRiveRR-Zapret-macOS-….zip` dosyası olan en yeni sürümden (şu an v5.2.5) bu dosyayı indirin ve açın. Yalnız Windows düzeltmesi içeren sürümlerde Mac paketi bulunmaz.
 2. **RedRiveRR Zapret.app**'i açın. Uygulama Apple'a ücretli geliştirici hesabıyla imzalatılmadığı için macOS ilk açılışta uyarır:
    - **macOS 12–14:** uygulamaya **sağ tıklayın → Aç → Aç**.
    - **macOS 15 Sequoia ve sonrası:** çift tıklayın, uyarıyı kapatın; **Sistem Ayarları → Gizlilik ve Güvenlik** sayfasının altındaki **Yine de Aç** düğmesine basın.

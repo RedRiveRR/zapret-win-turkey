@@ -2,10 +2,14 @@
 
 Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-turkey) üzerine bu fork'ta (`gelistirme` dalı) yapılan değişiklikleri listeler. Temel: upstream `9eeac04` (v4.5 kaynakları).
 
-## [Yayınlanmamış]
+## [v5.2.6] — 2026-11-09 — kararlı (Windows düzeltmesi)
 
 ### Windows
-- **Bazı hatlarda tam analiz "engel yok" deyip strateji bulmadan bitiyordu.** Analiz yalnız roblox.com'u deniyordu; Roblox'un açık, Discord'un engelli olduğu sağlayıcılarda (ör. Türk Telekom) zapret'siz bağlantı başarılı sayılıp tarama 10 saniyede kesiliyordu ve yanlışlıkla "sonuçlar okunamadı" uyarısı çıkıyordu. Artık önce discord.com, sonra roblox.com denenir; "engel yok" yalnız ikisi de engelsizse söylenir. Zapret1 analizinde de aynı.
+- **Bazı hatlarda tam analiz "engel yok" deyip strateji bulmadan bitiyordu.** Analiz yalnız roblox.com'u deniyordu; Roblox'un açık, Discord'un engelli olduğu sağlayıcılarda (ör. Türk Telekom) zapret'siz bağlantı başarılı sayılıp tarama 10 saniyede kesiliyordu ve yanlışlıkla "sonuçlar okunamadı" uyarısı çıkıyordu. Artık önce discord.com, sonra roblox.com denenir; "engel yok" yalnız ikisi de engelsizse söylenir. Zapret1 analizinde de aynı. Discord ile Roblox'un ikisinin de engelli olduğu hatlarda tarama biraz daha uzun sürebilir (iki site ayrı ayrı denenir).
+- Hızlı akıllı analiz, servis, stratejiler ve DNS ayarı değişmedi.
+
+### macOS
+- Değişiklik yok. Mac paketi [v5.2.5](https://github.com/RedRiveRR/zapret-win-turkey/releases/tag/v5.2.5) sürümündedir; Mac uygulaması bu sürümü güncelleme olarak göstermez.
 
 ## [v5.2.5] — 2026-10-29 — kararlı (macOS)
 
