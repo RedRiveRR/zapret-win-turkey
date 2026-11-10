@@ -17,9 +17,12 @@ Func _WinwsFilterModeFromText($sText)
     Return $WINWS_FILTER_OFF
 EndFunc
 
-; OOB stratejileri hostlist filtreleriyle çalışmaz.
-Func _WinwsStrategyHasOOB($sStrategy)
-    Return StringInStr($sStrategy, "oob") > 0
+; Hostlist filtreleriyle çalışmayan stratejiler: OOB ve syndata. syndata bağlantının ilk paketinde
+; (SYN) çalışır; o an site adı bilinmediği için hostlist'li profilde hiç uygulanmaz (H39: Vodafone'da
+; analizde %100 çalışan syndata, Başlat'ta --hostlist-auto ile Discord'u açmıyordu). Bunlar filtresiz,
+; tüm trafiğe uygulanır; analiz de onları böyle ölçer.
+Func _WinwsStrategyIgnoresFilter($sStrategy)
+    Return StringInStr($sStrategy, "oob") > 0 Or StringInStr($sStrategy, "syndata") > 0
 EndFunc
 
 ; Yakalanan giden UDP portları: 67 (DHCP sunucusu) hariç hepsi (H31). Açılışta bilgisayar henüz IPv4
@@ -43,7 +46,7 @@ EndFunc
 ;   $sAutoHostlistPath  : AUTO modunda kullanılır
 ;   $sHostlistPath      : MANUAL modunda kullanılır
 Func _BuildWinwsArgs($sEngine, $sWinwsPath, $sStrategy, $sFilterMode, $sExcludePath = "", $sAutoHostlistPath = "", $sHostlistPath = "")
-    Local $bOOB = _WinwsStrategyHasOOB($sStrategy)
+    Local $bOOB = _WinwsStrategyIgnoresFilter($sStrategy)
     Local $sArgs = ""
 
     If $sEngine = "Zapret2" Then
@@ -62,7 +65,7 @@ Func _BuildWinwsArgs($sEngine, $sWinwsPath, $sStrategy, $sFilterMode, $sExcludeP
                 ' --lua-init="@' & $sLuaDir & 'zapret-auto.lua"'
     EndIf
 
-    ; OOB stratejilerinde hostlist filtreleri uygulanmaz.
+    ; OOB ve syndata stratejilerinde hostlist filtreleri uygulanmaz.
     If Not $bOOB Then
         If $sFilterMode = $WINWS_FILTER_AUTO Then
             $sArgs &= ' --hostlist-auto="' & $sAutoHostlistPath & '"'
@@ -76,7 +79,7 @@ EndFunc
 
 ; Seçilen filtre modu için gereken hostlist dosyası yoksa varsayılan içerikle oluşturur.
 Func _EnsureHostlistFile($sFilterMode, $sStrategy, $sAutoHostlistPath, $sHostlistPath)
-    If _WinwsStrategyHasOOB($sStrategy) Then Return
+    If _WinwsStrategyIgnoresFilter($sStrategy) Then Return
     If $sFilterMode = $WINWS_FILTER_AUTO Then
         If Not FileExists($sAutoHostlistPath) Then FileWrite($sAutoHostlistPath, "")
     ElseIf $sFilterMode = $WINWS_FILTER_MANUAL Then

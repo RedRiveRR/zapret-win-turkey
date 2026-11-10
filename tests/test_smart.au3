@@ -53,6 +53,8 @@ Func _TestSmart()
     _AssertTrue(_SmartScore(1, 150, $sSimple) > _SmartScore(1, 900, $sSimple), "hızlı olan önde")
     _AssertTrue(_SmartScore(1, 150, $sSimple) > _SmartScore(1, 150, "--lua-desync=fake:repeats=6 --lua-desync=multisplit"), "sade olan önde")
     _AssertEq(_SmartScore(1, 150, "--lua-desync=oob:x"), 70, "OOB 30 puan ceza alır")
+    _AssertEq(_SmartScore(1, 150, '--lua-desync="syndata"'), _SmartScore(1, 150, '--lua-desync="multisplit"') - 30, _
+            "H39: syndata da filtreyle çalışmadığı için 30 puan ceza alır")
     _AssertTrue(_SmartScore(0.9, 150, $sSimple) > _SmartScore(0.6, 150, $sSimple), "başarı en baskın etken")
 
     ; --- _SmartAddCandidate ---

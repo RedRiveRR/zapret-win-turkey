@@ -394,7 +394,7 @@ EndFunc
 
 Func _UpdateFilterForStrategy()
     Local $sStrategy = _GetActiveStrategyString()
-    Local $bHasOOB = StringInStr($sStrategy, "oob") > 0
+    Local $bHasOOB = _WinwsStrategyIgnoresFilter($sStrategy)
 
     If $bHasOOB Then
         If Not $bOOBFilterLock Then

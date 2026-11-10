@@ -129,14 +129,14 @@ Func _SmartSuccessRatio(ByRef $aM, ByRef $aTargets, ByRef $aBlocked, $bOnlyTls13
     Return $fNum / $fDen
 EndFunc
 
-; 0..100 puan: başarı 80, gecikme 15, sadelik 5. OOB stratejiler hostlist ile
+; 0..100 puan: başarı 80, gecikme 15, sadelik 5. OOB ve syndata stratejiler hostlist ile
 ; çalışmadığı ve tüm trafiği etkilediği için 30 puan ceza alır.
 Func _SmartScore($fSuccess, $fAvgMs, $sStrategy)
     If $fSuccess <= 0 Then Return 0
     Local $fLat = 15 * __SmartClamp(1 - ($fAvgMs - 150) / 1350, 0, 1)
     Local $fSimp = __SmartClamp(5 - _SmartComplexity($sStrategy), 0, 5)
     Local $f = 80 * $fSuccess + $fLat + $fSimp
-    If _WinwsStrategyHasOOB($sStrategy) Then $f -= 30
+    If _WinwsStrategyIgnoresFilter($sStrategy) Then $f -= 30
     If $f < 0 Then $f = 0
     Return Round($f, 1)
 EndFunc
@@ -209,8 +209,8 @@ Func _SmartOrderCandidates(ByRef $aC)
     Local $aIdx[$n], $aCx[$n], $iRest = 0
     For $i = 0 To $n - 1
         If _SmartIsPriorityCandidate($aC[$i][1]) Then ContinueLoop
-        ; OOB sade görünse de filtreyle çalışmaz ve puanda ceza alır: en sona.
-        Local $fC = _SmartComplexity($aC[$i][0]) + (_WinwsStrategyHasOOB($aC[$i][0]) ? 100 : 0)
+        ; OOB/syndata sade görünse de filtreyle çalışmaz ve puanda ceza alır: en sona.
+        Local $fC = _SmartComplexity($aC[$i][0]) + (_WinwsStrategyIgnoresFilter($aC[$i][0]) ? 100 : 0)
         Local $j = $iRest
         While $j > 0 And $aCx[$j - 1] > $fC
             $aIdx[$j] = $aIdx[$j - 1]

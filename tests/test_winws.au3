@@ -35,6 +35,17 @@ Func _TestWinws()
     _AssertEq(_BuildWinwsArgs("Zapret2", $sExe2, "--lua-desync=oob", $WINWS_FILTER_AUTO, $sEx, $sAuto, $sHost), _
             '--wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-66,68-65535 --lua-desync=oob' & $sLua, _
             "OOB: exclude ve hostlist eklenmez")
+    ; H39: syndata bağlantının ilk paketinde (SYN) çalışır; o an site adı bilinmez, hostlist'le hiç uygulanmıyordu
+    _AssertEq(_BuildWinwsArgs("Zapret2", $sExe2, '--lua-desync="syndata:blob=0x1603"', $WINWS_FILTER_AUTO, $sEx, $sAuto, $sHost), _
+            '--wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-66,68-65535 --lua-desync="syndata:blob=0x1603"' & $sLua, _
+            "H39: syndata: exclude ve hostlist eklenmez")
+    _AssertEq(_BuildWinwsArgs("Zapret1", $sExe1, "--dpi-desync=syndata", $WINWS_FILTER_MANUAL, $sEx, $sAuto, $sHost), _
+            '--wf-tcp=0-65535 --wf-udp=0-66,68-65535 --dpi-desync=syndata', "H39: Zapret1 syndata da filtresiz")
+    _AssertTrue(_WinwsStrategyIgnoresFilter("--lua-desync=oob"), "OOB filtreyle çalışmaz")
+    _AssertTrue(_WinwsStrategyIgnoresFilter('--lua-desync="syndata" --payload="tls_client_hello" --lua-desync="multisplit"'), "syndata filtreyle çalışmaz")
+    _AssertFalse(_WinwsStrategyIgnoresFilter($sS2), "ClientHello stratejisi filtreyle çalışır")
+    _AssertFalse(_WinwsStrategyIgnoresFilter('--lua-desync="wssize:wsize=1:scale=6" --payload="tls_client_hello" --lua-desync="multisplit:pos=10"'), _
+            "wssize stratejisi filtreli kalır (asıl bölme ClientHello'da)")
     _AssertEq(_BuildWinwsArgs("Zapret2", $sExe2, $sS2, $WINWS_FILTER_OFF), _
             '--wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-66,68-65535 ' & $sS2 & $sLua, _
             "strateji testi: filtresiz, exclude'suz")
@@ -62,4 +73,6 @@ Func _TestWinws()
     FileDelete($sTmpHost)
     _EnsureHostlistFile($WINWS_FILTER_MANUAL, "--x=oob", $sTmpAuto, $sTmpHost)
     _AssertFalse(FileExists($sTmpHost), "OOB stratejide dosya oluşturulmaz")
+    _EnsureHostlistFile($WINWS_FILTER_MANUAL, '--lua-desync="syndata"', $sTmpAuto, $sTmpHost)
+    _AssertFalse(FileExists($sTmpHost), "H39: syndata stratejide dosya oluşturulmaz")
 EndFunc

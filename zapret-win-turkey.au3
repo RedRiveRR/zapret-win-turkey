@@ -712,7 +712,7 @@ EndFunc
 
 Func _UpdateFilterForStrategy()
     Local $sStrategy = _GetActiveStrategyString()
-    Local $bHasOOB = StringInStr($sStrategy, "oob") > 0
+    Local $bHasOOB = _WinwsStrategyIgnoresFilter($sStrategy)
 
     If $bHasOOB Then
         If Not $bOOBFilterLock Then
@@ -1595,8 +1595,8 @@ Func _BuildStrategyTestCommand($sStrategy)
 EndFunc
 
 Func _UpdateOobWarning($sStrategy, $lblOobWarning)
-    If StringInStr($sStrategy, "oob") Then
-        GUICtrlSetData($lblOobWarning, "UYARI: Bu strateji OOB içeriyor. Filtreler ile çalışmamaktadır. Sistem geneli çalışacaktır. Bazı sitelerde sorun yaratabilir.")
+    If _WinwsStrategyIgnoresFilter($sStrategy) Then
+        GUICtrlSetData($lblOobWarning, "UYARI: Bu strateji OOB/syndata içeriyor. Filtreler ile çalışmamaktadır. Sistem geneli çalışacaktır. Bazı sitelerde sorun yaratabilir.")
         GUICtrlSetState($lblOobWarning, $GUI_SHOW)
     Else
         GUICtrlSetData($lblOobWarning, "")
