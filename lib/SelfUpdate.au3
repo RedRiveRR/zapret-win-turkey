@@ -54,6 +54,12 @@ Func _UpdateAssetUrl($sJson, $sName)
     Return $a[0]
 EndFunc
 
+; GitHub API'ye ulaşılamazsa (403: paylaşılan IP'de istek sınırı, ör. Cloudflare WARP) release dosyasının
+; adresi biçiminden kurulur. Yine _UpdateUrlAllowed ve SHA256 ile denetlenir.
+Func _UpdateDirectAssetUrl($sRepo, $sTag, $sName)
+    Return "https://github.com/" & $sRepo & "/releases/download/" & $sTag & "/" & $sName
+EndFunc
+
 ; Dosyanın SHA256 özeti (küçük harf onaltılık).
 Func _UpdateFileSha256($sPath)
     Local $bHash = _Crypt_HashFile($sPath, $CALG_SHA_256)
@@ -69,15 +75,20 @@ Func _UpdateDownload($sRepo, $sTag, $bLite, $sDir, ByRef $sErr)
     DirCreate($sDir)
     ; 1) Release bilgisi
     Local $bJson = InetRead("https://api.github.com/repos/" & $sRepo & "/releases/tags/" & $sTag, $INET_FORCERELOAD)
+    Local $sZipUrl, $sSumUrl
     If @error Or BinaryLen($bJson) = 0 Then
-        $sErr = "GitHub'a ulaşılamadı (sürüm bilgisi alınamadı)."
-        Return ""
-    EndIf
-    Local $sJson = BinaryToString($bJson, $SB_UTF8)
-    Local $sZipUrl = _UpdateAssetUrl($sJson, $sAsset), $sSumUrl = _UpdateAssetUrl($sJson, "SHA256SUMS.txt")
-    If $sZipUrl = "" Or $sSumUrl = "" Then
-        $sErr = "Bu sürümde " & $sAsset & " bulunamadı."
-        Return ""
+        ; API kapalı/sınırda: dosyalar bilinen adreslerinden indirilir (özet yine doğrulanır).
+        _LogWarn("Güncelleme: GitHub API'den sürüm bilgisi alınamadı; doğrudan indirme adresi kullanılıyor")
+        $sZipUrl = _UpdateDirectAssetUrl($sRepo, $sTag, $sAsset)
+        $sSumUrl = _UpdateDirectAssetUrl($sRepo, $sTag, "SHA256SUMS.txt")
+    Else
+        Local $sJson = BinaryToString($bJson, $SB_UTF8)
+        $sZipUrl = _UpdateAssetUrl($sJson, $sAsset)
+        $sSumUrl = _UpdateAssetUrl($sJson, "SHA256SUMS.txt")
+        If $sZipUrl = "" Or $sSumUrl = "" Then
+            $sErr = "Bu sürümde " & $sAsset & " bulunamadı."
+            Return ""
+        EndIf
     EndIf
     If Not _UpdateUrlAllowed($sZipUrl, $sRepo) Or Not _UpdateUrlAllowed($sSumUrl, $sRepo) Then
         $sErr = "Beklenmeyen indirme adresi: " & $sZipUrl

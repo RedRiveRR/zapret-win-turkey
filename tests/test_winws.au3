@@ -75,4 +75,17 @@ Func _TestWinws()
     _AssertFalse(FileExists($sTmpHost), "OOB stratejide dosya oluşturulmaz")
     _EnsureHostlistFile($WINWS_FILTER_MANUAL, '--lua-desync="syndata"', $sTmpAuto, $sTmpHost)
     _AssertFalse(FileExists($sTmpHost), "H39: syndata stratejide dosya oluşturulmaz")
+
+    ; --- H39: eski sürümle syndata + filtreyle kurulmuş servis komutu düzeltilir ---
+    Local $sSvcOld = '"C:\Z\winws2.exe" --wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-66,68-65535 --hostlist-exclude="C:\Z\config\excludelist.txt" ' & _
+            '--lua-desync="syndata" --lua-init="@C:\Z\lua\zapret-lib.lua" --hostlist-auto="C:\Z\config\autohostlist.txt"'
+    _AssertEq(_WinwsArgsFixFilterless($sSvcOld), '"C:\Z\winws2.exe" --wf-l3=ipv4 --wf-tcp-out=0-65535 --wf-udp-out=0-66,68-65535 ' & _
+            '--lua-desync="syndata" --lua-init="@C:\Z\lua\zapret-lib.lua"', "H39: syndata servis komutundan hostlist filtreleri çıkar")
+    _AssertEq(_WinwsArgsFixFilterless('"C:\Z\winws.exe" --wf-tcp=0-65535 --dpi-desync=syndata --hostlist="C:\Z\h.txt"'), _
+            '"C:\Z\winws.exe" --wf-tcp=0-65535 --dpi-desync=syndata', "H39: Zapret1 manuel hostlist de çıkar")
+    Local $sSvcOk = '"C:\Z\winws2.exe" --hostlist-exclude="C:\Z\ex.txt" ' & $sS2 & ' --hostlist-auto="C:\Z\a.txt"'
+    _AssertEq(_WinwsArgsFixFilterless($sSvcOk), $sSvcOk, "filtreyle çalışan strateji komutuna dokunulmaz")
+    _AssertEq(_WinwsArgsFixFilterless(""), "", "boş komut")
+    Local $sSvcPath = '"C:\Users\Boob\Z\winws2.exe" --hostlist-exclude="C:\Users\Boob\Z\ex.txt" ' & $sS2 & ' --hostlist-auto="C:\Users\Boob\Z\a.txt"'
+    _AssertEq(_WinwsArgsFixFilterless($sSvcPath), $sSvcPath, "yoldaki 'oob' stratejiden sayılmaz")
 EndFunc

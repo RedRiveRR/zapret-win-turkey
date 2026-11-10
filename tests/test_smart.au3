@@ -5,7 +5,8 @@
 Func _TestSmart()
     ; --- _SmartParseTargets ---
     Local $aT = _SmartParseTargets($SMART_DEFAULT_TARGETS)
-    _AssertEq(UBound($aT), 4, "varsayılan 4 hedef")
+    _AssertEq(UBound($aT), 5, "varsayılan 5 hedef")
+    _AssertEq($aT[4][0], "updates.discord.com", "Discord güncelleyicisi de ölçülür (uygulama açılışta buna bağlanır, H35)")
     _AssertEq($aT[0][0], "gateway.discord.gg", "ilk hedef gateway")
     _AssertEq($aT[0][1], 3, "gateway ağırlığı 3")
     Local $aT2 = _SmartParseTargets(" Discord.com , bozuk host:2, roblox.com:0 ,,cdn.x.com:2.5,a.b.c:1")

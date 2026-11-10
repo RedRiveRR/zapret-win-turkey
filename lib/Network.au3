@@ -111,8 +111,8 @@ Func CheckDnsPoisoningSilent()
         If Not $bInternet Then _LogWarn("DNS kontrolü: internet bağlantısı yok (1.1.1.1/8.8.8.8 erişilemiyor); DNS zehirli sayılmadı")
     EndIf
     Local $bPoison = _DnsIsPoisonVerdict($sIP, $bInternet)
-    _LogInfo("DNS kontrolü: discord.com -> " & StringLeft(StringStripWS($sIP, 3), 80) & " => " & _
-            ($bPoison ? "zehirli" : ($bInternet ? "temiz" : "bilinmiyor (internet yok)")))
+    _LogInfo("DNS kontrolü: discord.com -> " & _DnsAnswerLogText($sIP) & " => " & _
+            ($bPoison ? (_DnsAnswerNeedsRetry($sIP) ? "DNS yanıt vermiyor (sorunlu)" : "zehirli") : ($bInternet ? "temiz" : "bilinmiyor (internet yok)")))
     Return $bPoison
 EndFunc
 
@@ -129,6 +129,12 @@ Func __NetInternetReachable()
             "try { if ($c.ConnectAsync($h, 443).Wait(2000)) { exit 0 } } catch {} finally { $c.Close() } }; exit 1"
     Local $iRc = RunWait('powershell.exe -NoProfile -NonInteractive -Command "' & $sPs & '"', "", @SW_HIDE)
     Return $iRc = 0
+EndFunc
+
+; Logdaki yanıt: adres değilse "yanıt yok" (PowerShell hata metni adres yerine yazılıyordu).
+Func _DnsAnswerLogText($sIP)
+    If _DnsAnswerNeedsRetry($sIP) Then Return "yanıt yok"
+    Return StringStripWS($sIP, 3)
 EndFunc
 
 ; Yanıt bir IPv4/IPv6 adresi değilse (boş, zaman aşımı, PowerShell hata metni) True.

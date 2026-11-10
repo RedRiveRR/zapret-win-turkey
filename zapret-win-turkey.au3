@@ -327,7 +327,7 @@ _ServiceMigrateDhcpFilter($serviceName)
 _ServiceDriverCleanup($serviceName)
 _SetStatus("DNS KONTROL EDİLİYOR...")
 
-Local $isDnsChangedByApp = False
+Local $isDnsChangedByApp = False, $isCryptTriedByApp = False
 
 While 1
     Local $isPoisoned = CheckDnsPoisoningSilent()
@@ -338,12 +338,29 @@ While 1
         _SetStatus("DNS ZEHİRLENMESİ SAPTANDI!")
         GUICtrlSetColor($lblStatusText, 0xC0392B)
 
-        ; 2. TUR: Uygulama DNS değiştirdi ama hala zehirliyse (TT engelliyorsa)
+        ; 2. TUR: Uygulama DNS'i Cloudflare yaptı ama hâlâ sorunluysa (yanıt yok ya da yine zehirli: port 53'e
+        ; müdahale, ör. Vodafone) şifreli DNS'i tek tıkla öner. Önceden yalnız "DNSCrypt kurun" yazıyordu.
+        If $isDnsChangedByApp And Not $isCryptTriedByApp And Not _StateCryptOn() And FileExists(@ScriptDir & "\bin\dnscrypt-proxy\dnscrypt-proxy.exe") Then
+            If MsgBox(36 + 8192, "Cloudflare DNS de çalışmadı", _
+                    "Cloudflare DNS (1.1.1.1) bu bağlantıda yanıt vermiyor ya da yine yanlış adres dönüyor; sağlayıcınız DNS sorgularına müdahale ediyor." & @CRLF & @CRLF & _
+                    "Şifreli DNS (DNSCrypt) kurulsun mu? Küçük bir servis kurar, sorgular şifreli gider." & @CRLF & @CRLF & _
+                    "Hayır derseniz sonra DNS sekmesinden de seçebilirsiniz.") = 6 Then
+                $isCryptTriedByApp = True
+                _SetStatus("DNSCRYPT KURULUYOR...")
+                If _DnscryptInstallNow() Then
+                    _SetStatus("DNS TEST EDİLİYOR...")
+                    Sleep(1500)
+                    ContinueLoop
+                EndIf
+            EndIf
+            ExitLoop
+        EndIf
         If $isDnsChangedByApp Then
-            MsgBox(48 + 8192, "Kritik Uyarı", "Düz DNS değişikliği işe yaramadı, port 53'e müdahale var." & @CRLF & @CRLF & _
+            MsgBox(48 + 8192, "Kritik Uyarı", ($isCryptTriedByApp ? "Şifreli DNS kuruldu ama discord.com hâlâ doğru çözülemiyor." : "Düz DNS değişikliği işe yaramadı, port 53'e müdahale var.") & @CRLF & @CRLF & _
                     "Yapabilecekleriniz şunlar:" & @CRLF & @CRLF & _
-                    "1- Program içinden dnscrypt-proxy servisi kurmak" & @CRLF & @CRLF & _
-                    "2- YogaDNS gibi harici bir DNS client'i kullanmak")
+                    "1- DNS sekmesinden Şifreli DNS'i seçmek (kurulu değilse)" & @CRLF & @CRLF & _
+                    "2- VPN/WARP açıksa kapatıp programı yeniden açmak" & @CRLF & @CRLF & _
+                    "3- YogaDNS gibi harici bir DNS istemcisi kullanmak")
             ExitLoop
         EndIf
 
@@ -629,14 +646,7 @@ While 1
 
             If Not _StateCryptOn() Then
                 _SetStatus("DNSCRYPT KURULUYOR...")
-                _LogInfo("DNSCrypt servisi kuruluyor")
-
-                RunWait('"' & $sProxyPath & '" -service install', $sProxyDir, @SW_HIDE)
-                RunWait('"' & $sProxyPath & '" -service start', $sProxyDir, @SW_HIDE)
-                If Not _SetDNS_Localhost() Then MsgBox(48 + 8192, "Uyarı", $NET_MSG_NO_ADAPTER)
-
-                _DnscryptSetOn(True)
-                ;MsgBox(64 + 8192, "Başarılı", "DNSCrypt servisi kuruldu.")
+                _DnscryptInstallNow()
             Else
                 _SetStatus("DNSCRYPT KALDIRILIYOR...")
                 _LogInfo("DNSCrypt servisi kaldırılıyor")
@@ -1831,6 +1841,19 @@ Func _LanShareNotify($sTitle, $sText, $bInteractive)
     Else
         TrayTip($sTitle, $sText, 10, 2)
     EndIf
+EndFunc
+
+; DNSCrypt servisini kurup başlatır ve sistem DNS'ini 127.0.0.1'e yönlendirir. Dosya yoksa False.
+Func _DnscryptInstallNow()
+    Local $sProxyDir = @ScriptDir & "\bin\dnscrypt-proxy"
+    Local $sProxyPath = $sProxyDir & "\dnscrypt-proxy.exe"
+    If Not FileExists($sProxyPath) Then Return False
+    _LogInfo("DNSCrypt servisi kuruluyor")
+    RunWait('"' & $sProxyPath & '" -service install', $sProxyDir, @SW_HIDE)
+    RunWait('"' & $sProxyPath & '" -service start', $sProxyDir, @SW_HIDE)
+    If Not _SetDNS_Localhost() Then MsgBox(48 + 8192, "Uyarı", $NET_MSG_NO_ADAPTER)
+    _DnscryptSetOn(True)
+    Return True
 EndFunc
 
 ; DNS değiştikten sonra açılıştaki kontrolün aynısı: zehirlenme varsa kritik düğmeler kilitlenir.

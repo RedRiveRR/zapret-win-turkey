@@ -142,7 +142,7 @@ EndFunc
 Func _ServiceMigrateDhcpFilter($sName)
     Local $sRaw = _ServiceParseBinPath(_ServiceGetConfig($sName))
     If $sRaw = "" Then Return False
-    Local $sFixed = _WinwsArgsFixDhcp($sRaw)
+    Local $sFixed = _WinwsArgsFixFilterless(_WinwsArgsFixDhcp($sRaw))
     If $sFixed == $sRaw Then Return False
     Local $bOk
     If _ServiceGetState($sName) = "RUNNING" Then
@@ -151,9 +151,9 @@ Func _ServiceMigrateDhcpFilter($sName)
         $bOk = RunWait(@ComSpec & " /c sc config " & $sName & ' binPath= "' & StringReplace($sFixed, '"', '\"') & '"', "", @SW_HIDE) = 0
     EndIf
     If $bOk Then
-        _LogInfo("Servis komutu düzeltildi: DHCP (UDP 67) artık yakalanmıyor (H31)")
+        _LogInfo("Servis komutu düzeltildi (DHCP UDP 67 yakalanmaz H31; syndata/OOB filtresiz H39)")
     Else
-        _LogWarn("Servis komutu düzeltilemedi (DHCP filtresi, H31)")
+        _LogWarn("Servis komutu düzeltilemedi (H31/H39)")
     EndIf
     Return $bOk
 EndFunc

@@ -46,9 +46,14 @@ EndFunc
 ; Arka planda son sürüm sorgusunu başlatır.
 Func _UpdateStartCheck($sRepo)
     $__g_sUpdateOut = ""
-    Local $sPs = "try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; " & _
-            "(Invoke-RestMethod -Uri 'https://api.github.com/repos/" & $sRepo & "/releases/latest' -TimeoutSec 8).tag_name } " & _
-            "catch { 'HATA ' + [int]$_.Exception.Response.StatusCode }"
+    ; API 403 verirse (paylaşılan IP'de istek sınırı, ör. Cloudflare WARP) github.com/.../releases/latest
+    ; yönlendirmesindeki etiket okunur (API sınırına tabi değil).
+    Local $sPs = "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; " & _
+            "try { (Invoke-RestMethod -Uri 'https://api.github.com/repos/" & $sRepo & "/releases/latest' -TimeoutSec 8).tag_name } " & _
+            "catch { $e = 'HATA ' + [int]$_.Exception.Response.StatusCode; " & _
+            "try { $q = [Net.WebRequest]::Create('https://github.com/" & $sRepo & "/releases/latest'); $q.AllowAutoRedirect = $false; $q.Timeout = 8000; " & _
+            "$r = $q.GetResponse(); $l = [string]$r.Headers['Location']; $r.Close(); " & _
+            "if ($l -match '/releases/tag/([^/?#]+)$') { $Matches[1] } else { $e } } catch { $e } }"
     $__g_iUpdatePid = Run('powershell.exe -NoProfile -NonInteractive -Command "' & $sPs & '"', "", @SW_HIDE, $STDOUT_CHILD)
 EndFunc
 

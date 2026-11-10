@@ -7,6 +7,10 @@ Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-
 ### Windows
 - **Analizin önerdiği "syndata" stratejisi Başlat'ta hiç çalışmıyordu (ör. Vodafone).** syndata bağlantının ilk paketinde çalışır; o anda site adı henüz bilinmediği için otomatik/manuel site listesi filtresiyle hiç uygulanmıyordu. Analizde %100 çalışan strateji seçilip başlatılınca Discord uygulaması ve diğer engelli siteler açılmıyordu. Artık syndata, OOB gibi filtresiz (tüm trafiğe) uygulanır, filtre kutusu "Filtre Uygulanamaz" olur ve akıllı analiz filtreyle çalışan bir strateji varsa onu önerir (syndata 30 puan ceza alır). Ana ve Lite.
 - **Tanılama paketi düğmesi basınca tepki vermiyordu** (paket ~10 sn sürüyor); kullanıcı defalarca basınca ikinci paket ya da "Önceki işlem sürerken basıldı" uyarısı çıkıyordu. Artık düğme hemen "Paket hazırlanıyor…" olur ve kilitlenir; iş sürerken sıraya giren basışlar yok sayılır.
+- **Cloudflare DNS de yanıt vermeyen hatlarda (ör. Vodafone) program yalnız "DNSCrypt kurun" diyordu.** Artık açılışta Şifreli DNS'i (DNSCrypt) tek tıkla kurmayı teklif eder ve DNS'i yeniden dener. Kayıtta DNS yanıt vermeyince adres yerine hata metni yazılıyordu; artık "yanıt yok" yazar.
+- **Cloudflare WARP gibi paylaşılan bağlantılarda güncelleme kontrolü "GitHub'a ulaşılamadı (HTTP 403)" diyordu** (GitHub API istek sınırı). Artık sürüm github.com'dan okunur, paket doğrudan adresinden indirilip SHA256 ile doğrulanır.
+- **Eski sürümle syndata stratejisiyle kurulmuş servis** açılışta kendiliğinden düzeltilir (site listesi filtresi çıkarılır).
+- Akıllı analiz Discord güncelleyicisini (`updates.discord.com`) de ölçer: uygulama açılışta önce ona bağlanır.
 
 ### Yeni
 - **Başlarken rehberi:** ilk açılışta 6 adımda ne yapılacağını gösterir (DNS, strateji bulma, başlatma, servis, sorun olursa). Her adımda alt menüde hangi sekmeye gidileceği ve hangi düğmeye basılacağı işaretlidir. Sonradan **Diğer → Nasıl kullanılır?** ile açılır.

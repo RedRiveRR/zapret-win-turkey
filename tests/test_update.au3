@@ -63,4 +63,9 @@ Func _TestUpdate()
     _AssertEq(_UpdateAssetUrl($sJson, "RedRiveRR-Zapret-Lite-v5.2.0.zip"), "", "olmayan dosya")
     _AssertTrue(StringInStr(_UpdateTempDir("v5.2.0"), "zwt-guncelleme-v5.2.0") > 0, "geçici klasör adı")
     _AssertFalse(StringInStr(_UpdateTempDir("v5/../x"), "/") > 0, "etiket klasör adına güvenli çevrilir")
+    ; API 403 verirse (WARP gibi paylaşılan IP'lerde istek sınırı) indirme adresi doğrudan kurulur; izinli adres olmalı.
+    Local $sDirect = _UpdateDirectAssetUrl($sRepo, "v5.2.6", "RedRiveRR-Zapret-v5.2.6.zip")
+    _AssertEq($sDirect, "https://github.com/RedRiveRR/zapret-win-turkey/releases/download/v5.2.6/RedRiveRR-Zapret-v5.2.6.zip", "API'siz paket adresi")
+    _AssertTrue(_UpdateUrlAllowed($sDirect, $sRepo), "API'siz adres izinli")
+    _AssertFalse(_UpdateUrlAllowed(_UpdateDirectAssetUrl($sRepo, "v5/../x", "a.zip"), $sRepo), "bozuk etiketle adres izinli sayılmaz")
 EndFunc

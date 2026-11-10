@@ -25,7 +25,8 @@
 Global Const $SMART_TLS12 = "1.2"
 Global Const $SMART_TLS13 = "1.3"
 ; host:ağırlık. gateway.discord.gg Discord uygulamasının sohbet bağlantısıdır (en kritik).
-Global Const $SMART_DEFAULT_TARGETS = "gateway.discord.gg:3,discord.com:2,roblox.com:2,cdn.discordapp.com:1"
+; updates.discord.com: Discord uygulaması açılışta önce güncelleyiciye bağlanır; engelliyse "Update failed" ekranında kalır (H35).
+Global Const $SMART_DEFAULT_TARGETS = "gateway.discord.gg:3,discord.com:2,roblox.com:2,cdn.discordapp.com:1,updates.discord.com:1"
 Global Const $SMART_PHASE2_MAX = 12
 ; Büyük aday listeleri (blockcheck yüzlerce strateji bulabiliyor) için:
 ; elemede en fazla bu kadar tarama adayı denenir (kayıtlı/hazır profiller sınırsız)...

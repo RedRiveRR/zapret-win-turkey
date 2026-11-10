@@ -30,6 +30,14 @@ EndFunc
 ; gönderemiyor, Ethernet IPv4 adresi alamıyor (yalnız IPv6 kalıyor, Discord açılmıyor).
 Global Const $WINWS_UDP_PORTS = "0-66,68-65535"
 
+; Eski sürümle filtreyle çalışmayan bir stratejiyle (syndata, H39) kurulmuş servis komutundan
+; hostlist filtrelerini çıkarır; yoksa strateji hiç uygulanmaz. Stratejiye bakarken dosya yolları
+; ("C:\...") yok sayılır: kullanıcı adında "oob" geçmesi filtreleri kaldırmasın.
+Func _WinwsArgsFixFilterless($sCmd)
+    If Not _WinwsStrategyIgnoresFilter(StringRegExpReplace($sCmd, '"[A-Za-z]:\\[^"]*"', '""')) Then Return $sCmd
+    Return StringRegExpReplace($sCmd, '\s*--hostlist(?:-exclude|-auto)?="[^"]*"', "")
+EndFunc
+
 ; Eski sürümlerin kurduğu servis komutunda tüm UDP'yi yakalayan filtreyi DHCP'siz hâline çevirir.
 ; Başka biçimde verilmiş UDP filtresine dokunulmaz.
 Func _WinwsArgsFixDhcp($sCmd)

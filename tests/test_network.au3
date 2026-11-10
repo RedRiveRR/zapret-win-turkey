@@ -36,4 +36,9 @@ Func _TestNetwork()
     _AssertTrue(StringInStr($sScript, "if ($adapter) { Write-Output x } else { exit " & $NET_EXIT_NO_ADAPTER & " }") > 0, "H4: bağdaştırıcı yoksa ayrı çıkış kodu")
     _AssertFalse(StringInStr($sScript, '"') > 0, "betik çift tırnak içermez (-Command ile güvenli)")
     _AssertFalse(StringInStr($NET_PS_SELECT_ADAPTER, '"') > 0, "bağdaştırıcı seçimi çift tırnak içermez")
+
+    ; --- Log metni: yanıt bir adres değilse hata metni yerine "yanıt yok" (Vodafone 2026-11-10) ---
+    _AssertEq(_DnsAnswerLogText('Exception calling "GetHostAddresses" with "1" argument(s): "Bu, ana bilgisayar a'), "yanıt yok", "hata metni loga yazılmaz")
+    _AssertEq(_DnsAnswerLogText(""), "yanıt yok", "boş yanıt")
+    _AssertEq(_DnsAnswerLogText(" 162.159.135.232 "), "162.159.135.232", "IP aynen yazılır")
 EndFunc
