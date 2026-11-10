@@ -86,6 +86,7 @@ Global $g_bWebHealthIni = True, $g_bWebRestartIni = False, $g_sWebSvcHealth = ""
 ; DNS ekranı: etkin DNS sunucuları ("?" = okunmadı; PowerShell gerektirir, yalnızca sekme açılınca ve değişiklikten sonra okunur)
 Global $g_sWebDnsServers = "?", $g_bWebDnsReread = False, $g_sWebLastDnsJson = ""
 Global $g_sWebLastOtherJson = "", $g_sWebUpdateIni = "1", $g_sUpdateNotice = ""
+Global $g_hWebDiagDone = 0 ; son tanılama paketinin bittiği an (iş sürerken sıraya giren basışlar yok sayılır)
 Global $g_sPrevTestShot = "" ; önizleme: deneme penceresi görüntüsünün yolu
 Global $g_hWebYieldTimer = 0
 Global $g_sPrevBusyLeft = "" ; önizleme: alt pencere kapanırken kuyrukta kalan mesaj
@@ -504,6 +505,7 @@ While 1
 
         Case $btnPageDiag
             _DiagCreateFromTray()
+            $g_hWebDiagDone = TimerInit()
 
         Case $btnNewUi
             _WebUiSwitchToNew()
@@ -1971,10 +1973,14 @@ Func _WebUiTick($nMsg)
                 $g_sWebLastOtherJson = ""
                 _WebUiServiceRefreshSoon()
                 _WV2_Post(_WebJsonObj("tip", "tema", "tema", _WebUiTheme()))
+                ; Başlarken rehberi: kapatılana (Atla / Başlayalım) kadar her açılışta
+                If IniRead($iniPath, "Arayuz", "Rehber", "") <> "1" Then _WV2_Post(_WebJsonObj("tip", "rehber"))
                 If $g_sUpdateNotice <> "" Then
                     _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", $g_sUpdateNotice))
                     $g_sUpdateNotice = ""
                 EndIf
+            Case "rehber"
+                IniWrite($iniPath, "Arayuz", "Rehber", "1")
             Case "tema"
                 Local $sTheme = (_WebJsonGet($sMsg, "tema") = "koyu") ? "koyu" : "acik"
                 IniWrite($iniPath, "Arayuz", "Tema", $sTheme)
@@ -2037,6 +2043,11 @@ Func _WebUiTick($nMsg)
                         Case Else
                             $idOther = $btnRemoveService
                     EndSwitch
+                    ; Paket hazırlanırken sıraya giren basışlar (basıldıkları an son paketin bitişinden önce): ikinci paket yok.
+                    If $sCmd = "tanilama" And $g_hWebDiagDone <> 0 And $iAge >= TimerDiff($g_hWebDiagDone) Then
+                        _LogInfo("Yeni arayüz: paket hazırlanırken basılan tanılama yok sayıldı")
+                        Return $nMsg
+                    EndIf
                     If BitAND(GUICtrlGetState($idOther), $GUI_ENABLE) Then Return $idOther
                 ElseIf $sCmd = "dns" Then
                     $g_bWebDnsReread = True
@@ -2132,6 +2143,8 @@ Func _UiYield($hWnd, $bForce = False)
                 $g_sWebLastDnsJson = ""
                 $g_sWebLastOtherJson = ""
                 _WV2_Post(_WebJsonObj("tip", "bildirim", "metin", "Bir işlem sürüyor veya açık bir pencere var; bitince tekrar dene."))
+            Case "rehber"
+                IniWrite($iniPath, "Arayuz", "Rehber", "1")
             Case "tema"
                 Local $sTheme = (_WebJsonGet($sMsg, "tema") = "koyu") ? "koyu" : "acik"
                 IniWrite($iniPath, "Arayuz", "Tema", $sTheme)
@@ -2365,6 +2378,19 @@ Func _WebUiPreviewAndExit($sDir)
         If $nMsg = $btnRunZapret Then FileWriteLine($sLog, "Başlat komutu -> btnRunZapret olayı (önizlemede çalıştırılmadı)")
         If Not $g_bWebPageReady Then ContinueLoop
         If $iShot = -1 Then
+            ; Başlarken rehberi (ilk açılışta görünür): her adım, koyu tema, sonra kapatılır
+            __WebUiPreviewPump(1200, $sLog)
+            For $iStep = 0 To 5
+                _WV2_Exec("rehberGoster(" & $iStep & ")")
+                __WebUiPreviewPump(500, $sLog)
+                _ScreenCapture_CaptureWnd($sDir & "\rehber" & $iStep & ".png", $hWebGui)
+            Next
+            _WV2_Exec("document.getElementById('tema').click(); rehberGoster(2)")
+            __WebUiPreviewPump(600, $sLog)
+            _ScreenCapture_CaptureWnd($sDir & "\rehber-koyu.png", $hWebGui)
+            _WV2_Exec("document.getElementById('tema').click(); rehberGoster(5); document.getElementById('rehber-ileri').click()")
+            __WebUiPreviewPump(600, $sLog)
+            FileWriteLine($sLog, "rehber kapatıldı: Rehber=" & IniRead($iniPath, "Arayuz", "Rehber", ""))
             $iShot = 0
             $hShot = TimerInit()
         ElseIf TimerDiff($hShot) > 1200 Then
@@ -2423,7 +2449,10 @@ Func _WebUiPreviewAndExit($sDir)
         __WebUiPreviewPump(1200, $sLog)
         _ScreenCapture_CaptureWnd($sDir & "\diger.png", $hWebGui)
         _WV2_Exec("document.querySelector('[data-komut=tanilama]').click()")
+        Sleep(150)
+        _ScreenCapture_CaptureWnd($sDir & "\tanilama-basildi.png", $hWebGui)
         __WebUiPreviewPump(500, $sLog)
+        _ScreenCapture_CaptureWnd($sDir & "\tanilama-sonra.png", $hWebGui)
         _WV2_Exec("document.getElementById('temizle').click(); document.getElementById('temizle').click()")
         __WebUiPreviewPump(800, $sLog)
         ; Ağ paylaşımı sayfası (kart ve Npcap yalnızca okunur; go-pcap2socks başlatılmaz)

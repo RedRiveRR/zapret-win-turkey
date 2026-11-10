@@ -23,6 +23,7 @@
 //   {tip:"bildirim", metin}   (program -> sayfa, birkaç saniye görünür)
 //   {tip:"platform", ad:"macos"}   (yalnız macOS sürümü; Windows'a özgü [data-yalniz="windows"] satırları gizlenir)
 //   {tip:"komut", ad:"servisKur|servisKaldir|servisAyarlar"}, {tip:"ayar", ad:"onarim|yenidenBaslat", deger:bool}
+//   {tip:"rehber"}   (program -> sayfa: Başlarken rehberini aç; ilk açılışta)  /  {tip:"rehber"} (sayfa -> program: rehber kapatıldı, bir daha açılışta gösterme)
 'use strict';
 
 const wv = window.chrome && window.chrome.webview;
@@ -248,8 +249,25 @@ $('guncelleme').addEventListener('click', () => {
   gonder({ tip: 'ayar', ad: 'guncelleme', deger: yeni });
 });
 onayliDugme($('temizle'), 'temizle');
+// Tanılama paketi ~10 sn sürer ve bu sürede program yanıt vermez. Düğme hemen kilitlenip ne olduğunu
+// söyler; yoksa kullanıcı defalarca basıyor, sıraya giren basışlar ikinci paket ya da uyarı üretiyordu.
+const tanilama = $('tanilama');
+const tanilamaBaslik = tanilama.querySelector('b').textContent;
+const tanilamaAlt = tanilama.querySelector('.kucuk').textContent;
+tanilama.addEventListener('click', () => {
+  tanilama.disabled = true;
+  tanilama.querySelector('b').textContent = 'Paket hazırlanıyor…';
+  tanilama.querySelector('.kucuk').textContent = '10 saniye kadar sürer; bitince masaüstü açılır.';
+});
+function tanilamaBitti() {
+  if (!tanilama.disabled) return;
+  tanilama.disabled = false;
+  tanilama.querySelector('b').textContent = tanilamaBaslik;
+  tanilama.querySelector('.kucuk').textContent = tanilamaAlt;
+}
 
 function digerUygula(m) {
+  tanilamaBitti(); // program işi bitirince bu durumu yeniden gönderir
   $('guncelleme').setAttribute('aria-checked', String(!!m.guncelleme));
   $('guncelleme').disabled = false;
   $('hakkinda').textContent = m.hakkinda || '';
@@ -354,6 +372,111 @@ function cihazlarUygula(acik, liste) {
   $('paylasim-cihaz-not').hidden = liste.length === 0;
 }
 
+// --- Başlarken rehberi ---
+// Her adım: alttaki menüde nereye gidileceği (hedef), ne yazdığı (eylem) ve ne yapılacağı.
+const REHBER = [
+  { hedef: null, baslik: 'Zapret ne yapar?',
+    govde: 'İnternet sağlayıcın Discord\'a (ve Roblox\'a) giden bağlantıyı tanıyıp kesiyor. Zapret aynı bağlantıyı sağlayıcının tanıyamayacağı biçimde gönderir.',
+    ipucu: ['VPN değildir: trafiğin başka bir ülkeye gitmez, hızın düşmez.', 'Dört adımda kurulur; bu rehber hepsini gösterir.'] },
+  { hedef: 'dns', eylem: 'Cloudflare (1.1.1.1)', baslik: 'Önce DNS',
+    govde: 'Program açılınca DNS\'i kontrol eder. Bağlantı ekranında "DNS zehirlenmesi" görürsen DNS sekmesinden Cloudflare\'i seç.',
+    ipucu: ['Cloudflare yanıt vermiyorsa (bazı hatlarda olur) Şifreli DNS\'i seç.'] },
+  { hedef: 'strateji', eylem: 'Hızlı testi başlat', baslik: 'Hattına uygun yöntemi bul',
+    govde: 'Strateji sekmesinde Hızlı test\'e bas. Birkaç dakikada en iyi yöntemi ölçüp seçer.',
+    ipucu: ['Sonuç çıkmazsa Tam analiz\'i dene (5–15 dk).', 'Ya da Strateji listesinden sağlayıcının adını taşıyan hazır stratejiyi seç (ör. Vodafone).'] },
+  { hedef: 'baglanti', eylem: 'güç', baslik: 'Başlat',
+    govde: 'Bağlantı sekmesindeki güç düğmesine bas. Kart yeşile dönünce Zapret çalışıyor demektir.',
+    ipucu: ['Sonra Discord\'u tamamen kapatıp (saat yanındaki simgesinden de) yeniden aç.'] },
+  { hedef: 'servis', eylem: 'Servisi kur', baslik: 'Her açılışta kendiliğinden',
+    govde: 'Çalıştığını gördüysen Servis sekmesinden Servisi kur. Bilgisayar açılınca Zapret, program açık olmasa da çalışır.',
+    ipucu: ['Stratejiyi değiştirirsen servis yeni stratejiyle güncellenir.'] },
+  { hedef: 'diger', eylem: 'Sorun bildirmek için paket oluştur', baslik: 'Sorun olursa',
+    govde: 'Cloudflare WARP ya da başka bir VPN açıksa kapat; Zapret ile birlikte çalışmaz.',
+    ipucu: ['Hâlâ açılmıyorsa Diğer sekmesinden paket oluştur ve masaüstüne gelen dosyayı gönder.', 'Bu rehbere Diğer → Nasıl kullanılır? ile dönebilirsin.'] },
+];
+const rehber = $('rehber');
+let rehberAdim = 0;
+let rehberOnceki = null; // rehber kapanınca odak geri döner
+
+function rehberSahne(a) {
+  const sahne = $('rehber-sahne');
+  sahne.replaceChildren();
+  if (!a.hedef) {
+    // Bağlantı ekranındaki yol: Sen → Zapret → Sağlayıcı → Discord (akış çizgileriyle)
+    const k = document.createElement('div');
+    k.className = 'kahraman';
+    k.dataset.durum = 'aktif';
+    k.append(document.querySelector('#kahraman .yol').cloneNode(true));
+    sahne.append(k);
+    return;
+  }
+  const nav = document.createElement('div');
+  nav.className = 'rehber-nav';
+  document.querySelectorAll('nav a').forEach((l) => {
+    const s = document.createElement('span');
+    s.append(l.querySelector('svg').cloneNode(true), l.textContent.trim());
+    if (l.dataset.gorunum === a.hedef) s.className = 'hedef';
+    nav.append(s);
+  });
+  const eylem = document.createElement('div');
+  eylem.className = 'rehber-eylem';
+  const b = document.createElement('b');
+  if (a.eylem === 'güç') {
+    b.append($('guc').querySelector('svg').cloneNode(true), 'Güç düğmesi');
+    b.querySelector('svg').setAttribute('stroke', 'currentColor');
+  } else b.textContent = a.eylem;
+  eylem.append('Bas:', b);
+  sahne.append(nav, eylem);
+}
+
+function rehberGoster(i) {
+  rehberAdim = Math.max(0, Math.min(REHBER.length - 1, i));
+  const a = REHBER[rehberAdim];
+  $('rehber-sayac').textContent = `${rehberAdim + 1} / ${REHBER.length}`;
+  $('rehber-baslik').textContent = a.baslik;
+  $('rehber-govde').textContent = a.govde;
+  $('rehber-ipucu').replaceChildren(...(a.ipucu || []).map((t) => { const li = document.createElement('li'); li.textContent = t; return li; }));
+  rehberSahne(a);
+  $('rehber-noktalar').replaceChildren(...REHBER.map((_, j) => { const n = document.createElement('i'); if (j === rehberAdim) n.className = 'su'; return n; }));
+  $('rehber-geri').hidden = rehberAdim === 0;
+  const son = rehberAdim === REHBER.length - 1;
+  $('rehber-ileri').textContent = son ? 'Başlayalım' : 'İleri';
+  $('rehber-atla').hidden = son;
+}
+
+function rehberAc() {
+  rehberOnceki = document.activeElement;
+  rehber.hidden = false;
+  rehberGoster(0);
+  $('rehber-ileri').focus();
+}
+
+function rehberKapat() {
+  if (rehber.hidden) return;
+  rehber.hidden = true;
+  gonder({ tip: 'rehber' }); // program bir daha açılışta göstermez
+  if (rehberOnceki && rehberOnceki.focus) rehberOnceki.focus();
+}
+
+$('rehber-ileri').addEventListener('click', () => {
+  if (rehberAdim === REHBER.length - 1) rehberKapat(); else rehberGoster(rehberAdim + 1);
+});
+$('rehber-geri').addEventListener('click', () => rehberGoster(rehberAdim - 1));
+$('rehber-atla').addEventListener('click', rehberKapat);
+$('rehber-ac').addEventListener('click', rehberAc);
+rehber.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') rehberKapat();
+  else if (e.key === 'ArrowRight' && e.target.tagName !== 'BUTTON') rehberGoster(rehberAdim + 1);
+  else if (e.key === 'ArrowLeft' && e.target.tagName !== 'BUTTON') rehberGoster(rehberAdim - 1);
+  else if (e.key === 'Tab') {
+    // Odak rehberin içinde kalsın
+    const odak = [...rehber.querySelectorAll('button')].filter((b) => !b.hidden);
+    const ilk = odak[0], son = odak[odak.length - 1];
+    if (e.shiftKey && document.activeElement === ilk) { e.preventDefault(); son.focus(); }
+    else if (!e.shiftKey && document.activeElement === son) { e.preventDefault(); ilk.focus(); }
+  }
+});
+
 // --- Bildirim ---
 let bildirimZaman = 0;
 function bildirimGoster(metin) {
@@ -377,6 +500,7 @@ if (wv) {
     else if (m.tip === 'diger') digerUygula(m);
     else if (m.tip === 'paylasim') paylasimUygula(m);
     else if (m.tip === 'platform') document.documentElement.dataset.platform = m.ad; // macOS sürümü
+    else if (m.tip === 'rehber') rehberAc();
   });
 }
 gonder({ tip: 'hazir' });

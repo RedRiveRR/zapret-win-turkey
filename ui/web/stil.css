@@ -161,3 +161,34 @@ button.satir:disabled{opacity:.5;cursor:default}
 .not-kutu b{font-weight:700}
 .uyari-metin{color:var(--warnText)!important;font-weight:600}
 .adimlar{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:1.4}
+/* Başlarken rehberi */
+.rehber-ekran{position:absolute;inset:0;z-index:5;background:var(--bg);display:flex;flex-direction:column;gap:16px;padding:20px 22px 18px}
+.rehber-ekran:not([hidden]){animation:rehberAc .22s ease-out}
+@keyframes rehberAc{from{opacity:0}to{opacity:1}}
+.rehber-ust{display:flex;align-items:center;justify-content:space-between;min-height:32px}
+.rehber-sayac{font-size:13px;font-weight:600;color:var(--muted)}
+.rehber-atla{border:0;background:none;color:var(--muted);font-size:13px;font-weight:600;padding:6px 8px;border-radius:10px;cursor:pointer}
+.rehber-atla:hover{background:var(--surface2)}
+.rehber-sahne{background:var(--surface);border-radius:22px;padding:18px 16px;display:flex;flex-direction:column;align-items:center;gap:16px;min-height:178px;justify-content:center}
+.rehber-sahne .kahraman{background:none;padding:0;width:100%}
+.rehber-nav{display:flex;gap:4px;width:100%;padding:6px;border-radius:18px;background:var(--bg)}
+.rehber-nav span{flex:1;height:50px;border-radius:13px;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10.5px}
+.rehber-nav span.hedef{background:var(--accent);color:var(--onAccent);font-weight:600;animation:hedef 1.8s ease-in-out infinite}
+@keyframes hedef{0%,100%{box-shadow:0 0 0 0 var(--accentTint)}50%{box-shadow:0 0 0 6px var(--accentTint)}}
+.rehber-eylem{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.rehber-eylem b{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:12px;background:var(--accentTint);color:var(--accentText);font-size:13px;font-weight:600}
+.rehber-metin{flex:1;min-height:0;overflow-y:auto;padding:0 2px}
+.rehber-metin h1{font-size:23px;line-height:1.2;margin:0 0 8px}
+.rehber-metin p{margin:0;font-size:14.5px;line-height:1.55}
+.rehber-ipucu{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.rehber-ipucu li{font-size:13px;line-height:1.5;color:var(--muted);padding-left:14px;position:relative}
+.rehber-ipucu li::before{content:"";position:absolute;left:0;top:.62em;width:6px;height:6px;border-radius:3px;background:var(--accent)}
+.rehber-alt{display:flex;flex-direction:column;gap:14px}
+.rehber-noktalar{display:flex;justify-content:center;gap:6px}
+.rehber-noktalar i{width:7px;height:7px;border-radius:4px;background:var(--surface2);transition:width .2s,background .2s}
+.rehber-noktalar i.su{width:20px;background:var(--accent)}
+.rehber-dugmeler{display:flex;gap:10px}
+.rehber-dugmeler .ikincil{flex:0 0 110px;height:48px;border-radius:16px}
+.rehber-dugmeler .birincil{flex:1}
+.rehber-atla:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.rehber-ekran:not([hidden]),.rehber-nav span.hedef{animation:none}.rehber-noktalar i{transition:none}}
