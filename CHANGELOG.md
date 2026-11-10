@@ -2,7 +2,7 @@
 
 Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-turkey) üzerine bu fork'ta (`gelistirme` dalı) yapılan değişiklikleri listeler. Temel: upstream `9eeac04` (v4.5 kaynakları).
 
-## [Yayınlanmamış]
+## [v5.2.7] — 2026-11-10 — kararlı (Windows)
 
 ### Windows
 - **Analizin önerdiği "syndata" stratejisi Başlat'ta hiç çalışmıyordu (ör. Vodafone).** syndata bağlantının ilk paketinde çalışır; o anda site adı henüz bilinmediği için otomatik/manuel site listesi filtresiyle hiç uygulanmıyordu. Analizde %100 çalışan strateji seçilip başlatılınca Discord uygulaması ve diğer engelli siteler açılmıyordu. Artık syndata, OOB gibi filtresiz (tüm trafiğe) uygulanır, filtre kutusu "Filtre Uygulanamaz" olur ve akıllı analiz filtreyle çalışan bir strateji varsa onu önerir (syndata 30 puan ceza alır). Ana ve Lite.
@@ -14,6 +14,9 @@ Bu dosya, [alimali54/zapret-win-turkey](https://github.com/alimali54/zapret-win-
 
 ### Yeni
 - **Başlarken rehberi:** ilk açılışta 6 adımda ne yapılacağını gösterir (DNS, strateji bulma, başlatma, servis, sorun olursa). Her adımda alt menüde hangi sekmeye gidileceği ve hangi düğmeye basılacağı işaretlidir. Sonradan **Diğer → Nasıl kullanılır?** ile açılır.
+
+### macOS
+- Değişiklik yok. Mac paketi [v5.2.5](https://github.com/RedRiveRR/zapret-win-turkey/releases/tag/v5.2.5) sürümündedir.
 
 ## [v5.2.6] — 2026-11-09 — kararlı (Windows düzeltmesi)
 

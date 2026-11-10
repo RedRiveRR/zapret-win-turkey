@@ -44,7 +44,7 @@ Intel ve Apple Silicon (M1, M2, M3, M4…) Mac'ler için, macOS 12 Monterey ve s
 - **Ağ paylaşımı:** PS5, PS4, Xbox, Switch ve TV bu Mac üzerinden Discord'a bağlanır; bağlı cihazlar panelde listelenir.
 - **Discord'u yeniden başlat** düğmesi ve doğrulamalı **otomatik güncelleme**.
 
-İndirme: [v5.2.5 sürümü](https://github.com/RedRiveRR/zapret-win-turkey/releases/tag/v5.2.5) sayfasından `RedRiveRR-Zapret-macOS-v5.2.5.zip` (v5.2.6 yalnız Windows düzeltmesidir; Mac paketi v5.2.5'te kalır). Kurulum, ilk açılış onayı ve ayrıntılar: **[docs/macos.md](docs/macos.md)**.
+İndirme: [v5.2.5 sürümü](https://github.com/RedRiveRR/zapret-win-turkey/releases/tag/v5.2.5) sayfasından `RedRiveRR-Zapret-macOS-v5.2.5.zip` (v5.2.6 ve v5.2.7 yalnız Windows sürümleridir; Mac paketi v5.2.5'te kalır). Kurulum, ilk açılış onayı ve ayrıntılar: **[docs/macos.md](docs/macos.md)**.
 
 ## Öne çıkanlar
 - **Sade, kompakt arayüz** (açık/koyu tema): Bağlantı, Strateji, Servis, DNS ve Diğer ekranları. Durumu tek bakışta gösterir: *Sen → Zapret → Sağlayıcı → Discord*.
@@ -61,8 +61,8 @@ Intel ve Apple Silicon (M1, M2, M3, M4…) Mac'ler için, macOS 12 Monterey ve s
 **Gereksinimler:** Windows 10 veya 11 (64 bit), yönetici yetkisi. Yeni arayüz Microsoft Edge **WebView2** kullanır; Windows 11'de yerleşiktir, Windows 10'da çoğunlukla Windows Update ile gelir. Bulunamazsa program klasik arayüzle açılır.
 
 1. [Releases](https://github.com/RedRiveRR/zapret-win-turkey/releases) sayfasından son sürümü indirin:
-   - `RedRiveRR-Zapret-v5.2.6.zip` — tam sürüm (önerilen).
-   - `RedRiveRR-Zapret-Lite-v5.2.6.zip` — yalnızca temel işlevler, küçük pencere.
+   - `RedRiveRR-Zapret-v5.2.7.zip` — tam sürüm (önerilen).
+   - `RedRiveRR-Zapret-Lite-v5.2.7.zip` — yalnızca temel işlevler, küçük pencere.
    - `SHA256SUMS.txt` ile indirdiğiniz dosyayı doğrulayabilirsiniz.
 2. ZIP'i bir klasöre çıkarın (ör. `Belgeler\RedRiveRR Zapret`). ZIP'in içinden çalıştırmayın.
 3. **`RedRiveRR Zapret.exe`** dosyasını çalıştırın; yönetici izni istenir.
